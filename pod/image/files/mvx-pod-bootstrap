@@ -9,6 +9,10 @@
 # was built with (Wifi_Credential_Config), and the STA's Wifi_Inet_Config
 # (DHCP, as core's 20_kconfig.sta_backhaul_inet.json.sh would insert).
 #
+# No tx_chainmask: mac80211_hwsim reports none, so osw's confsync would try to
+# set it forever, and owm aborts when confsync has not settled in 180 s --
+# dropping the backhaul, the GRE and the cloud session every 3 minutes.
+#
 # Only the radios in sta_bands get a backhaul STA (default: 5G only). hwsim
 # radios are multi-band, so a 2.4G STA would join the gateway's 5G backhaul
 # AP as well and cm would bring up a second, redundant GRE uplink.
@@ -50,7 +54,7 @@ for phy in $(ls /sys/class/ieee80211 | sort -V); do
           {"op":"insert","table":"Wifi_Radio_Config","row":{
              "enabled":true,"if_name":"'"$phy"'","freq_band":"'"$fb"'","hw_mode":"'"$hw"'",
              "ht_mode":"'"$ht"'","channel_mode":"cloud","channel_sync":0,
-             "hw_type":"mac80211_hwsim","hw_config":["map",[]],"tx_chainmask":1,
+             "hw_type":"mac80211_hwsim","hw_config":["map",[]],
              "vif_configs":["set",[]]}}]' >/dev/null \
             && echo "mvx-pod-bootstrap: $phy = $fb (no backhaul STA)"
         continue ;;
@@ -67,7 +71,7 @@ for phy in $(ls /sys/class/ieee80211 | sort -V); do
       {"op":"insert","table":"Wifi_Radio_Config","row":{
          "enabled":true,"if_name":"'"$phy"'","freq_band":"'"$fb"'","hw_mode":"'"$hw"'",
          "ht_mode":"'"$ht"'","channel_mode":"cloud","channel_sync":0,
-         "hw_type":"mac80211_hwsim","hw_config":["map",[]],"tx_chainmask":1,
+         "hw_type":"mac80211_hwsim","hw_config":["map",[]],
          "vif_configs":["set",[["named-uuid","sta"]]]}}]' >/dev/null \
         && echo "mvx-pod-bootstrap: $phy = $fb, $vif -> '$ssid'"
 done
