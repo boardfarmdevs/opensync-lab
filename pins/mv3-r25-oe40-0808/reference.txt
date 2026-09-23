@@ -1,0 +1,9 @@
+reference_build=/home/rev/yocto/mv3-lxd-r25-oe40-0808
+manifest=mv3-r25-oe40.xml @ d254498
+machine=exm-qemux86-mv3
+image=ofw-exm-qemux86-mv3-20260808202625.rootfs.tar.bz2
+image_sha256=5bc07412f10af05848ff77d1a1a15077627f2ef8f3421cf9bf31d80c69a2720f
+buildhistory_head=4eaa01e Build 20260808202625 of mng 2.5 for machine exm-qemux86-mv3 on rev140
+pin_store=/home/rev/yocto/repo_reference/mvx-pins/mv3-r25-oe40-0808 (branch mvx/mv3-r25-oe40-0808), 190M
+projects=67 missing_from_mirror=11
+pinned_at=2026-09-22T17:38:54-07:00 by rev@rev140

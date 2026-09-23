@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<manifest>
+  <!-- revision-locked from /home/rev/yocto/mv3-lxd-r25-oe40-0808 (mv3-r25-oe40.xml) by mvx-opensync lib/pin-manifest.py -->
+  <remote name="lgirdk" fetch="ssh://git@github.com/lgirdk" revision="oe40" />
+  <remote name="upc-mv3" alias="origin" fetch="ssh://git@bitbucket.upc.biz:7999/mv3s" revision="rnl25" />
+  <remote name="upc-mng" alias="origin" fetch="ssh://git@bitbucket.upc.biz:7999/mng" revision="rnl25" />
+  <remote name="upc-mngs" alias="origin" fetch="ssh://git@bitbucket.upc.biz:7999/mngs" />
+  <remote name="upc-rmc" alias="origin" fetch="ssh://git@bitbucket.upc.biz:7999/rmc" revision="rnl25" />
+  <default sync-j="4" />
+  <project remote="lgirdk" name="bitbake" path="openembedded-core/bitbake" upstream="oe40" revision="9097600ccd22de6934de282b5fdf24fdfb9500ba" />
+  <project remote="lgirdk" name="openembedded-core" path="openembedded-core" upstream="oe40" revision="3cf8edf6a22b0ea3b186a2d16e1b362348c8f176" />
+  <project remote="lgirdk" name="meta-openembedded" path="meta-openembedded" upstream="oe40" revision="c47cac777cdeffed882a2aaf8b2538eb97b611bd" />
+  <project remote="lgirdk" name="meta-virtualization" path="meta-virtualization" upstream="oe40" revision="55ed2134a4b0225e7cb74777a5775d910dc3f065" />
+  <project remote="upc-mng" name="meta-mng" path="meta-mng" upstream="rnl25" revision="23044ae27e8e2d0f038e4b0f1ee7496a472a2de6" />
+  <project remote="upc-mng" name="meta-mng-restricted" path="meta-mng-restricted" upstream="rnl25" revision="1a58833a235814dfb8e5a99b0a9b9fa2635bb72c" />
+  <project remote="upc-mng" name="meta-rdk-opensync" path="meta-rdk-opensync" upstream="rnl25" revision="6949db288fa9f8c8bd474f94bd65ada99601e4d0" />
+  <project remote="upc-mv3" name="bcmbca-rdkb-metas" path="bcmbca-rdkb-metas" upstream="rnl25" revision="39eab36936faffd047f5e2698052c8d8f83025eb">
+    <linkfile src="meta-rdk-broadcom-bca-soc" dest="meta-rdk-broadcom-bca-soc" />
+    <linkfile src="meta-rdk-broadcom-bca-system" dest="meta-rdk-broadcom-bca-system" />
+    <linkfile src="meta-rdk-broadcom-sagemcom" dest="meta-rdk-broadcom-sagemcom" />
+  </project>
+  <project remote="upc-mv3" name="bcmbca-rdkb-meta-scom-boards" path="meta-rdk-sagemcom-boards" upstream="rnl25" revision="ed6c7a0bf9cd56c5427115bb94c0f23d01b7b319" />
+  <project remote="upc-mv3" name="meta-opensync-sagemcom" path="meta-rdk-opensync-sagemcom" upstream="rnl25" revision="e1c7652bd88ab44ec8975676f5e7151b50d0d963" />
+  <project remote="upc-mv3" name="meta-rdk-sagemcom-lgi" path="meta-rdk-sagemcom-lgi" upstream="rnl25" revision="b1e2accd693fa37629f10dfa11edc70148d5272f" />
+  <project remote="upc-mv3" name="meta-rdk-sagemcom-voice" path="meta-rdk-sagemcom-voice" upstream="rnl25" revision="53316ac55da7935ec2928fdb5cb78919c75affbf" />
+  <project remote="upc-mv3" name="mv3-bcmbca-milestone-5.04l.x" path="bcasdk" upstream="rnl25" revision="8135fa08390b41739c050bda3ff00671a2992be2" />
+  <project remote="upc-mv3" name="bcmbca-rdkb-hal-system" path="bcmbca-rdkb-hal-system" upstream="rnl25" revision="e7d5384ad7891220a2856849112869c148b9aa0c" />
+  <project remote="upc-mv3" name="binaries" path="binaries" revision="f5f7cb8227f33b3d4a2f339638ea8fa35beb1bce" upstream="master" />
+  <project remote="upc-mv3" name="bspteam-dockerfiles" path="bspteam-dockerfiles" upstream="rnl25" revision="25d16611580980d73a319740ca037e2c133b93df" />
+  <project remote="upc-mv3" name="ccsp-led-manager" path="src/ccsp-led-manager" revision="ff8b9ca67bdab6a9700f263810e777c5cd3445a2" upstream="dev/LG-RDK" />
+  <project remote="upc-mv3" name="ccsp-profile-hunter" path="src/ccsp-profile-hunter" revision="e949f7b1cdc570ead603709f750b518a580ed91f" upstream="develop" />
+  <project remote="upc-mv3" name="data-encryption" path="src/data-encryption" revision="8a12e04f4d685908c37ae60e2c2abdcea0c50aa4" upstream="master" />
+  <project remote="upc-mv3" name="getpp" path="src/getpp" revision="f0670280c4a85bd0f97ba3e5c6b91916e6fbf22d" upstream="master" />
+  <project remote="upc-mv3" name="hal-mv3" path="src/hal-mv3" revision="08cb5ade69b0e7e570c27f912a6106459b186cde" upstream="dev/LG-RDK" />
+  <project remote="upc-mv3" name="migration-mng" path="src/migration-mng" revision="0c0cc336640e1b46ae44e902f4c999090d3c6e70" upstream="master" />
+  <project remote="upc-rmc" name="rbus2" path="src/rbus2" upstream="rnl25" revision="ebb0095a9415b72a5b8a0a7f93e90a74d97d4358" />
+  <project remote="upc-rmc" name="ipoe-health-check" path="src/ipoe-health-check" upstream="rnl25" revision="51da420e78b94c435054ad66a4e67dfb9d3799e3" />
+  <project remote="upc-rmc" name="libsyswrapper" path="src/libsyswrapper" upstream="rnl25" revision="587e22604aba46919c459775e19296b64da2f0cb" />
+  <project remote="upc-rmc" name="libunpriv" path="src/libunpriv" upstream="rnl25" revision="4632ac95850541b3ab2a2e5b6dc60d9f6eae8f8e" />
+  <project remote="upc-rmc" name="rdk-logger" path="src/rdk-logger" upstream="rnl25" revision="d71cdb9227388576d9867c15e46356eb8ee5ad6c" />
+  <project remote="upc-rmc" name="syslog-helper" path="src/syslog-helper" upstream="rnl25" revision="cf24f4834b83f4201d952e5835a42b9385d8fcf8" />
+  <project remote="upc-rmc" name="webconfig-framework" path="src/webconfig-framework" upstream="rnl25" revision="23ffa18dcc819454be7bdeee5f6946d0a6be1e16" />
+  <project remote="upc-rmc" name="json-rpc" path="src/json-rpc" upstream="rnl25" revision="b9981f04a7a8b089699086f2a5ed94f72b837e6c" />
+  <project remote="upc-rmc" name="mtu-modifier" path="src/mtu-modifier" upstream="rnl25" revision="9441a5a651a3eef08246497ba9c91aae208c7583" />
+  <project remote="upc-rmc" name="notify-comp" path="src/notify-comp" upstream="rnl25" revision="a61f535196ed2e927b4d75c3c5cfa70e8eb49ea9" />
+  <project remote="upc-rmc" name="ccsp-cm-agent" path="src/ccsp-cm-agent" upstream="rnl25" revision="1732d73361010e7016749f1858998ad96a33088e" />
+  <project remote="upc-rmc" name="ccsp-common-library" path="src/ccsp-common-library" upstream="rnl25" revision="0caa0f0c0e3e2fc5282c1ed8eddc671bcf34ac59" />
+  <project remote="upc-rmc" name="ccsp-cr" path="src/ccsp-cr" upstream="rnl25" revision="d375299202f1dd0fbdacd8f8c9f2b9b349db6409" />
+  <project remote="upc-rmc" name="ccsp-dhcp-mgr" path="src/ccsp-dhcp-mgr" upstream="rnl25" revision="7404313e683e05ba91c474caa8bd0f151c83b6b1" />
+  <project remote="upc-rmc" name="ccsp-dmcli" path="src/ccsp-dmcli" upstream="rnl25" revision="6d6aaeca2d14ad048e47fba451e58bb37b46fb17" />
+  <project remote="upc-rmc" name="ccsp-eth-agent" path="src/ccsp-eth-agent" upstream="rnl25" revision="d2409bfb51fb4f1b006885b229805fa3772de98d" />
+  <project remote="upc-rmc" name="ccsp-jse" path="src/ccsp-jse" upstream="rnl25" revision="42a8738f0186e66ddcdb58e826f3ca96a68b3972" />
+  <project remote="upc-rmc" name="ccsp-lm-lite" path="src/ccsp-lm-lite" upstream="rnl25" revision="4ed6f325b721fc76bd35955921da7bf2935fe0f8" />
+  <project remote="upc-rmc" name="ccsp-misc" path="src/ccsp-misc" upstream="rnl25" revision="9040a31e3ae0782938d7ef04153d774d74c0a44e" />
+  <project remote="upc-rmc" name="ccsp-mta-agent" path="src/ccsp-mta-agent" upstream="rnl25" revision="832b3bcedda2f3959022676ec9a2937fcddd8426" />
+  <project remote="upc-rmc" name="ccsp-one-wifi" path="src/ccsp-one-wifi" upstream="rnl25" revision="3904113794a5bc532058ee69b25fb04aecc4587a" />
+  <project remote="upc-rmc" name="ccsp-p-and-m" path="src/ccsp-p-and-m" upstream="rnl25" revision="99191481efb4cfbcbdb5753b101c59d97842adde" />
+  <project remote="upc-rmc" name="ccsp-psm" path="src/ccsp-psm" upstream="rnl25" revision="e1f5680d465e648e1821d6f9b8b588aa2f66fe6f" />
+  <project remote="upc-rmc" name="ccsp-snmp-pa" path="src/ccsp-snmp-pa" upstream="rnl25" revision="b206660b00ed41b00623cfcc27989bdde693a897" />
+  <project remote="upc-rmc" name="ccsp-tr069-pa" path="src/ccsp-tr069-pa" upstream="rnl25" revision="bf369342b71eb8acc6cd25cf86990b88854947ed" />
+  <project remote="upc-rmc" name="ccsp-wifi-agent" path="src/ccsp-wifi-agent" upstream="rnl25" revision="428d258f00da7dccb8c5a1e2f5b9c4266472ef35" />
+  <project remote="upc-rmc" name="core-net-lib" path="src/core-net-lib" upstream="rnl25" revision="b187b92f2ae716ed8827c476c9ef9c971f439ac0" />
+  <project remote="upc-rmc" name="gwprovapp" path="src/gwprovapp" upstream="rnl25" revision="bf02408bf8c6c2eb047cb494c6f2d69112903f05" />
+  <project remote="upc-rmc" name="hal" path="src/hal" revision="efa5da049bf5558c5c2ead53bb81babde8e4c3ff" upstream="ofw-rnl25" />
+  <project remote="upc-rmc" name="halinterface" path="src/halinterface" upstream="rnl25" revision="6c3ae4b665f9397e2a81da40876e1eaab35c219e" />
+  <project remote="upc-rmc" name="hotspot" path="src/hotspot" upstream="rnl25" revision="4a0605853f0a78533760e9f677ba6c827f76e673" />
+  <project remote="upc-rmc" name="meshagent" path="src/meshagent" upstream="rnl25" revision="9785cf4d2c88ef2eaf0053ded5401ca889dfb770" />
+  <project remote="upc-rmc" name="rdk-gponmanager" path="src/rdk-gponmanager" upstream="rnl25" revision="eaed5c54bd2e76d1edd9f08f6f54c0d09a4698e3" />
+  <project remote="upc-rmc" name="rdk-fwupgrade-manager" path="src/rdk-fwupgrade-manager" upstream="rnl25" revision="45a0ec4c7a6252e23d31ff644d93a49fdf68cc94" />
+  <project remote="upc-rmc" name="rdktelcovoicemanager" path="src/rdktelcovoicemanager" upstream="rnl25" revision="63fd9088fce23c84152bae0ccff6ea280b4325f9" />
+  <project remote="upc-rmc" name="rdk-vlanmanager" path="src/rdk-vlanmanager" upstream="rnl25" revision="4fd95f0e4fcbac6b2a0aef775b4d3cd7e3ef9f81" />
+  <project remote="upc-rmc" name="rdk-wanmanager" path="src/rdk-wanmanager" upstream="rnl25" revision="f63ad41c5b3ad420895b6c1f78a171ba18b34a5e" />
+  <project remote="upc-rmc" name="rdk-wifi-hal" path="src/rdk-wifi-hal" upstream="rnl25" revision="63a8bd913b011cfce74c15be24ba2634b7342547" />
+  <project remote="upc-rmc" name="sysint-broadband" path="src/sysint-broadband" upstream="rnl25" revision="d5fa438384fe82aee1b21f9b335c459fffc1c3b9" />
+  <project remote="upc-rmc" name="test-and-diagnostic" path="src/test-and-diagnostic" upstream="rnl25" revision="f2a0a07e564062d1960929ca6add2bae81805435" />
+  <project remote="upc-rmc" name="telemetry" path="src/telemetry" upstream="rnl25" revision="a53f81510ba86fc8089dcddedacdba044b6ca7f9" />
+  <project remote="upc-rmc" name="utopia" path="src/utopia" upstream="rnl25" revision="1912644c58eb9805eade1fc1fe0cabb0e1781026" />
+  <project remote="upc-mng" name="rest-backend" path="src/rest-backend" upstream="rnl25" revision="f95d0bad0ac8a96b45555b25ae8fd4633d61123f" />
+  <project remote="upc-mng" name="webui2-ofw" path="src/webui2-ofw" upstream="rnl25" revision="31f0f86d143dc2e4adc27793b3a9496e9947cdc0" />
+  <project remote="upc-mngs" name="webui3-prebuilt" path="src/webui3-prebuilt" revision="44294f4d97b619c625bd690ffbe4c9ad19211501" upstream="rnl25-staging" />
+</manifest>

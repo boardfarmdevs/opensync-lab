@@ -1,0 +1,3 @@
+meta-lxd rnl25-oe40 15058aa872869876569efbb3b8649064ce64dbcc ssh://git@bitbucket.upc.biz:7999/~rvogelaar/meta-lxd.git
+meta-lxd-mv3 rnl25-oe40 12fbde1a1e8a9b4aa39be9b0d168a1ba7c2d498f ssh://git@bitbucket.upc.biz:7999/~rvogelaar/meta-lxd-mv3.git
+meta-python2 kirkstone f02882e2aa9279ca7becca8d0cedbffe88b5a253 https://code.rdkcentral.com/r/a/rdk/components/opensource/oe/meta-python2
