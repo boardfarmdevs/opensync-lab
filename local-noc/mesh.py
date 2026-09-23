@@ -16,6 +16,10 @@ Gateway (--mesh-gateway, the node whose uplink is the WAN):
     a port of the LAN bridge (Interface/Port/Bridge), so the pod is on the
     gateway's LAN. The pod's cm builds the other end (g-bhaul-sta-*) itself.
 
+  * live counters: ovs-vswitchd refreshes Interface.statistics only every
+    other_config:stats-update-interval (mv3 ships 1 hour); set it to
+    --mesh-stats-interval ms so the topology view shows current traffic.
+
 Pod (any other node that reaches the controller -- over that tunnel):
   * fronthaul AP: Wifi_VIF_Config home-ap-<band> on the radio of --mesh-
     fronthaul-band, in br-home, with the home SSID/PSK, plus its
@@ -65,6 +69,7 @@ class Mesh:
         self.home = (args.mesh_home_ssid, args.mesh_home_psk)
         self.fh_band = args.mesh_fronthaul_band
         self.interval = args.mesh_interval
+        self.stats_ms = args.mesh_stats_interval
         self.busy = set()                   # nodes with a reconcile in flight
 
     async def run(self):
@@ -116,7 +121,17 @@ class Mesh:
         else:
             log.warning("mesh: %s has no Wifi_VIF_Config %s", s.node, self.bhaul_if)
 
-        # 2. a GRE per pod holding a backhaul address
+        # 2. live OVS counters
+        if self.stats_ms:
+            ovs = next(iter(s.tables.get("Open_vSwitch", {}).values()), None)
+            if ovs is not None and omap(ovs.get("other_config")).get("stats-update-interval") != str(self.stats_ms):
+                await self.transact(s, f"OVS stats-update-interval {self.stats_ms} ms", {
+                    "op": "mutate", "table": "Open_vSwitch", "where": [],
+                    "mutations": [["other_config", "delete", ["set", ["stats-update-interval"]]],
+                                  ["other_config", "insert",
+                                   ["map", [["stats-update-interval", str(self.stats_ms)]]]]]})
+
+        # 3. a GRE per pod holding a backhaul address
         for ip in sorted(self.pod_ips(s)):
             b = ip.packed
             name = f"pgd{b[2]}_{b[3]}"
@@ -241,3 +256,5 @@ def add_args(ap):
     g.add_argument("--mesh-home-psk", default="opensync-lab-home-psk")
     g.add_argument("--mesh-fronthaul-band", default="24", choices=sorted(BANDS))
     g.add_argument("--mesh-interval", type=float, default=5.0)
+    g.add_argument("--mesh-stats-interval", type=int, default=5000,
+                   help="gateway OVS counters refresh (ms) for the topology view; 0 = leave as is")

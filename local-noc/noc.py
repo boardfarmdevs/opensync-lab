@@ -29,6 +29,10 @@ Mesh (--mesh-gateway): orchestrates a location -- the gateway's backhaul AP,
 a GRE per extender (pod) on it, and the pods' fronthaul -- as the cloud does
 (mesh.py).
 
+Web UI (--http-port, default 8640): GET / serves webui/index.html, a live
+view of the location's topology; GET /api/topology returns it as JSON
+(topology.py).
+
 Control: newline-delimited JSON on the unix socket <data>/noc.sock (see
 noc-ctl). Commands: nodes, tables, dump, request, transact.
 
@@ -44,8 +48,10 @@ import os
 import time
 
 import mesh
+import topology
 
 log = logging.getLogger("local-noc")
+WEBUI = os.path.join(os.path.dirname(os.path.realpath(__file__)), "webui")
 
 
 class JsonStream:
@@ -234,7 +240,9 @@ class Noc:
         self.data = args.data
         self.advertise = args.advertise
         self.controller_port = args.controller_port
+        self.location = args.location
         self.sessions = set()
+        self.topology = topology.Topology(self)
         os.makedirs(self.data, exist_ok=True)
 
     def node_dir(self, s):
@@ -280,6 +288,44 @@ class Noc:
             await writer.drain()
         writer.close()
 
+    async def http(self, reader, writer):
+        """Minimal HTTP/1.1 for the web UI: GET only, one request per connection."""
+        try:
+            line = await asyncio.wait_for(reader.readline(), 10)
+            while (await asyncio.wait_for(reader.readline(), 10)) not in (b"\r\n", b"\n", b""):
+                pass
+            parts = line.decode("latin-1").split()
+            path = parts[1].split("?")[0] if len(parts) >= 2 else "/"
+            if parts[:1] != ["GET"]:
+                status, ctype, body = "405 Method Not Allowed", "text/plain", b"GET only\n"
+            elif path == "/api/topology":
+                status, ctype = "200 OK", "application/json"
+                body = json.dumps(self.topology.build()).encode()
+            elif path.startswith("/api/node/"):
+                # one node's raw OVSDB mirror, as the cloud holds it
+                try:
+                    sess = self.find(path[len("/api/node/"):])
+                    status, ctype = "200 OK", "application/json"
+                    body = json.dumps({"node": sess.node, "peer": sess.peer,
+                                       "tables": sess.tables}, indent=1).encode()
+                except KeyError:
+                    status, ctype, body = "404 Not Found", "text/plain", b"no such node\n"
+            elif path in ("/", "/index.html"):
+                with open(os.path.join(WEBUI, "index.html"), "rb") as f:
+                    status, ctype, body = "200 OK", "text/html; charset=utf-8", f.read()
+            else:
+                status, ctype, body = "404 Not Found", "text/plain", b"not found\n"
+            writer.write((f"HTTP/1.1 {status}\r\nContent-Type: {ctype}\r\n"
+                          f"Content-Length: {len(body)}\r\nCache-Control: no-store\r\n"
+                          "Connection: close\r\n\r\n").encode() + body)
+            await writer.drain()
+        except (asyncio.TimeoutError, ConnectionError, OSError):
+            pass
+        except Exception as e:                              # noqa: BLE001
+            log.warning("http: %r", e)
+        finally:
+            writer.close()
+
     async def command(self, cmd):
         c = cmd.get("cmd")
         if c == "nodes":
@@ -306,6 +352,8 @@ async def main():
     ap.add_argument("--advertise", required=True,
                     help="address nodes reach the controller on (goes into manager_addr)")
     ap.add_argument("--data", default="/var/lib/local-noc")
+    ap.add_argument("--http-port", type=int, default=8640, help="web UI (0 = off)")
+    ap.add_argument("--location", default="opensync-lab", help="location name shown in the web UI")
     mesh.add_args(ap)
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -319,9 +367,11 @@ async def main():
         await asyncio.start_server(noc.handler("controller"), args.listen, args.controller_port),
         await asyncio.start_unix_server(noc.control, sock),
     ]
-    log.info("local-noc: redirector tcp:%s:%d, controller tcp:%s:%d (advertised as %s), data %s",
-             args.listen, args.redirector_port, args.listen, args.controller_port,
-             args.advertise, noc.data)
+    if args.http_port:
+        servers.append(await asyncio.start_server(noc.http, args.listen, args.http_port))
+    log.info("local-noc: redirector tcp:%s:%d, controller tcp:%s:%d (advertised as %s), "
+             "web UI http:%s:%d, data %s", args.listen, args.redirector_port, args.listen,
+             args.controller_port, args.advertise, args.listen, args.http_port, noc.data)
     tasks = [s.serve_forever() for s in servers]
     if args.mesh_gateway:
         tasks.append(mesh.Mesh(noc, args).run())

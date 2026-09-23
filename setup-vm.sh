@@ -78,6 +78,26 @@ make_boardfarm_bundle() {
     git --git-dir="$cache" bundle verify "$out" >/dev/null 2>&1 || die "bad bundle $out"
 }
 
+# local-noc's web UI on the host: rev140:<port> -> VM:<port> -> local-noc.
+# LXD proxies into a VM must NAT, which needs a fixed NIC address (reserve the
+# one the VM has) and a concrete listen address (the host's primary one).
+noc_ui_listen() {
+    echo "${MVX_NOC_UI_LISTEN:-$(ip -4 route get 1.1.1.1 | sed -n 's/.* src \([0-9.]*\).*/\1/p')}"
+}
+expose_noc_ui() {
+    local sub ip listen
+    sub=$(lxc network get "$MVX_VM_NETWORK" ipv4.address | cut -d/ -f1 | cut -d. -f1-3)
+    ip=$(lxc list "$MVX_VM" -c 4 --format csv | tr ',' '\n' | tr -d '"' | grep -o "$sub\.[0-9]*" | head -1)
+    listen=$(noc_ui_listen)
+    [ -n "$ip" ] && [ -n "$listen" ] || { warn "noc-ui: no VM address ($ip) or host address ($listen); web UI not exposed"; return 0; }
+    lxc config device set "$MVX_VM" eth0 ipv4.address="$ip"
+    lxc config device remove "$MVX_VM" noc-ui >/dev/null 2>&1 || true
+    lxc config device add "$MVX_VM" noc-ui proxy nat=true \
+        listen="tcp:$listen:$MVX_NOC_UI_PORT" connect="tcp:$ip:$MVX_NOC_UI_PORT" >/dev/null \
+        || { warn "noc-ui: could not add the proxy device"; return 0; }
+    log "provision: local-noc web UI at http://$listen:$MVX_NOC_UI_PORT/"
+}
+
 cmd_provision() {
     vm_exists || die "$MVX_VM does not exist (run: $0 create)"
     [ "$(vm_state)" = RUNNING ] || lxc start "$MVX_VM"
@@ -103,6 +123,7 @@ cmd_provision() {
     vm_run_guest 10-hwsim.sh
     vm_run_guest 20-boardfarm.sh
     vm_run_guest 25-local-noc.sh
+    expose_noc_ui
     log "provision: done"
     cmd_status
 }
@@ -123,6 +144,9 @@ cmd_status() {
         echo "--- docker"; docker ps --format "  {{.Names}}\t{{.Status}}" 2>/dev/null
         echo "--- lxc";    lxc list -c ns4 --format csv 2>/dev/null | sed "s/^/  /"
     '
+    local ui
+    ui=$(lxc config device get "$MVX_VM" noc-ui listen 2>/dev/null) \
+        && echo "local-noc web UI: http://${ui#tcp:}/"
 }
 
 cmd_delete() {

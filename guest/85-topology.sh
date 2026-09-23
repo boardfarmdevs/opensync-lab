@@ -65,6 +65,18 @@ for p in $(seq 1 "$pods"); do
     fi
 done
 
+# the topology view (local-noc web UI) must show the same location
+ui=${MVX_NOC_UI_PORT:-8640}
+view=$(curl -fs "http://127.0.0.1:$ui/api/topology" | python3 -c '
+import json, sys
+c = json.load(sys.stdin)["counts"]
+print(c["gateways"], c["extenders"], c["clients"], c["online"])' 2>/dev/null)
+if [ "$view" = "1 $pods $((pods * clients)) $((pods + 1))" ]; then
+    result PASS "topology view" "http://<host>:$ui/ shows 1 gateway, $pods extenders, $((pods * clients)) clients, all online"
+else
+    result FAIL "topology view" "api/topology counts '${view:-no answer}' (gateways extenders clients online)"
+fi
+
 state=FAIL; [ $fail -eq 0 ] && state=PASS
 { echo "$state $gw+${pods}x$clients $(date -Is)"; printf '%s\n' "${lines[@]}"; } > "$STATE/topology.status"
 echo "=== topology: $state ==="

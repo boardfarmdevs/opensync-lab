@@ -51,6 +51,7 @@ Working end to end, reproduced from a fresh VM with the scripts alone (2026-09-2
 | mv3 internet | erouter0 leases `10.70.0.x` from boardfarm Kea on tagged VLAN 1081; internet, DNS and TLS to the Plume redirector all work |
 | OpenSync cloud | `Manager` ACTIVE on the theta dev controller; the `mv3` identity is claimed into a location and receives cloud config |
 | Local cloud (local-noc) | the same node connects to `local-noc` over plain TCP (redirector -> controller, all 109 tables monitored and recorded) and switches back and forth with the Plume cloud |
+| Topology view | local-noc's web UI on `http://<host>:8640/` shows the live location: 1 gateway, 3 extenders, 6 clients, their Wi-Fi links (band, channel) and the WAN, with draggable spring physics and per-node details |
 | OpenSync extenders (GRE backhaul) | three OpenSync 6.6.1.0 pods with only hwsim radios join mv3's backhaul AP, build their GRE uplinks (`cm`), are claimed by local-noc through them and get their fronthaul; local-noc builds mv3's end of each tunnel. Two Alpine `wpa_supplicant` clients per pod, each pinned to its pod's fronthaul, get DHCP from mv3 and reach the internet (ICMP, DNS, HTTP) |
 
 All of the mesh configuration goes through the cloud protocol, with local-noc
@@ -67,6 +68,7 @@ as the cloud.
 | The lab gives CPEs global IPv6 but rev140 has no IPv6 internet: `cm` prefers IPv6 and waits out a timeout per attempt | boardfarm rebuild hook makes `wan-cpe1` reject non-lab IPv6 (TCP reset), so `cm` fails over to IPv4 at once | a lab with IPv6 upstream (the hook then does nothing) |
 | hal-wifi-hwsim: (1) never reports the VAP security, so mv3's `wm` sees config ≠ state; this build's `wm` also re-applies non-home VIFs every 30 s regardless, and each re-apply restarted every BSS of the radio (`STOP_AP`), silently dropping associated stations; (2) its MLME never removes a station (no deauth/disassoc handling, stale entry on re-auth), so a returning STA never completes the 4-way handshake. Together the extender lost the backhaul and could not rejoin | `meta-mvx/` patches 0001 (report security and real BSS state, keep a running BSS running) and 0002 (forget a station on deauth/disassoc/re-auth), added by `build-mvx.sh` | hal-wifi-hwsim |
 | mv3's `cm` (OpenSync 4.4) picks the uplink's address family once: with a global IPv6 on erouter0 it takes IPv6 and never evaluates IPv4 until the IPv4 address changes. Whenever OpenSync (re)starts on a WAN that is already up (e.g. a cloud switch), it then retries IPv6 forever, and this lab has no IPv6 upstream. First boot also leaves `Connection_Manager_Uplink.ipv4` unset | `guest/50-opensync.sh`: while `cm` is not connected and there is no IPv6 internet, sets `ipv6=blocked` (and `ipv4=ready`) on the uplink and restarts `cm` via `Node_Services` | OpenSync cm2 / RDK target; or a lab with IPv6 upstream |
+| OpenSync 6.6.1.0 osw: `owm` aborts when its config sync has not settled in 180 s; with a `tx_chainmask` configured it never settles on mac80211_hwsim (no chains reported), so every pod dropped its backhaul, GRE and cloud session every 3 minutes | the pod bootstrap sets no `tx_chainmask` | hwsim / OpenSync osw (tolerate an unsupported chainmask) |
 | OpenSync 6.6.1.0: `cm2` builds an extender's GRE only for the STAs in `CONFIG_OVSDB_BOOTSTRAP_WIFI_STA_LIST`; the OVSDB bootstrap then needs unquoted `BACKHAUL_SSID/PASS` (the `local` provider quotes them) | our `HWSIM_POD` target sets the list; `mvx-local` provider unquoted | opensync-service-provider-local |
 | mac80211_hwsim radios are multi-band; OpenSync assumes one band per phy (duplicate channels, VIF naming) | `pod/opensync/patches/core/0001` (per-phy band filter), `build-pod.sh` band-by-position for `52_owm_prep.sh`, the pod's backhaul STA on 5G only | wmediumd/hwsim band config, or OpenSync |
 | Repo mirror is older than the 0808 build (11 pinned commits missing) | pin store `~/yocto/repo_reference/mvx-pins/<pins>` | refresh the mirror |
@@ -99,6 +101,9 @@ There are three scripts, one per stage. Each subcommand can be re-run safely.
 ./deploy-mvx.sh mesh                      # opensync --cloud local, pod-1..3, 2 clients each, topology check
 ./deploy-mvx.sh pod pod-2                 # or one at a time
 ./deploy-mvx.sh client pod-2-wc1 pod-2
+
+# 5. watch it: local-noc's live topology view, from any browser
+#    http://<rev140 address>:8640/        (setup-vm.sh status prints the URL)
 ```
 
 ### local-noc: a local OpenSync cloud
@@ -112,6 +117,36 @@ container in the lab VM on boardfarm's WAN segment (`10.101.0.40`, network
 - **controller** (`:6641`): `list_dbs`, `get_schema`, then `monitor` on every
   table; answers the node's `echo` probes and keeps a live mirror of its
   database.
+
+**Topology view.** local-noc also serves a web UI (port 8640, published on
+the host by `setup-vm.sh`: `http://<host address>:8640/`). It draws the
+location it holds, live: the gateway (drawn as a router) with its WAN link
+to the internet, the extenders (drawn as plug-in pods) on their Wi-Fi
+backhaul, clients on their extender's or gateway's AP. Every Wi-Fi link is a
+spring, coloured by band and badged with its channel. The layout is a force
+simulation that settles and then stands still; drag any node and the others
+follow on their springs, which shimmy while you drag. Drag the background to
+pan, use the wheel to zoom, double-click to pin a node.
+
+The configuration and traffic are one hover or click away, never in the way:
+- hover a node for its active configuration: an extender shows its GRE
+  uplink (both endpoints, parent interface), the gateway's end of it, its
+  LAN bridge and ports, fronthaul, cloud state and tunnel traffic; the router
+  its WAN/LAN, APs, tunnels and leases; hover a link for the tunnel or client;
+- click a node for everything, in collapsible sections: interfaces (with GRE
+  endpoints and states), bridge ports with packet/byte/error counters and
+  rates, GRE tunnels, radios, Wi-Fi interfaces, the uplink monitor, cloud
+  session, DHCP leases, MAC table, and the node's raw OVSDB tables
+  (`/api/node/<id>`);
+- the collapsed **Network** drawer lists every tunnel with live rates, all
+  Wi-Fi links, the cloud sessions and the leases.
+
+Counters are the gateway's OVS port counters (the extenders run no
+ovs-vswitchd); local-noc sets mv3's OVS `stats-update-interval` to 5 s
+(`--mesh-stats-interval`, mv3 ships 1 hour) so they are current. Nodes
+that lose their session stay on the map, greyed out, for 10 minutes. The data
+behind it is `GET /api/topology` (`local-noc/topology.py`), built from the
+same OVSDB mirrors `noc-ctl` shows.
 
 With `--mesh-gateway` (set by the VM provisioning), local-noc also
 orchestrates the location like the cloud (`local-noc/mesh.py`): it enables
@@ -135,7 +170,7 @@ such as the VM name, are written to the untracked `config/local.conf`.
 build-mvx.sh  setup-vm.sh  deploy-mvx.sh  build-pod.sh   entry points (run on rev140)
 config/       mvx.conf defaults (+ untracked local.conf)
 lib/          host-side helpers (common.sh, vm.sh, pin-manifest.py)
-local-noc/    local OpenSync cloud (noc.py, mesh.py, noc-ctl, Dockerfile)
+local-noc/    local OpenSync cloud (noc.py, mesh.py, topology.py, webui/, noc-ctl, Dockerfile)
 meta-mvx/     bbappends + patches on top of the pinned layers (hal-wifi-hwsim)
 pod/          OpenSync extender: sources.lock, target/provider overlays, patches, build env, image
 pins/         pinned manifest, layer commits, SRCREVs, reference package list

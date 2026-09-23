@@ -522,6 +522,31 @@ The Plume-cloud variant (pods claimed into the theta location, the cloud
 building the GRE) needs the pods' identities registered with that cloud and
 is a follow-up.
 
+### 5.10 Topology view (local-noc web UI)
+
+local-noc serves `http://<host>:8640/` (`--http-port`; `setup-vm.sh`
+publishes it on the host through an LXD NAT proxy to the VM, whose address it
+reserves, and Docker publishes it from the container to the VM). The page
+(`local-noc/webui/index.html`, canvas + plain JavaScript, no external
+assets) polls `GET /api/topology` every 2 s and draws the location as a live
+map: gateway (a router, WAN link to the internet), extenders (plug-in pods)
+on their Wi-Fi backhaul, clients on their AP, links as springs coloured by
+band with channel badges. A force layout (springs, repulsion) settles and
+stands still; nothing animates on its own, the springs shimmy only while a
+node is dragged. Nodes can be dragged, pinned, inspected; pan and zoom.
+Hover cards show a node's active configuration (for an extender: GRE uplink
+both ends, bridge ports, fronthaul, cloud, tunnel traffic) or a link's
+tunnel; the detail panel has collapsible sections (interfaces, bridge ports
+with counters and rates, GRE tunnels, radios, VIFs, uplink monitor, cloud,
+leases, MAC table, raw tables via `/api/node/<id>`); a collapsed drawer
+lists all tunnels, links, cloud sessions and leases. Traffic counters are the
+gateway's OVS port counters; local-noc's mesh sets the gateway's OVS
+`stats-update-interval` to 5 s so they are live (mv3 ships 1 hour). `local-noc/topology.py` derives nodes and
+links from the OVSDB mirrors: roles from `Connection_Manager_Uplink`, the
+backhaul from which AP lists an extender's STA as an associated client (mv3
+reports zero VIF MACs), clients from the other associations, addresses from
+the gateway's `DHCP_leased_IP`.
+
 ## 6. Success criteria
 
 | Tier | Meaning | Check |

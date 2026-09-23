@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>local-noc · Topology</title>
+<style>
+  :root {
+    --bg0: #04060d; --bg1: #0b1226; --panel: rgba(14, 22, 44, .78); --line: rgba(140, 160, 210, .18);
+    --text: #e6ecff; --muted: #8b97b8; --faint: #56617f;
+    --b24: #ffb454; --b5: #8aa2ff; --b6: #6cf2a8; --wired: #b9c3d9;
+    --ok: #37e6b0; --off: #5b6478; --warn: #ff7a8a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg0); color: var(--text);
+    font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  canvas { position: fixed; inset: 0; display: block; cursor: default; touch-action: none; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  header { position: fixed; left: 18px; top: 16px; pointer-events: none; }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: .02em; display: flex; align-items: center; gap: 10px; }
+  header h1 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+  header h1 .dot.stale { background: var(--warn); box-shadow: 0 0 10px var(--warn); }
+  header .sub { color: var(--muted); margin-top: 2px; }
+  header .chips { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .chip { padding: 3px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); backdrop-filter: blur(6px); }
+  .chip b { color: var(--text); font-weight: 600; }
+  .legend { position: fixed; left: 18px; bottom: 16px; display: flex; gap: 14px; flex-wrap: wrap; padding: 8px 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(6px); color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+  .controls { position: fixed; right: 18px; bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .controls button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-size: 16px; backdrop-filter: blur(6px); }
+  .controls button:hover { border-color: rgba(160, 180, 255, .5); }
+  .panel { position: fixed; right: 18px; top: 16px; width: 560px; max-width: calc(100% - 36px); max-height: calc(100% - 200px); overflow: auto;
+    scrollbar-width: thin; scrollbar-color: rgba(140,160,210,.35) transparent;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(10px);
+    transform: translateX(380px); opacity: 0; transition: transform .25s ease, opacity .25s ease; }
+  .panel.open { transform: none; opacity: 1; }
+  .panel h2 { margin: 0 0 2px; font-size: 15px; word-break: break-all; }
+  .panel .kind { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
+  .panel h3 { margin: 14px 0 6px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+  .panel table { width: 100%; border-collapse: collapse; }
+  .panel td { padding: 2px 0; vertical-align: top; }
+  .panel td:first-child { color: var(--muted); width: 38%; padding-right: 8px; }
+  .panel .close { position: absolute; right: 10px; top: 8px; background: none; border: 0; color: var(--muted); font-size: 18px; }
+  .tag { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; border: 1px solid currentColor; margin-right: 4px; }
+  .card { position: fixed; display: none; pointer-events: none; max-width: 400px; padding: 10px 12px; border-radius: 12px;
+    background: rgba(8, 12, 26, .96); border: 1px solid var(--line); box-shadow: 0 8px 30px rgba(0,0,0,.45); font-size: 12px; z-index: 5; }
+  .card .ch { display: flex; gap: 8px; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; }
+  .card .ch span { color: var(--muted); }
+  .card table { width: 100%; border-collapse: collapse; }
+  .card td { padding: 1px 0; vertical-align: top; }
+  .card td:first-child { color: var(--muted); padding-right: 10px; white-space: nowrap; }
+  .note { color: var(--faint); font-size: 11px; margin-top: 6px; }
+  .panel details { border-top: 1px solid var(--line); padding: 7px 0 5px; }
+  .panel summary { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; list-style: none; }
+  .panel summary::-webkit-details-marker { display: none; }
+  .panel summary::before { content: "\25B8  "; }
+  .panel details[open] summary::before { content: "\25BE  "; }
+  .panel details > *:not(summary) { margin-top: 6px; }
+  .cnt { color: var(--faint); font-weight: 500; }
+  .gridwrap { overflow-x: auto; scrollbar-width: thin; }
+  table.grid { font-size: 11px; width: auto; }
+  table.grid th { text-align: left; color: var(--faint); font-weight: 600; padding: 2px 10px 2px 0; white-space: nowrap; }
+  table.grid td, .panel table.grid td:first-child { padding: 2px 10px 2px 0; white-space: nowrap; width: auto; color: var(--text); }
+  .sub { color: var(--muted); font-size: 11px; margin: 8px 0 3px; }
+  .none { color: var(--faint); font-size: 12px; }
+  .path { margin: 4px 0; padding-left: 20px; } .path li { margin: 3px 0; }
+  a.raw { color: #8aa2ff; }
+  .drawer { position: fixed; left: 18px; top: 108px; max-width: min(720px, calc(100% - 36px)); max-height: calc(100% - 190px); overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(8px); padding: 5px 12px; scrollbar-width: thin; }
+  .drawer button { background: none; border: 0; color: var(--text); font: inherit; font-weight: 600; padding: 2px 0; }
+  #dbody { display: none; padding-bottom: 6px; }
+  .hint { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); color: var(--faint); font-size: 12px; pointer-events: none; }
+  .empty { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; color: var(--muted); pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<header>
+  <h1><span class="dot" id="live"></span><span>local-noc</span><span style="color:var(--muted);font-weight:400" id="loc"></span></h1>
+  <div class="sub" id="updated">connecting…</div>
+  <div class="chips" id="chips"></div>
+</header>
+<div class="legend">
+  <span><i style="background:var(--b5)"></i>5 GHz</span>
+  <span><i style="background:var(--b24)"></i>2.4 GHz</span>
+  <span><i style="background:var(--b6)"></i>6 GHz</span>
+  <span><i style="background:var(--wired)"></i>wired</span>
+  <span><i style="background:var(--off)"></i>offline</span>
+</div>
+<div class="controls">
+  <button id="zin" title="zoom in">+</button>
+  <button id="zout" title="zoom out">−</button>
+  <button id="fit" title="fit (F)">⤢</button>
+  <button id="calm" title="shake (S)">≈</button>
+</div>
+<div class="panel" id="panel"><button class="close" id="pclose">×</button><div id="pbody"></div></div>
+<div class="drawer"><button id="dtoggle">&#9656; Network</button><div id="dbody"></div></div>
+<div class="card" id="card"></div>
+<div class="hint">drag nodes · drag space to pan · wheel to zoom · double-click to pin</div>
+<div class="empty" id="empty">waiting for nodes to connect…</div>
+<script>
+"use strict";
+// ---------------------------------------------------------------- setup
+const cv = document.getElementById("c"), cx = cv.getContext("2d");
+const css = getComputedStyle(document.documentElement);
+const C = k => css.getPropertyValue(k).trim();
+const COL = { "2.4G": C("--b24"), "5G": C("--b5"), "6G": C("--b6"), wired: C("--wired"),
+              ok: C("--ok"), off: C("--off"), text: C("--text"), muted: C("--muted") };
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + "px"; cv.style.height = H + "px";
+}
+addEventListener("resize", resize); resize();
+
+const view = { x: 0, y: 0, k: 1 };            // world -> screen: (p - view) * k + center
+const toScreen = (x, y) => [(x - view.x) * view.k + W / 2, (y - view.y) * view.k + H / 2];
+const toWorld = (sx, sy) => [(sx - W / 2) / view.k + view.x, (sy - H / 2) / view.k + view.y];
+
+// stars, in screen space with a little parallax
+const stars = Array.from({ length: 180 }, () => ({ x: Math.random(), y: Math.random(),
+  r: Math.random() * 1.2 + .2, p: Math.random() * Math.PI * 2, d: Math.random() * .6 + .2 }));
+
+// ---------------------------------------------------------------- model
+const nodes = new Map();     // id -> node (with physics state)
+let links = [], data = null, energy = 0, lastOk = 0, first = true;
+const SPEC = {
+  gateway:  { r: 42, mass: 5, charge: 16000 },
+  extender: { r: 23, mass: 2.4, charge: 11000 },
+  client:   { r: 7,  mass: 1, charge: 2600 },
+  internet: { r: 22, mass: 4, charge: 7000 },
+};
+const REST = { backhaul: 230, client: 135, wired: 170 };
+
+function merge(topo) {
+  data = topo;
+  const seen = new Set();
+  for (const n of topo.nodes) {
+    seen.add(n.id);
+    let m = nodes.get(n.id);
+    if (!m) {
+      m = { id: n.id, x: 0, y: 0, vx: 0, vy: 0, pinned: false, born: performance.now(), fade: 1,
+            tilt: Math.random() * .8 - .4, spin: Math.random() * Math.PI * 2 };
+      nodes.set(n.id, m);
+      m.fresh = true;
+    }
+    Object.assign(m, { kind: n.kind, label: n.label, online: n.online, detail: n.detail || {}, gone: false });
+    Object.assign(m, SPEC[n.kind] || SPEC.client);
+  }
+  for (const [id, m] of nodes) if (!seen.has(id) && !m.gone) { m.gone = true; m.goneAt = performance.now(); }
+  links = topo.links.filter(l => nodes.has(l.source) && nodes.has(l.target))
+    .map(l => ({ ...l, a: nodes.get(l.source), b: nodes.get(l.target), rest: REST[l.kind] || 110,
+                 phase: Math.random() * 10, parts: [Math.random(), Math.random()] }));
+  // new nodes are placed where they belong: extenders fanned out around their
+  // parent (away from the internet), clients fanned out behind their node
+  const fresh = [...nodes.values()].filter(m => m.fresh);
+  const parentOf = m => { const l = links.find(q => q.a === m && q.kind !== "wired") || links.find(q => q.a === m);
+                          return l ? l.b : null; };
+  const order = { gateway: 0, internet: 1, extender: 2, client: 3 };
+  fresh.sort((a, b) => order[a.kind] - order[b.kind]);
+  for (const m of fresh) {
+    const g = gatewayOf(), p = parentOf(m);
+    if (m.kind === "gateway") { m.x = 0; m.y = 0; }
+    else if (m.kind === "internet") { m.x = (g ? g.x : 0) + 10; m.y = (g ? g.y : 0) - REST.wired; }
+    else if (p) {
+      const pp = p.kind === "gateway" ? null : parentOf(p);
+      const sibs = links.filter(q => q.b === p && q.a.kind === m.kind).map(q => q.a);
+      const i = Math.max(0, sibs.indexOf(m)), n = Math.max(1, sibs.length);
+      let base, spread;
+      if (pp) { base = Math.atan2(p.y - pp.y, p.x - pp.x); spread = Math.min(Math.PI * .9, .75 * n); }
+      else { base = Math.PI / 2; spread = Math.PI * 1.55; }                 // below the core, away from the WAN
+      const ang = base + (n === 1 ? 0 : (i / (n - 1) - .5) * spread);
+      const d = REST[m.kind === "client" ? "client" : "backhaul"];
+      m.x = p.x + Math.cos(ang) * d; m.y = p.y + Math.sin(ang) * d;
+    } else { const a = Math.random() * 6.28; m.x = Math.cos(a) * 150; m.y = Math.sin(a) * 150; }
+    m.fresh = false;
+  }
+  // a first picture that has already settled, then it breathes
+  if (fresh.length) for (let i = 0; i < (first ? 260 : 60); i++) step(1, true);
+  first = false;
+  updateChrome();
+}
+const gatewayOf = () => [...nodes.values()].find(n => n.kind === "gateway" && !n.gone);
+
+// ---------------------------------------------------------------- physics
+function step(dt, quiet) {
+  const arr = [...nodes.values()];
+  const now = performance.now();
+  // shimmy only while a node is being dragged; it dies away quickly after release
+  energy = drag.node ? Math.max(energy, .8) : energy * .9;
+  if (energy < .01) energy = 0;
+  for (const n of arr) { n.fx = 0; n.fy = 0; }
+  for (let i = 0; i < arr.length; i++) {
+    const a = arr[i];
+    for (let j = i + 1; j < arr.length; j++) {
+      const b = arr[j];
+      let dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+      if (d2 < 1) { dx = Math.random() - .5; dy = Math.random() - .5; d2 = 1; }
+      const d = Math.sqrt(d2), f = Math.min((a.charge + b.charge) * .5 / d2, 22);
+      a.fx -= f * dx / d; a.fy -= f * dy / d; b.fx += f * dx / d; b.fy += f * dy / d;
+    }
+  }
+  for (const l of links) {
+    const dx = l.b.x - l.a.x, dy = l.b.y - l.a.y, d = Math.hypot(dx, dy) || 1;
+    const k = l.kind === "client" ? .05 : .022, f = k * (d - l.rest);
+    l.a.fx += f * dx / d; l.a.fy += f * dy / d; l.b.fx -= f * dx / d; l.b.fy -= f * dy / d;
+    l.stretch = d / l.rest;
+  }
+  const g = gatewayOf();
+  for (const n of arr) {
+    // weak pull to the origin, the gateway a little stronger (it is the star)
+    const c = n.kind === "gateway" ? .005 : .0004;
+    n.fx -= n.x * c; n.fy -= n.y * c;
+    if (n.kind === "internet" && g) { n.fx += (g.x - n.x) * .004; n.fy += (g.y - 175 - n.y) * .006; }
+    if (!quiet && energy) { n.fx += (Math.random() - .5) * energy * 1.6; n.fy += (Math.random() - .5) * energy * 1.6; }
+  }
+  for (const n of arr) {
+    if (n === drag.node || n.pinned) { n.vx = n.vy = 0; continue; }
+    n.vx = (n.vx + n.fx / n.mass * dt) * .86;
+    n.vy = (n.vy + n.fy / n.mass * dt) * .86;
+    const v = Math.hypot(n.vx, n.vy);
+    if (v > 40) { n.vx *= 40 / v; n.vy *= 40 / v; }
+    n.x += n.vx * dt; n.y += n.vy * dt;
+  }
+  for (const [id, n] of nodes) if (n.gone && now - n.goneAt > 900) nodes.delete(id);
+}
+
+// ---------------------------------------------------------------- drawing
+function bandColor(l) { return l.kind === "wired" ? COL.wired : (COL[l.band] || COL["5G"]); }
+function alphaOf(n) { return n.gone ? Math.max(0, 1 - (performance.now() - n.goneAt) / 900) : 1; }
+let hover = null, sel = null;
+function related(n) {
+  if (!n) return null;
+  const s = new Set([n]);
+  for (const l of links) if (l.a === n || l.b === n) { s.add(l.a); s.add(l.b); }
+  return s;
+}
+
+function drawBackground(time) {
+  const grd = cx.createRadialGradient(W * .5, H * .45, 0, W * .5, H * .5, Math.max(W, H) * .75);
+  grd.addColorStop(0, "#0e1733"); grd.addColorStop(.55, "#080d1d"); grd.addColorStop(1, "#04060d");
+  cx.fillStyle = grd; cx.fillRect(0, 0, W, H);
+  for (const s of stars) {
+    const x = ((s.x * W - view.x * view.k * s.d * .15) % W + W) % W;
+    const y = ((s.y * H - view.y * view.k * s.d * .15) % H + H) % H;
+    cx.globalAlpha = .25 + .35 * (0.5 + 0.5 * Math.sin(s.p));
+    cx.fillStyle = "#cfd8ff"; cx.beginPath(); cx.arc(x, y, s.r, 0, 7); cx.fill();
+  }
+  cx.globalAlpha = 1;
+  // orbits around the gateway
+  const g = gatewayOf();
+  if (g) {
+    const [sx, sy] = toScreen(g.x, g.y);
+    cx.lineWidth = 1;
+    for (const r of [190, 290, 390]) {
+      cx.strokeStyle = "rgba(120,150,230,.07)";
+      cx.setLineDash([2, 7]); cx.beginPath(); cx.arc(sx, sy, r * view.k, 0, 7); cx.stroke();
+    }
+    cx.setLineDash([]);
+  }
+}
+
+// a link is a spring: a coil whose amplitude tightens as it is stretched
+function drawLink(l, time, dim) {
+  const [ax, ay] = toScreen(l.a.x, l.a.y), [bx, by] = toScreen(l.b.x, l.b.y);
+  const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+  if (len < 2) return;
+  const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+  const off = !(l.a.online && l.b.online);
+  const col = off ? COL.off : bandColor(l);
+  const alpha = Math.min(alphaOf(l.a), alphaOf(l.b)) * (dim ? .18 : 1);
+  cx.globalAlpha = alpha;
+  if (l.kind === "wired") {
+    cx.strokeStyle = col; cx.lineWidth = 2 * Math.min(view.k, 1.4);
+    cx.setLineDash([8 * view.k, 6 * view.k]); cx.lineDashOffset = 0;
+    cx.beginPath(); cx.moveTo(ax, ay); cx.lineTo(bx, by); cx.stroke(); cx.setLineDash([]);
+  } else {
+    const wl = (l.kind === "backhaul" ? 15 : 11) * view.k;              // one coil
+    const s = l.stretch || 1;
+    const amp = (l.kind === "backhaul" ? 7 : 5) * view.k * Math.max(.25, Math.min(1.6, 1.25 / s));
+    // the spring shimmies while something is being dragged, and rests otherwise
+    const jig = energy ? energy * Math.sin(time * .03 + l.phase) : 0;
+    const quiver = 1 + .22 * jig;
+    const from = Math.min((l.a.r + 3) * view.k, len * .3), to = Math.max(len - (l.b.r + 3) * view.k, len * .7);
+    cx.strokeStyle = col; cx.lineWidth = (l.kind === "backhaul" ? 2.2 : 1.4) * Math.min(view.k, 1.5);
+    if (l.kind === "backhaul" && !off) { cx.shadowColor = col; cx.shadowBlur = 10; }
+    cx.beginPath();
+    const steps = Math.max(16, Math.ceil((to - from) / 2.5));
+    for (let i = 0; i <= steps; i++) {
+      const d = from + (to - from) * i / steps;
+      const env = Math.sin(Math.PI * i / steps);                         // taper at both ends
+      const w = Math.sin((d / wl) * Math.PI * 2 + l.phase + jig * .6) * amp * quiver * env;
+      const x = ax + ux * d + nx * w, y = ay + uy * d + ny * w;
+      i ? cx.lineTo(x, y) : cx.moveTo(x, y);
+    }
+    cx.stroke(); cx.shadowBlur = 0;
+    // channel badge
+    if (l.channel != null && view.k > .45) {
+      // client springs are short: keep their badge clear of the node's name
+      const at = l.kind === "client" ? .4 : .5, mx = ax + dx * at, my = ay + dy * at;
+      const txt = String(l.channel), bt = l.band || "";
+      cx.font = `600 ${Math.round(11 * Math.min(view.k, 1.3))}px ui-sans-serif, system-ui`;
+      const tw = cx.measureText(txt).width;
+      cx.font = `500 ${Math.round(9 * Math.min(view.k, 1.3))}px ui-sans-serif, system-ui`;
+      const bw = cx.measureText(bt).width;
+      const h = 18 * Math.min(view.k, 1.3), w = tw + bw + 18 * Math.min(view.k, 1.3);
+      roundRect(mx - w / 2, my - h / 2, w, h, h / 2);
+      cx.fillStyle = "rgba(8,12,26,.92)"; cx.fill(); cx.strokeStyle = col; cx.lineWidth = 1.2; cx.stroke();
+      cx.fillStyle = COL.text; cx.textBaseline = "middle"; cx.textAlign = "left";
+      cx.font = `600 ${Math.round(11 * Math.min(view.k, 1.3))}px ui-sans-serif, system-ui`;
+      cx.fillText(txt, mx - w / 2 + 7 * Math.min(view.k, 1.3), my + .5);
+      cx.fillStyle = col; cx.font = `500 ${Math.round(9 * Math.min(view.k, 1.3))}px ui-sans-serif, system-ui`;
+      cx.fillText(bt, mx - w / 2 + 11 * Math.min(view.k, 1.3) + tw, my + .5);
+    }
+  }
+  cx.globalAlpha = 1;
+}
+
+function roundRect(x, y, w, h, r) {
+  cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r);
+  cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
+}
+
+function label(text, x, y, color, size, pill) {
+  cx.font = `${pill ? 600 : 500} ${size}px ui-sans-serif, system-ui`;
+  cx.textAlign = "center"; cx.textBaseline = "middle";
+  if (pill) {
+    const w = cx.measureText(text).width + 22, h = size + 12;
+    roundRect(x - w / 2, y - h / 2, w, h, h / 2);
+    cx.fillStyle = "rgba(9,14,30,.9)"; cx.fill(); cx.strokeStyle = color; cx.lineWidth = 1.3; cx.stroke();
+    cx.fillStyle = COL.text; cx.fillText(text, x, y + .5);
+  } else {
+    cx.lineJoin = "round"; cx.lineWidth = 3.5; cx.strokeStyle = "rgba(5,8,18,.9)";
+    cx.strokeText(text, x, y);
+    cx.fillStyle = color; cx.fillText(text, x, y);
+  }
+}
+
+// a router: a low box seen slightly from above, antennas at the back, LEDs in front
+function drawRouter(x, y, s, on) {
+  const w = 76 * s, h = 22 * s, top = 12 * s, c = on ? COL.ok : COL.off;
+  // antennas
+  cx.lineCap = "round"; cx.strokeStyle = on ? "#9fb0d6" : "#6b7388"; cx.lineWidth = 3.2 * s;
+  for (const [ax, lean] of [[-.34, -.18], [0, 0], [.34, .18]]) {
+    cx.beginPath(); cx.moveTo(x + ax * w, y - top * .6);
+    cx.lineTo(x + ax * w + lean * 22 * s, y - top * .6 - 30 * s); cx.stroke();
+  }
+  cx.lineCap = "butt";
+  // top face
+  cx.beginPath();
+  cx.moveTo(x - w / 2 + 8 * s, y - top); cx.lineTo(x + w / 2 - 8 * s, y - top);
+  cx.lineTo(x + w / 2, y); cx.lineTo(x - w / 2, y); cx.closePath();
+  const tg = cx.createLinearGradient(x, y - top, x, y);
+  tg.addColorStop(0, on ? "#44527a" : "#3a4052"); tg.addColorStop(1, on ? "#2b3656" : "#2a2f3c");
+  cx.fillStyle = tg; cx.fill();
+  // front face
+  roundRect(x - w / 2, y, w, h, 5 * s);
+  const fg = cx.createLinearGradient(x, y, x, y + h);
+  fg.addColorStop(0, on ? "#222c48" : "#262a35"); fg.addColorStop(1, on ? "#141a2e" : "#1a1d25");
+  cx.fillStyle = fg; cx.fill();
+  cx.strokeStyle = c; cx.lineWidth = 1.4 * s; cx.stroke();
+  // status LEDs
+  for (let i = 0; i < 5; i++) {
+    const lx = x - w / 2 + 14 * s + i * 9 * s, ly = y + h / 2;
+    cx.fillStyle = i === 4 && on ? "#8aa2ff" : c;
+    cx.beginPath(); cx.arc(lx, ly, 2.1 * s, 0, 7); cx.fill();
+  }
+  // a vent
+  cx.strokeStyle = "rgba(160,175,210,.25)"; cx.lineWidth = 1 * s;
+  for (let i = 0; i < 4; i++) { const vx = x + w / 2 - 26 * s + i * 5 * s;
+    cx.beginPath(); cx.moveTo(vx, y + 7 * s); cx.lineTo(vx, y + h - 7 * s); cx.stroke(); }
+}
+
+// an extender: a rounded puck standing upright, a Wi-Fi mark, one status LED
+function drawPod(x, y, s, on) {
+  const w = 34 * s, h = 44 * s, c = on ? COL.ok : COL.off;
+  cx.fillStyle = "rgba(0,0,0,.35)";
+  cx.beginPath(); cx.ellipse(x, y + h / 2 + 3 * s, w * .55, 4 * s, 0, 0, 7); cx.fill();
+  roundRect(x - w / 2, y - h / 2, w, h, 12 * s);
+  const g = cx.createLinearGradient(x - w / 2, y - h / 2, x + w / 2, y + h / 2);
+  g.addColorStop(0, on ? "#e9eeff" : "#a4abbb"); g.addColorStop(1, on ? "#a9b6de" : "#6d7383");
+  cx.fillStyle = g; cx.fill();
+  cx.strokeStyle = c; cx.lineWidth = 1.6 * s; cx.stroke();
+  // Wi-Fi mark
+  cx.strokeStyle = on ? "#3b4a7a" : "#555b6a"; cx.lineWidth = 2 * s; cx.lineCap = "round";
+  const wy = y + 1 * s;
+  for (const r of [5, 9.5, 14]) {
+    cx.beginPath(); cx.arc(x, wy, r * s, Math.PI * 1.25, Math.PI * 1.75); cx.stroke();
+  }
+  cx.fillStyle = on ? "#3b4a7a" : "#555b6a"; cx.beginPath(); cx.arc(x, wy, 1.8 * s, 0, 7); cx.fill();
+  cx.lineCap = "butt";
+  // status LED
+  cx.fillStyle = c; cx.beginPath(); cx.arc(x, y + h / 2 - 8 * s, 2.4 * s, 0, 7); cx.fill();
+}
+
+function drawNode(n, time, dim) {
+  const [x, y] = toScreen(n.x, n.y), k = view.k, r = n.r * k, s = Math.min(k, 1.5);
+  const alpha = alphaOf(n) * (dim ? .22 : 1) * Math.min(1, (performance.now() - n.born) / 500);
+  const c = n.online ? COL.ok : COL.off;
+  cx.globalAlpha = alpha;
+  if (n.kind === "gateway") {
+    const halo = cx.createRadialGradient(x, y, r * .2, x, y, r * 2);
+    halo.addColorStop(0, n.online ? "rgba(55,230,176,.18)" : "rgba(90,100,120,.14)"); halo.addColorStop(1, "rgba(55,230,176,0)");
+    cx.fillStyle = halo; cx.beginPath(); cx.arc(x, y, r * 2, 0, 7); cx.fill();
+    drawRouter(x, y, s * 1.25, n.online);
+    label(n.label, x, y + 52 * s, c, Math.round(12 * Math.min(k, 1.2)), true);
+    label(n.detail.model || "gateway", x, y + 72 * s, COL.muted, Math.round(10 * Math.min(k, 1.2)));
+  } else if (n.kind === "extender") {
+    drawPod(x, y, s, n.online);
+    const short = n.label.length > 12 ? "…" + n.label.slice(-6) : n.label;
+    label(short, x, y + 40 * s, c, Math.round(11 * Math.min(k, 1.2)), true);
+  } else if (n.kind === "internet") {
+    cx.strokeStyle = "rgba(200,210,235,.8)"; cx.lineWidth = 1.4 * Math.min(k, 1.4);
+    cx.fillStyle = "rgba(20,28,52,.9)"; cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.fill(); cx.stroke();
+    for (const e of [.35, .75]) { cx.beginPath(); cx.ellipse(x, y, r * e, r, 0, 0, 7); cx.stroke(); }
+    cx.beginPath(); cx.moveTo(x - r, y); cx.lineTo(x + r, y); cx.stroke();
+    label(n.label, x, y - r - 12 * Math.min(k, 1.2), COL.muted, Math.round(11 * Math.min(k, 1.2)));
+  } else {
+    const l = links.find(q => q.a === n || q.b === n), col = n.online ? (l ? bandColor(l) : COL.muted) : COL.off;
+    cx.fillStyle = "rgba(14,20,40,.95)"; cx.beginPath(); cx.arc(x, y, r, 0, 7); cx.fill();
+    cx.strokeStyle = col; cx.lineWidth = 1.6 * Math.min(k, 1.4); cx.stroke();
+    cx.setLineDash([2, 3]); cx.beginPath(); cx.arc(x, y, r + 4 * Math.min(k, 1.4), 0, 6.28); cx.stroke(); cx.setLineDash([]);
+    cx.fillStyle = col; cx.beginPath(); cx.arc(x, y, r * .35, 0, 7); cx.fill();
+    if (k > .55) label(n.label, x, y + r + 13 * Math.min(k, 1.2), col, Math.round(10 * Math.min(k, 1.2)));
+  }
+  if (n.pinned) { cx.fillStyle = COL.text; cx.beginPath(); cx.arc(x - r * .9, y - r * .9, 2.5, 0, 7); cx.fill(); }
+  if (n === sel) {
+    cx.strokeStyle = "rgba(255,255,255,.7)"; cx.lineWidth = 1.2; cx.setLineDash([4, 4]);
+    cx.beginPath(); cx.arc(x, y, r + 12 * Math.min(k, 1.4), 0, 6.28); cx.stroke(); cx.setLineDash([]);
+  }
+  cx.globalAlpha = 1;
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(2, (now - last) / 16.7); last = now;
+  step(dt);
+  if (autoFit) fitView(true);
+  cx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawBackground(now);
+  const focus = hoverLink ? new Set([hoverLink.a, hoverLink.b]) : related(hover || sel);
+  for (const l of links) drawLink(l, now, focus && !(focus.has(l.a) && focus.has(l.b)));
+  const order = { internet: 0, client: 1, extender: 2, gateway: 3 };
+  [...nodes.values()].sort((a, b) => order[a.kind] - order[b.kind]).forEach(n => drawNode(n, now, focus && !focus.has(n)));
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- interaction
+const drag = { node: null, pan: false, sx: 0, sy: 0, vx: 0, vy: 0, moved: 0, t: 0 };
+let autoFit = true;
+function pick(sx, sy) {
+  const [wx, wy] = toWorld(sx, sy);
+  let best = null, bd = Infinity;
+  for (const n of nodes.values()) {
+    if (n.gone) continue;
+    const d = Math.hypot(n.x - wx, n.y - wy), hit = n.r + (n.kind === "client" ? 10 : 8) / view.k;
+    if (d < hit && d < bd) { best = n; bd = d; }
+  }
+  return best;
+}
+let hoverAt = null, hoverLink = null;
+function pickLink(sx, sy) {
+  let best = null, bd = 8;
+  for (const l of links) {
+    const [ax, ay] = toScreen(l.a.x, l.a.y), [bx, by] = toScreen(l.b.x, l.b.y);
+    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1;
+    const t = Math.max(.12, Math.min(.88, ((sx - ax) * dx + (sy - ay) * dy) / L2));
+    const d = Math.hypot(sx - (ax + dx * t), sy - (ay + dy * t));
+    if (d < bd) { bd = d; best = l; }
+  }
+  return best;
+}
+function showCard(x, y) {
+  const card = document.getElementById("card");
+  hover = pick(x, y); hoverLink = hover ? null : pickLink(x, y);
+  if (!hover && !hoverLink) { card.style.display = "none"; return; }
+  card.innerHTML = hover ? nodeCard(hover) : linkCard(hoverLink);
+  card.style.display = "block";
+  const w = card.offsetWidth, h = card.offsetHeight;
+  card.style.left = Math.max(8, Math.min(x + 16, W - w - 10)) + "px";
+  card.style.top = Math.max(8, Math.min(y + 16, H - h - 10)) + "px";
+}
+function hideCard() { hoverAt = null; hover = null; hoverLink = null; document.getElementById("card").style.display = "none"; }
+cv.addEventListener("pointerleave", hideCard);
+cv.addEventListener("pointerdown", e => {
+  hideCard();
+  cv.setPointerCapture(e.pointerId);
+  drag.node = pick(e.clientX, e.clientY); drag.pan = !drag.node;
+  drag.sx = e.clientX; drag.sy = e.clientY; drag.moved = 0; drag.t = performance.now();
+  if (drag.node || drag.pan) autoFit = false;
+});
+cv.addEventListener("pointermove", e => {
+  if (drag.node) {
+    const [wx, wy] = toWorld(e.clientX, e.clientY), n = drag.node;
+    drag.vx = wx - n.x; drag.vy = wy - n.y; n.x = wx; n.y = wy;
+    drag.moved += Math.abs(e.movementX) + Math.abs(e.movementY);
+  } else if (drag.pan) {
+    view.x -= (e.clientX - drag.sx) / view.k; view.y -= (e.clientY - drag.sy) / view.k;
+    drag.sx = e.clientX; drag.sy = e.clientY; drag.moved += 1;
+  } else {
+    hoverAt = { x: e.clientX, y: e.clientY };
+    showCard(e.clientX, e.clientY);
+  }
+});
+cv.addEventListener("pointerup", e => {
+  if (drag.node) {
+    const n = drag.node;
+    if (drag.moved < 4) select(n);
+    else { n.vx = drag.vx * 1.4; n.vy = drag.vy * 1.4; }              // fling
+  } else if (drag.pan && drag.moved < 2) select(null);
+  drag.node = null; drag.pan = false;
+});
+cv.addEventListener("dblclick", e => { const n = pick(e.clientX, e.clientY); if (n) n.pinned = !n.pinned; });
+cv.addEventListener("wheel", e => {
+  e.preventDefault(); autoFit = false;
+  zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * .0015));
+}, { passive: false });
+function zoomAt(sx, sy, f) {
+  const [wx, wy] = toWorld(sx, sy);
+  view.k = Math.max(.25, Math.min(3.5, view.k * f));
+  const [nx, ny] = toWorld(sx, sy);
+  view.x += wx - nx; view.y += wy - ny;
+}
+function fitView(soft) {
+  const arr = [...nodes.values()].filter(n => !n.gone);
+  if (!arr.length) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n of arr) { x0 = Math.min(x0, n.x - 60); y0 = Math.min(y0, n.y - 70); x1 = Math.max(x1, n.x + 60); y1 = Math.max(y1, n.y + 80); }
+  const k = Math.max(.3, Math.min(1.6, Math.min((W - 120) / (x1 - x0), (H - 160) / (y1 - y0))));
+  const tx = (x0 + x1) / 2, ty = (y0 + y1) / 2, a = soft ? .06 : 1;
+  view.k += (k - view.k) * a; view.x += (tx - view.x) * a; view.y += (ty - view.y) * a;
+}
+document.getElementById("zin").onclick = () => { autoFit = false; zoomAt(W / 2, H / 2, 1.25); };
+document.getElementById("zout").onclick = () => { autoFit = false; zoomAt(W / 2, H / 2, .8); };
+document.getElementById("fit").onclick = () => { autoFit = true; };
+document.getElementById("calm").onclick = () => shake();
+addEventListener("keydown", e => {
+  if (e.key === "f" || e.key === "F") autoFit = true;
+  if (e.key === "s" || e.key === "S") shake();
+  if (e.key === "Escape") select(null);
+});
+function shake() {
+  energy = 1.5;
+  for (const n of nodes.values()) if (!n.pinned) { n.vx += (Math.random() - .5) * 18; n.vy += (Math.random() - .5) * 18; }
+}
+
+// ---------------------------------------------------------------- counters
+// The gateway's OVS counts every port of its bridge, including each
+// extender's GRE; rates are the difference between two refreshes.
+const hist = new Map(), rates = new Map();
+function updateRates(topo) {
+  const now = topo.t;
+  for (const n of topo.nodes) for (const b of (n.detail && n.detail.ovs) || []) for (const p of b.ports) {
+    const k = n.id + "/" + p.name, st = p.stats || {};
+    if (st.rx_bytes == null) continue;
+    const h = hist.get(k), changed = !h || st.rx_bytes !== h.rx_bytes || st.tx_bytes !== h.tx_bytes;
+    if (h && now > h.t && (changed || now - h.t > 30)) {
+      const dt = now - h.t;
+      rates.set(k, { rx: Math.max(0, (st.rx_bytes - h.rx_bytes) * 8 / dt), tx: Math.max(0, (st.tx_bytes - h.tx_bytes) * 8 / dt),
+                     rxp: Math.max(0, (st.rx_packets - h.rx_packets) / dt), txp: Math.max(0, (st.tx_packets - h.tx_packets) / dt) });
+    }
+    if (changed || now - h.t > 30) hist.set(k, { t: now, ...st });
+  }
+}
+const fmtB = b => b == null ? "—" : b < 1024 ? b + " B" : b < 1048576 ? (b / 1024).toFixed(1) + " KB"
+  : b < 1073741824 ? (b / 1048576).toFixed(1) + " MB" : (b / 1073741824).toFixed(2) + " GB";
+const fmtR = r => r == null ? "—" : r < 1000 ? r.toFixed(0) + " b/s" : r < 1e6 ? (r / 1e3).toFixed(1) + " kb/s" : (r / 1e6).toFixed(2) + " Mb/s";
+const fmtN = n => n == null ? "—" : Number(n).toLocaleString();
+const maskLen = m => m ? m.split(".").reduce((a, o) => a + ((+o).toString(2).match(/1/g) || []).length, 0) : "";
+const cidr = i => i && i.inet_addr && i.inet_addr !== "0.0.0.0" ? `${i.inet_addr}/${maskLen(i.netmask)}` : "—";
+
+// ---------------------------------------------------------------- text
+const short = id => (id && id.length > 12 ? "…" + id.slice(-6) : id || "");
+const esc = s => String(s == null || s === "" ? "—" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function rows(pairs) { return "<table>" + pairs.map(([k, v]) => `<tr><td>${k === "" ? "" : esc(k)}</td><td class="mono">${esc(v)}</td></tr>`).join("") + "</table>"; }
+function grid(head, body) {
+  if (!body.length) return `<div class="none">none</div>`;
+  return `<div class="gridwrap"><table class="grid"><tr>${head.map(h => `<th>${esc(h)}</th>`).join("")}</tr>` +
+    body.map(r => `<tr>${r.map(c => `<td class="mono">${esc(c)}</td>`).join("")}</tr>`).join("") + "</table></div>";
+}
+const openSecs = new Set(["Overview"]);
+function sec(title, body, count) {
+  if (!body) return "";
+  return `<details data-sec="${esc(title)}"${openSecs.has(title) ? " open" : ""}><summary>${esc(title)}` +
+    `${count != null ? ` <span class="cnt">${count}</span>` : ""}</summary>${body}</details>`;
+}
+const cloudTxt = c => !c ? "—" : c.connected ? `${c.state || "connected"} ${c.target || ""}` : `not connected ${c.state ? "(" + c.state + ")" : ""}`;
+const upOf = n => links.find(l => l.kind === "backhaul" && l.a === n);
+const gwLinkOf = n => links.find(l => l.kind === "wired" && l.a === n);
+const clientsOf = n => links.filter(l => l.kind === "client" && l.b === n);
+const tunnelRate = l => { const t = l && l.detail.tunnel; return t && t.parent ? rates.get(l.b.id + "/" + t.parent.if_name) : null; };
+function lanOf(n) { return ((n.detail && n.detail.interfaces) || []).find(i => i.if_type === "bridge"); }
+
+function tunnelRows(l) {
+  const t = l.detail.tunnel, r = tunnelRate(l), st = (t && t.stats) || {};
+  if (!t) return rows([["tunnel", "no GRE interface reported"]]);
+  const e = t.extender, p = t.parent;
+  return rows([
+    ["extender end", `${e.if_name} ${e.gre_local} → ${e.gre_remote}`],
+    ["", `over ${e.gre_ifname} · mtu ${e.mtu ?? "—"}`],
+    ["gateway end", p ? `${p.if_name} ${p.gre_local} → ${p.gre_remote}` : "not set up (yet)"],
+    ["", p ? `over ${p.gre_ifname} · in ${t.parent_bridge || "—"} · mtu ${p.mtu ?? "—"}` : ""],
+    ["Wi-Fi", `${l.detail.ap} “${l.detail.ssid}” ${l.band} ch ${l.channel}`],
+    ["up (to gateway)", st.rx_bytes != null ? `${fmtR(r && r.rx)} · ${fmtN(st.rx_packets)} pkts · ${fmtB(st.rx_bytes)}` : "no counters"],
+    ["down (to extender)", st.tx_bytes != null ? `${fmtR(r && r.tx)} · ${fmtN(st.tx_packets)} pkts · ${fmtB(st.tx_bytes)}` : "no counters"],
+    ["errors / drops", st.rx_errors != null ? `${(st.rx_errors || 0) + (st.tx_errors || 0)} / ${(st.rx_dropped || 0) + (st.tx_dropped || 0)}` : "—"],
+  ]) + `<div class="note">counters: the gateway's OVS port of the tunnel</div>`;
+}
+
+// ---- hover cards: the active configuration at a glance
+function cardHead(title, sub, on) {
+  return `<div class="ch"><b class="mono">${esc(title)}</b><span>${esc(sub)}</span>${on === false ? `<span class="tag" style="color:var(--off)">offline</span>` : ""}</div>`;
+}
+function nodeCard(n) {
+  const d = n.detail || {};
+  if (n.kind === "gateway") {
+    const wan = d.uplink && d.uplink.if_name, lan = lanOf(n);
+    const tun = links.filter(l => l.kind === "backhaul" && l.b === n);
+    let rx = 0, tx = 0; tun.forEach(l => { const r = tunnelRate(l); if (r) { rx += r.rx; tx += r.tx; } });
+    const aps = (d.vifs || []).filter(v => v.mode === "ap");
+    return cardHead(n.id, `router · ${d.model || ""}`, n.online) + rows([
+      ["WAN", `${wan || "—"} ${(d.inet || {})[wan] || ""}`],
+      ["LAN", lan ? `${lan.if_name} ${cidr(lan)}` : "—"],
+      ["APs", aps.map(v => `${v.if_name} “${v.ssid}” ch ${v.channel}`).join(", ")],
+      ["extenders", `${tun.length} GRE in ${(tun[0] && tun[0].detail.tunnel && tun[0].detail.tunnel.parent_bridge) || "—"} · ↑${fmtR(rx)} ↓${fmtR(tx)}`],
+      ["DHCP leases", (d.leases || []).length],
+      ["cloud", cloudTxt(d.cloud)]]) + `<div class="note">click for interfaces, ports, counters, leases…</div>`;
+  }
+  if (n.kind === "extender") {
+    const l = upOf(n), t = l && l.detail.tunnel, lan = lanOf(n), r = tunnelRate(l);
+    const sta = (d.vifs || []).find(v => v.mode === "sta"), aps = (d.vifs || []).filter(v => v.mode === "ap");
+    const ports = ((d.ovs || [])[0] || { ports: [] }).ports.map(p => p.name).filter(p => p !== (lan && lan.if_name));
+    aps.forEach(v => { if (v.bridge && !ports.includes(v.if_name)) ports.push(v.if_name); });
+    return cardHead(n.id, `extender · ${d.model || ""}`, n.online) + rows([
+      ["uplink", t ? `GRE ${t.extender.if_name} ${t.extender.gre_local} → ${t.extender.gre_remote}` : (d.uplink && d.uplink.if_name) || "—"],
+      ["over", sta ? `${sta.if_name} “${sta.ssid}” ${sta.band} ch ${sta.channel}` : "—"],
+      ["gateway end", t && t.parent ? `${short(l.b.id)} ${t.parent.if_name} in ${t.parent_bridge || "—"}` : "—"],
+      ["LAN", lan ? `${lan.if_name} ${cidr(lan)} (${lan.assign || "—"})` : "—"],
+      ["bridge", lan ? `${lan.if_name}: ${ports.join(", ")}` : "—"],
+      ["fronthaul", aps.map(v => `${v.if_name} “${v.ssid}” ch ${v.channel} · ${v.clients.length} clients`).join(", ")],
+      ["tunnel traffic", t && t.stats && t.stats.rx_bytes != null ? `↑${fmtR(r && r.rx)} ↓${fmtR(r && r.tx)} · ${fmtB(t.stats.rx_bytes)} / ${fmtB(t.stats.tx_bytes)}` : "—"],
+      ["cloud", cloudTxt(d.cloud)]]) + `<div class="note">click for all interfaces, the tunnel, radios, uplink monitor…</div>`;
+  }
+  if (n.kind === "client") {
+    const l = links.find(q => q.a === n), ap = l && l.b, up = ap && upOf(ap), gw = up ? up.b : ap;
+    return cardHead(d.ip || d.mac, "wireless client", n.online) + rows([
+      ["MAC", d.mac], ["IP", d.ip], ["SSID", d.ssid], ["band", l ? `${l.band} ch ${l.channel}` : "—"],
+      ["path", ap ? `${short(ap.id)} ${d.ap}${up ? ` → GRE → ${gw.id} ${up.detail.tunnel && up.detail.tunnel.parent ? up.detail.tunnel.parent.if_name : ""}` : ""} → WAN` : "—"]]);
+  }
+  const g = links.find(q => q.kind === "wired");
+  return cardHead("Internet", "WAN") + rows([["gateway", g && g.a.id], ["interface", g && g.detail.if_name], ["address", g && g.detail.address]]);
+}
+function linkCard(l) {
+  if (l.kind === "backhaul") return cardHead(`${short(l.a.id)} → ${l.b.id}`, "backhaul · GRE over Wi-Fi") + tunnelRows(l);
+  if (l.kind === "client") return cardHead(l.a.detail.ip || l.a.id, `client on ${short(l.b.id)}`) +
+    rows([["AP", `${l.detail.ap} “${l.detail.ssid}”`], ["band", `${l.band} ch ${l.channel}`], ["MAC", l.a.detail.mac]]);
+  return cardHead("WAN", l.a.id) + rows([["interface", l.detail.if_name], ["address", l.detail.address]]);
+}
+
+// ---- detail panel: everything, in collapsible sections
+function panelFor(n) {
+  const d = n.detail || {}, raw = `<a class="raw" href="api/node/${encodeURIComponent(n.id)}" target="_blank">api/node/${esc(n.id)}</a>`;
+  const ifaces = grid(["interface", "type", "address", "via", "mtu", "state", "GRE local → remote"],
+    (d.interfaces || []).map(i => [i.if_name, i.if_type, cidr(i), i.assign, i.mtu, `${i.port_state || "—"}/${i.net_state || "—"}`,
+      i.gre_local ? `${i.gre_local} → ${i.gre_remote} (${i.gre_ifname})` : ""]));
+  const radios = grid(["radio", "band", "channel", "width", "enabled"],
+    (d.radios || []).map(r => [r.if_name, r.band, r.channel, r.ht_mode, r.enabled === true ? "yes" : "no"]));
+  const vifs = grid(["interface", "mode", "SSID", "channel", "band", "bridge", "clients"],
+    (d.vifs || []).map(v => [v.if_name, v.mode, v.ssid, v.channel, v.band, v.bridge, v.mode === "ap" ? v.clients.length : v.parent]));
+  const ports = (d.ovs || []).map(b => `<div class="sub">${esc(b.name)}</div>` + grid(
+    ["port", "link", "rx pkts", "tx pkts", "rx", "tx", "rx rate", "tx rate", "err/drop"],
+    b.ports.map(p => { const s = p.stats || {}, r = rates.get(n.id + "/" + p.name) || {};
+      return [p.type ? `${p.name} (${p.type})` : p.name, p.link, fmtN(s.rx_packets), fmtN(s.tx_packets), fmtB(s.rx_bytes), fmtB(s.tx_bytes),
+              s.rx_bytes != null ? fmtR(r.rx) : "", s.rx_bytes != null ? fmtR(r.tx) : "",
+              s.rx_errors != null ? `${(s.rx_errors || 0) + (s.tx_errors || 0)}/${(s.rx_dropped || 0) + (s.tx_dropped || 0)}` : ""]; }))).join("");
+  const uplinks = grid(["uplink", "type", "used", "prio", "L2", "L3", "ipv4", "ipv6", "unreach link/router/cloud/inet"],
+    (d.uplinks || []).map(u => [u.if_name, u.if_type, u.is_used ? "yes" : "", u.priority, u.has_L2 ? "yes" : "no", u.has_L3 ? "yes" : "no",
+      u.ipv4, u.ipv6, [u.unreachable_link_counter, u.unreachable_router_counter, u.unreachable_cloud_counter, u.unreachable_internet_counter].map(x => x ?? "—").join("/")]));
+  const cloud = rows([["state", d.cloud && d.cloud.state], ["target", d.cloud && d.cloud.target],
+    ["connected for", d.cloud && d.cloud.since ? `${d.cloud.since} s` : "—"], ["inactivity probe", d.cloud && d.cloud.probe_ms ? `${d.cloud.probe_ms} ms` : "—"],
+    ["session", `${d.peer || "—"} since ${d.since ? new Date(d.since * 1000).toLocaleTimeString() : "—"}`]]);
+  const st = n.online ? `<span class="tag" style="color:var(--ok)">online</span>` : `<span class="tag" style="color:var(--off)">offline</span>`;
+  let h = `<div class="kind">${esc(n.kind === "gateway" ? "router" : n.kind)}</div><h2 class="mono">${esc(n.id)}</h2>${st}`;
+
+  if (n.kind === "gateway") {
+    const wan = d.uplink && d.uplink.if_name, lan = lanOf(n);
+    const tun = links.filter(l => l.kind === "backhaul" && l.b === n);
+    h += sec("Overview", rows([["model", d.model], ["firmware", d.firmware], ["serial", d.serial],
+      ["WAN", `${wan || "—"} ${(d.inet || {})[wan] || ""}`], ["LAN", lan ? `${lan.if_name} ${cidr(lan)}` : "—"],
+      ["extenders", tun.length], ["clients", `${clientsOf(n).length} direct · ${links.filter(l => l.kind === "client").length} in the location`],
+      ["cloud", cloudTxt(d.cloud)]]));
+    h += sec("Cloud & uplink", cloud + uplinks);
+    h += sec("Interfaces", ifaces, (d.interfaces || []).length);
+    h += sec("Bridge ports & counters", ports + `<div class="note">OVS counters, refreshed every few seconds; rates between refreshes</div>`);
+    h += sec("GRE tunnels", grid(["port", "extender", "remote", "up rate", "down rate", "up", "down"],
+      tun.map(l => { const t = l.detail.tunnel || {}, r = tunnelRate(l) || {}, s = t.stats || {};
+        return [t.parent ? t.parent.if_name : "—", short(l.a.id), t.parent ? t.parent.gre_remote : "—", fmtR(r.rx), fmtR(r.tx), fmtB(s.rx_bytes), fmtB(s.tx_bytes)]; })), tun.length);
+    h += sec("Radios", radios, (d.radios || []).length);
+    h += sec("Wi-Fi interfaces", vifs, (d.vifs || []).length);
+    h += sec("DHCP leases", grid(["IP", "MAC", "hostname", "vendor"], (d.leases || []).map(l => [l.ip, l.mac, l.hostname, l.vendor])), (d.leases || []).length);
+    h += sec("MAC table", grid(["MAC", "bridge", "port", "vlan"], (d.macs || []).map(m => [m.mac, m.bridge, m.port, m.vlan])), (d.macs || []).length);
+    h += sec("Raw OVSDB", `<div class="note">every table the router reports, as local-noc holds it</div>${raw}`);
+  } else if (n.kind === "extender") {
+    const l = upOf(n), lan = lanOf(n);
+    h += sec("Overview", rows([["model", d.model], ["firmware", d.firmware], ["serial", d.serial],
+      ["uplink", `${(d.uplink && d.uplink.if_name) || "—"} (${(d.uplink && d.uplink.if_type) || "—"})`], ["parent", l ? l.b.id : "—"],
+      ["LAN", lan ? `${lan.if_name} ${cidr(lan)}` : "—"], ["clients", clientsOf(n).length], ["cloud", cloudTxt(d.cloud)]]));
+    h += sec("GRE uplink", l ? tunnelRows(l) : `<div class="none">no backhaul</div>`);
+    h += sec("Interfaces", ifaces, (d.interfaces || []).length);
+    h += sec("Bridge", grid(["bridge", "port", "type"], [
+      ...(d.ovs || []).flatMap(b => b.ports.map(p => [b.name, p.name, p.type || "ovs port"])),
+      ...(d.vifs || []).filter(v => v.bridge).map(v => [v.bridge, v.if_name, `Wi-Fi ${v.mode}`])]));
+    h += sec("Radios", radios, (d.radios || []).length);
+    h += sec("Wi-Fi interfaces", vifs, (d.vifs || []).length);
+    h += sec("Uplink monitor", uplinks + `<div class="note">OpenSync cm's link/router/cloud/internet checks</div>`);
+    h += sec("Cloud", cloud);
+    h += sec("Raw OVSDB", `<div class="note">every table the extender reports, as local-noc holds it</div>${raw}`);
+  } else if (n.kind === "client") {
+    const l = links.find(q => q.a === n), ap = l && l.b, up = ap && upOf(ap), gw = up ? up.b : ap, t = up && up.detail.tunnel;
+    h += sec("Overview", rows([["MAC", d.mac], ["IP", d.ip], ["hostname", d.hostname], ["SSID", d.ssid],
+      ["connected to", `${short(d.node)} (${d.ap})`], ["band", l ? `${l.band} ch ${l.channel}` : "—"]]));
+    h += sec("Path", `<ol class="path">` + [
+      `client ${d.ip || d.mac}`, `Wi-Fi ${l ? l.band + " ch " + l.channel : ""} → ${short(ap && ap.id)} ${d.ap}`,
+      ...(up ? [`${short(ap.id)} ${lanOf(ap) ? lanOf(ap).if_name : "bridge"} → GRE ${t ? t.extender.if_name : ""}`,
+                `Wi-Fi ${up.band} ch ${up.channel} → ${gw.id} ${up.detail.ap}`,
+                `${gw.id} ${t && t.parent ? t.parent.if_name : "GRE"} → ${lanOf(gw) ? lanOf(gw).if_name : "LAN"} (DHCP ${lanOf(gw) ? lanOf(gw).inet_addr : ""})`] : []),
+      `${gw ? gw.id : ""} WAN → Internet`].map(s => `<li class="mono">${esc(s)}</li>`).join("") + "</ol>");
+  } else {
+    const g = links.find(q => q.kind === "wired");
+    h += sec("Overview", rows([["gateway", g && g.a.id], ["interface", g && g.detail.if_name], ["address", g && g.detail.address]]));
+  }
+  return h;
+}
+
+function select(n) {
+  sel = n;
+  const p = document.getElementById("panel"), b = document.getElementById("pbody");
+  if (!n) { p.classList.remove("open"); return; }
+  const scroll = p.scrollTop;
+  b.innerHTML = panelFor(n);
+  b.querySelectorAll("details").forEach(d => d.addEventListener("toggle", () =>
+    d.open ? openSecs.add(d.dataset.sec) : openSecs.delete(d.dataset.sec)));
+  p.classList.add("open"); p.scrollTop = scroll;
+}
+document.getElementById("pclose").onclick = () => select(null);
+
+// ---- the network drawer (collapsed by default)
+let drawerOpen = false;
+document.getElementById("dtoggle").onclick = () => { drawerOpen = !drawerOpen; renderDrawer(); };
+function renderDrawer() {
+  const t = document.getElementById("dtoggle"), b = document.getElementById("dbody");
+  t.textContent = (drawerOpen ? "▾ " : "▸ ") + "Network";
+  b.style.display = drawerOpen ? "block" : "none";
+  if (!drawerOpen || !data) return;
+  const bh = links.filter(l => l.kind === "backhaul"), all = [...nodes.values()].filter(n => !n.gone);
+  const gws = all.filter(n => n.kind === "gateway");
+  b.innerHTML =
+    `<div class="sub">GRE tunnels (${bh.length})</div>` + grid(["extender", "gateway port", "extender IP", "up", "down", "up total", "down total"],
+      bh.map(l => { const t = l.detail.tunnel || {}, r = tunnelRate(l) || {}, s = t.stats || {};
+        return [short(l.a.id), t.parent ? t.parent.if_name : "—", t.extender ? t.extender.gre_local : "—", fmtR(r.rx), fmtR(r.tx), fmtB(s.rx_bytes), fmtB(s.tx_bytes)]; })) +
+    `<div class="sub">Wi-Fi links</div>` + grid(["from", "to", "kind", "band", "ch", "SSID"],
+      links.filter(l => l.kind !== "wired").map(l => [l.a.kind === "client" ? (l.a.detail.ip || l.a.id) : short(l.a.id), short(l.b.id), l.kind, l.band, l.channel, l.detail.ssid])) +
+    `<div class="sub">Cloud sessions</div>` + grid(["node", "state", "for", "target"],
+      all.filter(n => n.kind === "gateway" || n.kind === "extender").map(n => { const c = n.detail.cloud || {};
+        return [short(n.id), n.online ? (c.state || "connected") : "offline", c.since ? c.since + " s" : "", c.target]; })) +
+    gws.map(g => `<div class="sub">${esc(g.id)} DHCP leases (${(g.detail.leases || []).length})</div>` +
+      grid(["IP", "MAC", "vendor"], (g.detail.leases || []).map(l => [l.ip, l.mac, l.vendor]))).join("");
+}
+
+function updateChrome() {
+  if (!data) return;
+  document.getElementById("loc").textContent = "· " + (data.location || "");
+  const c = data.counts || {};
+  document.getElementById("chips").innerHTML =
+    `<span class="chip"><b>${c.gateways || 0}</b> router</span><span class="chip"><b>${c.extenders || 0}</b> extenders</span>` +
+    `<span class="chip"><b>${c.clients || 0}</b> clients</span><span class="chip"><b>${c.online || 0}</b> online</span>`;
+  document.getElementById("empty").style.display = data.nodes.length ? "none" : "flex";
+  if (sel) { const n = nodes.get(sel.id); n && !n.gone ? select(n) : select(null); }
+  renderDrawer();
+  if (hoverAt) showCard(hoverAt.x, hoverAt.y);
+}
+
+// ---------------------------------------------------------------- data
+async function poll() {
+  try {
+    const r = await fetch("api/topology", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const topo = await r.json();
+    updateRates(topo);
+    merge(topo);
+    lastOk = Date.now();
+  } catch (e) { /* keep the last picture */ }
+  const age = (Date.now() - lastOk) / 1000;
+  document.getElementById("live").classList.toggle("stale", age > 6);
+  document.getElementById("updated").textContent = lastOk
+    ? (age > 6 ? `no update for ${Math.round(age)} s` : `live · updated ${new Date(lastOk).toLocaleTimeString()}`)
+    : "connecting…";
+  setTimeout(poll, 2000);
+}
+poll();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
