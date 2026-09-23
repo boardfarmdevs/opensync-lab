@@ -1,0 +1,12 @@
+[Unit]
+Description=Permit LXD bridge forwarding through Docker's firewall
+After=docker.service snap.lxd.daemon.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mvx-lxd-docker-forward
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

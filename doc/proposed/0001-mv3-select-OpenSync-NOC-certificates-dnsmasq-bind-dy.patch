@@ -1,0 +1,64 @@
+From 7733544a36429db0e2ca6a028d56ba566e48b0ff Mon Sep 17 00:00:00 2001
+From: Rob Vogelaar <revogelaar@gmail.com>
+Date: Tue, 22 Sep 2026 20:34:09 -0700
+Subject: [PATCH] mv3: select OpenSync NOC certificates; dnsmasq bind-dynamic
+
+Two gaps that keep OpenSync from working on the LXD mv3 (found by
+mvx-opensync, 2026-09-22):
+
+- opensync: the NOC certificate selection lives in
+  meta-rdk-opensync-sagemcom's do_install:append:f5685, which never applies to
+  MACHINE exm-qemux86-mv3. The image ships theta-dev/ and opensync-dev/ but no
+  ca.pem/client.pem/client_dec.key where the OVSDB SSL table points, so cm
+  never gets past BACKOFF. Link theta-dev (the f5685 default without
+  BUILD_OSRT, and what mv27/mv37 ship). With it, mv3 reaches
+  Manager ACTIVE on the theta dev controller.
+
+- utopia: service_dhcp's bind-interfaces makes dnsmasq refuse to start while
+  wl0.1/wl1.1 do not exist, which is the normal state under hal-wifi-hwsim
+  with SON on -- the 'enabling SON breaks LAN DHCP' symptom. Use bind-dynamic.
+---
+ recipes-ccsp/util/utopia_%.bbappend  |  9 +++++++++
+ recipes/opensync/opensync_%.bbappend | 13 +++++++++++++
+ 2 files changed, 22 insertions(+)
+ create mode 100644 recipes-ccsp/util/utopia_%.bbappend
+
+diff --git a/recipes-ccsp/util/utopia_%.bbappend b/recipes-ccsp/util/utopia_%.bbappend
+new file mode 100644
+index 0000000..5019bcb
+--- /dev/null
++++ b/recipes-ccsp/util/utopia_%.bbappend
+@@ -0,0 +1,9 @@
++# service_dhcp writes /var/dnsmasq.conf with bind-interfaces and lists the
++# wl0.1/wl1.1 VAP netdevs. On the real board those always exist; with
++# hal-wifi-hwsim they exist only while the VAP is enabled (the HAL owns the
++# names), and with SON on the cloud keeps them disabled -- dnsmasq then exits
++# with "unknown interface wl1.1" and the LAN gets no DHCP. bind-dynamic binds
++# the same interfaces but tolerates ones that come and go.
++do_configure:prepend() {
++	sed -i 's|"bind-interfaces\\n"|"bind-dynamic\\n"|' ${S}/source/service_dhcp/dhcp_server_functions.c
++}
+diff --git a/recipes/opensync/opensync_%.bbappend b/recipes/opensync/opensync_%.bbappend
+index 8ae20ea..43ca444 100644
+--- a/recipes/opensync/opensync_%.bbappend
++++ b/recipes/opensync/opensync_%.bbappend
+@@ -11,3 +11,16 @@ FILES:${PN}-dbg += "\
+     /usr/lib/debug/usr/opensync/tools/* \
+     /usr/lib/debug/usr/opensync/tools/band_steering_test/* \
+ "
++
++# OpenSync client certificates. The real board selects one NOC's certificates
++# in meta-rdk-opensync-sagemcom's do_install:append:f5685 (theta-dev unless
++# BUILD_OSRT=y); that override never applies to this MACHINE, so without this
++# the SSL table's /usr/opensync/etc/certs/{ca,client}.pem + client_dec.key do
++# not exist, ovsdb-server cannot complete TLS and cm stays in BACKOFF.
++OPENSYNC_NOC_DIR ?= "${@'opensync-dev' if d.getVar('BUILD_OSRT') == 'y' else 'theta-dev'}"
++do_install:append() {
++	for f in ca.pem client.pem client_dec.key upload.pem; do
++		[ -e ${D}/usr/opensync/etc/certs/${OPENSYNC_NOC_DIR}/$f ] || continue
++		ln -sf ${OPENSYNC_NOC_DIR}/$f ${D}/usr/opensync/etc/certs/$f
++	done
++}
+-- 
+2.34.1
+

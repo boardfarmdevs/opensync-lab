@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# Bring the boardfarm WAN side up and prove it is serving (boot + provisioning).
+# Fast path: restart the preserved containers. Slow path: bf-lab
+# teardown,setup,status. Either way the gate is service-level: Kea running on
+# the tagged sub-interfaces and wan-cpe1 reaching the internet.
+set -euo pipefail
+source /etc/default/boardfarm-lab
+export BF_LAB_CONFIG BF_INVENTORY
+bf=$BOARDFARM_WORKSPACE/.venv/bin/bf-lab
+lab=$BOARDFARM_WORKSPACE/boardfarm-lab-staging/lab
+state=/var/lib/mvx-opensync
+containers="dhcp-cpe1 wan-cpe1 lan-cpe1"
+
+ready() {
+    local c
+    for c in $containers; do
+        [ "$(docker inspect -f '{{.State.Running}}' "$c" 2>/dev/null)" = true ] || return 1
+    done
+    ip link show br-wan101 >/dev/null 2>&1 || return 1
+    ip link show br-lan201 >/dev/null 2>&1 || return 1
+    docker exec dhcp-cpe1 pidof kea-dhcp4 >/dev/null || return 1
+    docker exec dhcp-cpe1 pidof kea-dhcp6 >/dev/null || return 1
+    docker exec dhcp-cpe1 ip -4 -o addr show | grep -q 'eth1\.1081 .*inet 10\.70\.0\.10/' || return 1
+    docker exec wan-cpe1 ip -4 -o addr show | grep -q 'inet 10\.70\.0\.20/' || return 1
+    docker exec wan-cpe1 ping -c1 -W3 8.8.8.8 >/dev/null || return 1
+}
+
+wait_ready() {
+    local i
+    for i in $(seq 1 "$1"); do ready && return 0; sleep 2; done
+    return 1
+}
+
+for c in $containers; do docker start "$c" >/dev/null 2>&1 || true; done
+if ! wait_ready 15; then
+    # kea leaves stale pid files in the container layer after a hard stop
+    docker exec dhcp-cpe1 sh -c 'rm -f /var/run/kea/*.pid /run/kea/*.pid' 2>/dev/null \
+        && docker restart dhcp-cpe1 >/dev/null 2>&1 || true
+fi
+if ! wait_ready 15; then
+    # mvx containers attach to br-wan101/br-lan201; release them so bf-lab can
+    # recreate the docker networks
+    for c in $(lxc list -c n --format csv 2>/dev/null); do
+        [ "$(lxc info "$c" | sed -n 's/^Status: //p')" = RUNNING ] && lxc stop -f "$c" || true
+    done
+    cd "$lab"
+    for attempt in 1 2 3; do
+        echo "bf-lab teardown,setup (attempt $attempt)"
+        # Leftovers of an interrupted run (same-name containers, restart
+        # policies) make compose fail with "name already in use".
+        docker rm -f $containers >/dev/null 2>&1 || true
+        docker container prune -f >/dev/null 2>&1 || true
+        # 'status' is informational only: it also runs SSH probes that fail
+        # for reasons unrelated to serving (and it exits non-zero then).
+        # Readiness is decided by the service-level gate below.
+        if "$bf" teardown,setup; then
+            "$bf" status || echo "bf-lab status reported problems (informational)"
+            wait_ready 60 && break
+            echo "bf-lab setup finished, but the WAN side is not serving yet" >&2
+        fi
+        [ "$attempt" -lt 3 ] || { echo "bf-lab setup failed" >&2; exit 1; }
+        sleep $((attempt * 10))
+    done
+fi
+wait_ready 60 || { echo "boardfarm WAN side is not serving (see: docker ps; docker logs dhcp-cpe1)" >&2; exit 1; }
+docker update --restart unless-stopped $containers >/dev/null
+# docker re-enables bridge netfilter whenever it creates networks
+modprobe br_netfilter
+sysctl -qw net.bridge.bridge-nf-call-iptables=0 net.bridge.bridge-nf-call-ip6tables=0
+date -Is > "$state/boardfarm.ready-at"
+echo "boardfarm WAN side ready"
