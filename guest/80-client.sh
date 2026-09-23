@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# Wireless client behind the extender: a small Alpine container whose only
+# Wireless client behind an extender: a small Alpine container whose only
 # network is one hwsim radio (no wired NIC). wpa_supplicant joins the pod's
-# fronthaul (home SSID, configured by local-noc), DHCP comes from the gateway
-# across the pod's GRE backhaul, and the internet is reached as
+# fronthaul (home SSID, configured by local-noc; every pod uses the same SSID
+# on the one hwsim medium, so the client is pinned to its pod's BSSID), DHCP
+# comes from the gateway across the pod's GRE backhaul, and the internet is
+# reached as
+#
+#   80-client.sh <name> <pod>
 #   client -wifi-> pod home-ap -> br-home -> GRE over wifi backhaul -> mv3 brlan0 -> WAN
 source "$(dirname "$0")/common.sh"
 set +e
 set +o pipefail
 
-name=${1:-wclient}
-pod=${MVX_POD_NAME:-pod}
+name=${1:-pod-1-wc1}
+pod=${2:-pod-1}
 gw=${MVX_MESH_GATEWAY:-mv3}
 ssid=${MVX_MESH_HOME_SSID:-opensync-lab-home}
 psk=${MVX_MESH_HOME_PSK:-opensync-lab-home-psk}
@@ -38,6 +42,10 @@ if ! lxc image info "$image" >/dev/null 2>&1; then
     lxc delete "$image-build" >/dev/null
 fi
 
+ct_running "$pod" || die "pod $pod is not running (deploy-mvx.sh pod $pod)"
+podmac=$(lxc exec "$pod" -- cat /sys/class/net/home-ap-24/address 2>/dev/null)
+[ -n "$podmac" ] || die "$pod has no fronthaul home-ap-24 yet"
+
 log "client: (re)creating $name"
 lxc delete -f "$name" >/dev/null 2>&1
 lxc profile delete "$name" >/dev/null 2>&1
@@ -61,6 +69,7 @@ cx "mkdir -p /etc/wpa_supplicant; cat > /etc/wpa_supplicant/mvx.conf <<EOF
 ctrl_interface=/run/wpa_supplicant
 network={
     ssid=\"$ssid\"
+    bssid=$podmac
     psk=\"$psk\"
     key_mgmt=WPA-PSK
     scan_ssid=1
@@ -71,8 +80,7 @@ assoc() { cx "wpa_cli -i wlan0 status" | grep -q '^wpa_state=COMPLETED'; }
 if wait_for 90 3 "association with '$ssid'" assoc; then
     bssid=$(cx "wpa_cli -i wlan0 status" | sed -n 's/^bssid=//p')
     freq=$(cx "wpa_cli -i wlan0 status" | sed -n 's/^freq=//p')
-    podmac=$(lxc exec "$pod" -- cat /sys/class/net/home-ap-24/address 2>/dev/null)
-    if [ -n "$podmac" ] && [ "$bssid" = "$podmac" ]; then
+    if [ "$bssid" = "$podmac" ]; then
         result PASS "association" "'$ssid' bssid $bssid ($freq MHz) = $pod home-ap-24"
     else
         result FAIL "association" "bssid $bssid is not $pod's home-ap-24 (${podmac:-unknown})"
@@ -124,6 +132,6 @@ else
 fi
 
 state=FAIL; [ $fail -eq 0 ] && state=PASS
-{ echo "$state $name $(date -Is)"; printf '%s\n' "${lines[@]}"; } > "$STATE/client.status"
+{ echo "$state $name via $pod $(date -Is)"; printf '%s\n' "${lines[@]}"; } > "$STATE/$name.status"
 echo "=== wireless client: $state ==="
 exit $fail

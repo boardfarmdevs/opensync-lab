@@ -36,7 +36,7 @@ vm_push_tree() {
                  MVX_HWSIM_RADIOS MVX_INSTANCE MVX_OPENSYNC_REDIRECTOR MVX_LOCAL_NOC_IP \
                  MVX_LOCAL_NOC_REDIRECTOR_PORT MVX_LOCAL_NOC_CONTROLLER_PORT MVX_MESH_GATEWAY \
                  MVX_MESH_BHAUL_IF MVX_MESH_BHAUL_SSID MVX_MESH_BHAUL_PSK MVX_MESH_HOME_SSID \
-                 MVX_MESH_HOME_PSK; do
+                 MVX_MESH_HOME_PSK MVX_PODS MVX_POD_CLIENTS; do
             printf '%s=%q\n' "$v" "${!v}"
         done
     } | lxc exec "$MVX_VM" -- tee "$GUEST_ROOT/vm.env" >/dev/null

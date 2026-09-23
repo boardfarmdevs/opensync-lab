@@ -116,8 +116,8 @@ separately committed additions such as a boardfarm lab config.
     (serial mapped to a location in the Plume backend).
   - mvx on qemux86 is **gateway-only**: there is no `bhaul-sta` target
     `vif.c`, so an mvx cannot be a cloud-driven *pod*. External OpenSync pods
-    must be something else, or the leaf side must be injected
-    (`gen/sim-mesh.sh`).
+    must be something else: here, pods built from the open-source release
+    (§5.9).
   - Enabling SON in the hardware-less container **breaks LAN DHCP and LAN→WAN
     forwarding until a relaunch** (boardfarm makes these tests opt-in for this
     reason). That is acceptable here, because this lab is dedicated to OpenSync.
@@ -197,8 +197,8 @@ opensync-lab/
     30-mvx.sh                     meta-lxd checkout, mv.sh launch
     40-wan-check.sh               WAN connectivity gate (L1) + radio/LAN info
     50-opensync.sh                SON on, cloud connection (plume | local)
-    60-gre.sh                     injected GRE backhaul to a second mv3 (sim-mesh.sh)
     70-pod.sh, 80-client.sh       OpenSync extender + wireless client (§5.9)
+    85-topology.sh                the whole topology: gateway, every pod, every client
     files/                        mvx-hwsim-pool(.service), mvx-lxd-docker-forward(.service),
                                   boardfarm-lab-rebuild, boardfarm-lab.service, local-noc-net(.service)
   local-noc/                      noc.py, mesh.py, noc-ctl, Dockerfile
@@ -454,19 +454,12 @@ same VM.
 - Dump the OVSDB tables `AWLAN_Node`, `Manager`, `Wifi_Radio_State`,
   `Wifi_VIF_State`, and `Wifi_Inet_State` to `/var/lib/opensync-lab/ovsdb-<ts>.txt`.
 
-### 5.6 `guest/60-mesh.sh` (optional, planned: `deploy-mvx.sh mesh`)
+### 5.6 Second mv3 as a GRE leaf (removed)
 
-This proves the GRE side without waiting for claiming. It follows
-`opensync-mesh-hwsim.md`:
-
-- Launch a leaf with `mv.sh <img> -i 2` (no WAN, 3 radios).
-- `GW=mv3 LEAF=mv3-002 ./sim-mesh.sh all`: backhaul on `wlan2`, `nm`-built
-  `gre-bhaul` gretap on both ends, the leaf's `br-mesh` plus client AP, and a
-  netns Wi-Fi client that gets DHCP from mv3 over the tunnel and pings `8.8.8.8`.
-- This is **injected orchestration**, not cloud-driven. It is kept separate so
-  that the L4/L5 cloud results stay clean. It is mutually exclusive with a
-  claimed-cloud run on the same gateway, because the cloud would overwrite the
-  injected `Wifi_Inet_Config`.
+An earlier version launched a second mv3 (`mv3-002`, no WAN) as a leaf and
+injected the GRE rows with `gen/sim-mesh.sh`. A second gateway is not a
+normal deployment, and the extender topology (§5.9) covers the GRE backhaul
+through the cloud protocol, so it was removed.
 
 ### 5.7 `guest/90-check.sh` (planned: `deploy-mvx.sh report`)
 
@@ -515,13 +508,19 @@ medium is per kernel):
   and leased, and gives each pod that connects its fronthaul (`home-ap-24`
   in `br-home`, home SSID). All over OVSDB, recorded like everything else.
 - **Client** (`guest/80-client.sh`): an Alpine container with one hwsim radio
-  and no wired NIC; `wpa_supplicant` joins the pod's fronthaul, DHCP comes
-  from mv3 across the tunnel, and ICMP/DNS/HTTP reach the internet.
+  and no wired NIC; `wpa_supplicant` joins its pod's fronthaul (pinned to
+  that pod's BSSID: every pod uses the same home SSID on the one medium),
+  DHCP comes from mv3 across the tunnel, and ICMP/DNS/HTTP reach the internet.
+- **Topology** (`deploy-mvx.sh mesh`): one mv3, `MVX_PODS` pods (default 3:
+  `pod-1..3`) and `MVX_POD_CLIENTS` clients per pod (default 2:
+  `pod-N-wc1..2`); 15 hwsim radios in all. `guest/85-topology.sh` then checks
+  the whole: one backhaul station and one GRE port in `brlan0` per pod on
+  mv3, every pod claimed by local-noc, every client leased by mv3 and
+  associated to its own pod.
 
-The Plume-cloud variant (pod claimed into the theta location, the cloud
-building the GRE) needs the pod's identity registered with that cloud and is
-a follow-up; the injected `sim-mesh.sh` path (§5.6, `deploy-mvx.sh gre`) is
-kept alongside.
+The Plume-cloud variant (pods claimed into the theta location, the cloud
+building the GRE) needs the pods' identities registered with that cloud and
+is a follow-up.
 
 ## 6. Success criteria
 
@@ -534,8 +533,8 @@ kept alongside.
 | L3 | OpenSync running | dm/cm/nm/owm/ovsdb-server running |
 | L4 | Cloud connection | redirector_addr set; `Manager.is_connected=true` |
 | L5 | Cloud config (claimed node) | bhaul-ap VAPs configured and beaconing |
-| L6 | GRE backhaul | `g-*` gretap in `Wifi_Inet_State` when a pod joins (cloud) **or** `sim-mesh.sh` client internet over the GRE (injected) |
-| L7 | OpenSync extender | pod onboards over the Wi-Fi backhaul (both GRE ends, LAN lease), is claimed by local-noc and gets its fronthaul; a wireless client behind it reaches the internet (`deploy-mvx.sh mesh`) |
+| L6 | GRE backhaul | per pod: `g-bhaul-sta-50` on the pod, `pgd*` on mv3 in `brlan0` (`deploy-mvx.sh mesh`) |
+| L7 | OpenSync extenders | 3 pods onboard over the Wi-Fi backhaul (both GRE ends, LAN lease), are claimed by local-noc and get their fronthaul; 2 wireless clients per pod reach the internet; topology check (`deploy-mvx.sh mesh`) |
 
 The v1 "done" bar is **B + L0–L4 automated and green**. L5 and L6 are reported
 honestly: they depend on claiming and on an external pod.
@@ -567,8 +566,8 @@ setup-vm.sh   status | shell | start | stop | delete
 
 deploy-mvx.sh push [--image PATH]         image + pinned meta-lxd bundle into the VM
 deploy-mvx.sh launch | check | all        mv.sh launch, WAN check
-deploy-mvx.sh opensync [--cloud plume|local] | gre
-deploy-mvx.sh pod | client | mesh         OpenSync extender, wireless client, both (§5.9)
+deploy-mvx.sh opensync [--cloud plume|local]
+deploy-mvx.sh pod [NAME] | client [NAME POD] | mesh   extender, client, the 3-pod topology (§5.9)
 deploy-mvx.sh noc <noc-ctl args> | status | shell
               (planned: report)
 
@@ -625,10 +624,10 @@ VM as boardfarm CPE slots 1..N (`br-wan10N`/`br-lan20N`).
   local-noc; the Plume-claimed variant is a follow-up.)* The hwsim medium is per kernel, so pods must
   run **inside the same VM**. Is there a pod or extender image (e.g. a
   bpi/OpenSync pod build) that should be claimed into the same location as the
-  extender? Or is the injected `sim-mesh.sh` leaf acceptable for v1?
+  extender?
 - **Q3: runtime meta-lxd.** Should the VM use the build pin (`15058aa`) or HEAD
   (`e3d4f23`, with wmediumd/patched hwsim tooling) for `gen/`?
-- **Q4: boardfarm lab config.** Is it OK to upstream `lab/opensync-lab.json` and
-  the inventory to boardfarm-lab-staging? Until then this repo overlays them.
+- **Q4: boardfarm lab config.** Is it OK to upstream `lab/opensync-lab.json`
+  to boardfarm-lab-staging? Until then this repo overlays them.
 - **Q5: redirector.** Is `ssl:wildfire.plume.tech:443` the right default, or
   should it be a different cloud or service-provider endpoint?

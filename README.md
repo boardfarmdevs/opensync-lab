@@ -19,11 +19,11 @@ gateway** (the LGI "mvx" products, starting with **mv3**). It:
    (the Plume redirector) over the WAN, and the home and backhaul VAPs and the
    GRE backhaul network that external OpenSync nodes (extenders/pods) join are
    built.
-4. **Adds an OpenSync extender.** A pod built from the open-source OpenSync
-   release (6.6.1.0) runs as a container with only hwsim radios. It joins
-   mv3's Wi-Fi backhaul, builds its GRE uplink, and is claimed by `local-noc`,
-   which acts as the cloud. A wireless client on the pod's fronthaul reaches
-   the internet through pod → GRE → mv3.
+4. **Adds OpenSync extenders.** Three pods built from the open-source
+   OpenSync release (6.6.1.0) run as containers with only hwsim radios. Each
+   joins mv3's Wi-Fi backhaul, builds its GRE uplink, and is claimed by
+   `local-noc`, which acts as the cloud. Two wireless clients on each pod's
+   fronthaul reach the internet through pod → GRE → mv3.
 
 ```
  rev140 (host)                                     LXD VM  opensync-lab-MMDD
@@ -36,9 +36,9 @@ gateway** (the LGI "mvx" products, starting with **mv3**). It:
    (OpenSync 6.6.1.0)                                       └── wlan0/1/2 ◄── mac80211_hwsim pool
                                                                   wl1.1 backhaul AP  ((( 5 GHz )))
                                                                         │ gretap pgd* in brlan0
-                                                         pod ── bhaul-sta-50 ─ g-bhaul-sta-50 ─ br-home
+                                          pod-1, pod-2, pod-3 ── bhaul-sta-50 ─ g-bhaul-sta-50 ─ br-home
                                                                   home-ap-24 ((( 2.4 GHz )))
-                                                         wclient (alpine) ── wlan0 ─ wpa_supplicant
+                                   pod-N-wc1, pod-N-wc2 (alpine) ── wlan0 ─ wpa_supplicant
 ```
 
 ## Status
@@ -47,17 +47,14 @@ Working end to end, reproduced from a fresh VM with the scripts alone (2026-09-2
 
 | Goal | Result |
 |---|---|
-| Pinned offline build | `mv3-lxd-r25-oe40-0922`: installed packages identical to the 0808 reference, all recorded SRCREVs match the pins |
+| Pinned offline build | `mv3-lxd-r25-oe40-0923`: installed packages identical to the 0808 reference, all recorded SRCREVs match the pins |
 | mv3 internet | erouter0 leases `10.70.0.x` from boardfarm Kea on tagged VLAN 1081; internet, DNS and TLS to the Plume redirector all work |
 | OpenSync cloud | `Manager` ACTIVE on the theta dev controller; the `mv3` identity is claimed into a location and receives cloud config |
 | Local cloud (local-noc) | the same node connects to `local-noc` over plain TCP (redirector -> controller, all 109 tables monitored and recorded) and switches back and forth with the Plume cloud |
-| GRE backhaul | OpenSync `nm` builds the gretap on both ends over an hwsim RF backhaul to a second node (`mv3-002`); a Wi-Fi client behind it gets DHCP and internet through the tunnel |
-| OpenSync extender | an OpenSync 6.6.1.0 pod with only hwsim radios joins mv3's backhaul AP, builds its GRE uplink (`cm`), is claimed by local-noc through it and gets its fronthaul; local-noc builds mv3's end of the tunnel. An Alpine `wpa_supplicant` client on the pod's fronthaul gets DHCP from mv3 and reaches the internet (ICMP, DNS, HTTP) |
+| OpenSync extenders (GRE backhaul) | three OpenSync 6.6.1.0 pods with only hwsim radios join mv3's backhaul AP, build their GRE uplinks (`cm`), are claimed by local-noc through them and get their fronthaul; local-noc builds mv3's end of each tunnel. Two Alpine `wpa_supplicant` clients per pod, each pinned to its pod's fronthaul, get DHCP from mv3 and reach the internet (ICMP, DNS, HTTP) |
 
-In the `mv3-002` path the GRE is real OpenSync but its config is injected
-locally: the Plume cloud pushes backhaul/GRE config only once a pod exists in
-the location (see [doc/PLAN.md](doc/PLAN.md) §1.4). In the extender path, all
-of it goes through the cloud protocol, with local-noc as the cloud.
+All of the mesh configuration goes through the cloud protocol, with local-noc
+as the cloud.
 
 ### Workarounds this lab applies (and where the real fix belongs)
 
@@ -65,8 +62,6 @@ of it goes through the cloud protocol, with local-noc as the cloud.
 |---|---|---|
 | mv3 LXD image selects no OpenSync NOC certificates (only `do_install:append:f5685` does), so `cm` stays in BACKOFF | `guest/50-opensync.sh` links `/usr/opensync/etc/certs/*` -> `theta-dev/` and restarts `cm` | `doc/proposed/0001-*.patch` for meta-lxd-mv3 (untested) |
 | With SON on, `dnsmasq` refuses to start (`bind-interfaces` + missing `wl0.1`/`wl1.1`), so LAN DHCP breaks | `fix_lan_dhcp` in `guest/common.sh` restarts it with `bind-dynamic` | same proposed patch (utopia) |
-| mv3's MeshAgent crashes on the empty `SONURL` that `sim-mesh.sh` uses | `guest/60-gre.sh` enables SON on the leaf with the real redirector | meta-lxd `gen/sim-mesh.sh` |
-| On mv3, `brlan0` is an OVS bridge with SON on; `sim-mesh.sh` uses `ip link set master` | `guest/60-gre.sh` uses `ovs-vsctl add-port` | meta-lxd `gen/sim-mesh.sh` |
 | boardfarm `bf-wan` build: Debian bullseye security packages now 404 | `boardfarm/patches/0001` | boardfarm-lab-staging |
 | boardfarm `wan-cpe1`: docker 28+ can make the non-masqueraded eth1 the default route, so the WAN side has no internet | `boardfarm/patches/0002` | boardfarm-lab-staging |
 | The lab gives CPEs global IPv6 but rev140 has no IPv6 internet: `cm` prefers IPv6 and waits out a timeout per attempt | boardfarm rebuild hook makes `wan-cpe1` reject non-lab IPv6 (TCP reset), so `cm` fails over to IPv4 at once | a lab with IPv6 upstream (the hook then does nothing) |
@@ -94,15 +89,16 @@ There are three scripts, one per stage. Each subcommand can be re-run safely.
 ./setup-vm.sh status | shell | stop | start | delete
 
 # 3. deploy the container into the VM and check it
-./deploy-mvx.sh all                       # push, launch, WAN check, OpenSync cloud, GRE backhaul
+./deploy-mvx.sh all                       # push, launch, WAN check, OpenSync cloud
 ./deploy-mvx.sh opensync --cloud local    # switch the node to local-noc (or --cloud plume)
 ./deploy-mvx.sh noc nodes | tables mv3 | dump mv3 <table> | log mv3 [N] | transact mv3 '<op>'
 ./deploy-mvx.sh check | status | shell
 
-# 4. OpenSync extender (pod) + wireless client, orchestrated by local-noc
+# 4. OpenSync extenders (pods) + wireless clients, orchestrated by local-noc
 ./build-pod.sh all                        # OpenSync 6.6.1.0 -> pod LXD image (~/yocto/mvx-pod-work)
-./deploy-mvx.sh mesh                      # opensync --cloud local + pod + client
-./deploy-mvx.sh pod | client              # or one at a time
+./deploy-mvx.sh mesh                      # opensync --cloud local, pod-1..3, 2 clients each, topology check
+./deploy-mvx.sh pod pod-2                 # or one at a time
+./deploy-mvx.sh client pod-2-wc1 pod-2
 ```
 
 ### local-noc: a local OpenSync cloud
@@ -152,7 +148,7 @@ doc/          PLAN.md
 
 | Component | Location | Role |
 |---|---|---|
-| `meta-lxd` (`rnl25-oe40`) | `~/git/meta-lxd` | LXD image class, `hal-wifi-hwsim` recipe, `gen/mv.sh` launcher, `gen/gen-util.sh` hwsim pool, `gen/sim-mesh.sh` |
+| `meta-lxd` (`rnl25-oe40`) | `~/git/meta-lxd` | LXD image class, `hal-wifi-hwsim` recipe, `gen/mv.sh` launcher, `gen/gen-util.sh` hwsim pool |
 | `meta-lxd-mv3` (`rnl25-oe40`) | `~/git/meta-lxd-mv3` | mv3 LXD machine; selects `hal-wifi-hwsim` as the Wi-Fi HAL |
 | `hal-wifi-hwsim` | `~/git/hal-wifi-hwsim` | nl80211 `wifi_hal.h` implementation (multi-BSS home + backhaul VAPs) |
 | build tooling | `~/git/redkite/notes/rdk-b/bash` (`do-lxd.sh`, `git-offline.sh`), `~/yocto/mv-builds` | checkout and offline-redirect logic this project wraps |

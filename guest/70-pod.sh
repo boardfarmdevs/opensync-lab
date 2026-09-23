@@ -9,7 +9,7 @@ source "$(dirname "$0")/common.sh"
 set +e
 set +o pipefail
 
-name=${1:-pod}
+name=${1:-pod-1}
 radios=${MVX_POD_RADIOS:-2}
 meta=$MVX_GUEST_ROOT/pod/mvx-pod.metadata.tar.gz
 rootfs=$MVX_GUEST_ROOT/pod/mvx-pod.rootfs.tar.gz
@@ -119,6 +119,6 @@ else
 fi
 
 state=FAIL; [ $fail -eq 0 ] && state=PASS
-{ echo "$state $name id=$id $(date -Is)"; printf '%s\n' "${lines[@]}"; } > "$STATE/pod.status"
+{ echo "$state $name id=$id $(date -Is)"; printf '%s\n' "${lines[@]}"; } > "$STATE/$name.status"
 echo "=== extender: $state ==="
 exit $fail
