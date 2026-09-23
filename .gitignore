@@ -1,0 +1,4 @@
+# per-run logs
+logs/
+# machine-local overrides (VM name, build dir) written by the scripts
+config/local.conf
