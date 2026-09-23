@@ -256,6 +256,24 @@ EOF
     touch "$(marker configure)"
 }
 
+# meta-mvx (this repo): our fixes to pinned recipes, as bbappends + patches.
+# Not marker-gated: runs on every build so an existing build dir picks up
+# the layer, and a change to its content invalidates the 'built' marker.
+step_mvx_layer() {
+    local conf layer=$MVX_ROOT/meta-mvx sum
+    conf=$(subdir_of "$BUILD_DIR")/build-$PROD_MACHINE/conf
+    grep -qF "$layer" "$conf/bblayers.conf" || {
+        printf '\n# mvx-opensync (build-mvx.sh)\nBBLAYERS += "%s"\n' "$layer" >> "$conf/bblayers.conf"
+        log "meta-mvx: added to bblayers.conf"
+    }
+    sum=$(cd "$layer" && find . -type f | sort | xargs sha256sum | sha256sum | cut -c1-16)
+    if [ "$(cat "$(marker meta-mvx)" 2>/dev/null)" != "$sum" ]; then
+        [ -f "$(marker built)" ] && log "meta-mvx: content changed ($sum), rebuilding"
+        rm -f "$(marker built)"
+        echo "$sum" > "$(marker meta-mvx)"
+    fi
+}
+
 # Recipes whose shared-sstate output carries an absolute path into ANOTHER
 # (possibly deleted) build dir, as seen in this round's bitbake output, e.g.
 #   '/home/rev/yocto/<other-build>/build-*/tmp/work/<arch>/libwebsockets/.../libssl.so' ... missing
@@ -364,6 +382,7 @@ cmd_build() {
     step_checkout
     step_layers
     step_configure
+    step_mvx_layer
     step_bitbake
     step_verify || warn "the build succeeded but differs from the reference (see above)"
     # setup-vm.sh / deploy-mvx.sh default to this build from now on
@@ -375,7 +394,7 @@ cmd_status() {
     BUILD_DIR=${1:-$MVX_BUILD_DIR}
     echo "build dir: $BUILD_DIR"
     local m
-    for m in checkout layers configure built; do
+    for m in checkout layers configure meta-mvx built; do
         printf '  %-10s %s\n' "$m" "$([ -f "$(marker "$m")" ] && echo done || echo -)"
     done
     [ -e "$(artifact)" ] && echo "artifact:  $(readlink -f "$(artifact)")"

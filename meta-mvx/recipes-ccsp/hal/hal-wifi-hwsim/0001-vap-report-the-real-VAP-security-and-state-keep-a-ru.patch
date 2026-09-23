@@ -1,0 +1,166 @@
+From c41de9a01229d8e26b269200dc10b4e1fc4df558 Mon Sep 17 00:00:00 2001
+From: mvx-opensync <revogelaar@gmail.com>
+Date: Tue, 22 Sep 2026 23:52:34 -0700
+Subject: [PATCH 1/2] vap: report the real VAP security and state, keep a
+ running BSS running
+
+OpenSync's RDK target builds Wifi_VIF_State's wpa_key_mgmt, wpa_psks and
+*_pairwise_* from wifi_getRadioVapInfoMap[_OpenSync]()'s bss_info.security,
+which this HAL never filled in. With a secured AP, wm then sees config !=
+state for good and re-applies the VAP every 30 s ("'wpa_psks' changed").
+
+Each re-apply goes through CcspWifi's per-radio wifi_createVAP(), which
+restarted every enabled BSS of the radio: STOP_AP flushes the associated
+stations without a deauth, so an OpenSync extender on the backhaul VAP
+stays 'connected' to an AP that drops all its frames.
+
+- remember the security createVAP() was given and report it back;
+- skip the restart when a BSS is up (carrier) with the same SSID,
+  security and channel;
+- report a VAP enabled only while its BSS is actually up. cfg80211 stops
+  an AP whenever its netdev goes down (e.g. on an OpenSync restart), outside
+  createVAP(); reporting the wanted state hid that, so nothing restarted it.
+  Now wm sees the difference and re-applies.
+---
+ wifi_hal.c | 77 ++++++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 72 insertions(+), 5 deletions(-)
+
+diff --git a/wifi_hal.c b/wifi_hal.c
+index 34d650c..6c77ee3 100644
+--- a/wifi_hal.c
++++ b/wifi_hal.c
+@@ -87,9 +87,21 @@ static const sim_vap_t SIM_VAPS[] = {
+     { 5, 1, "onboard-ap-50" },
+ };
+ #define SIM_NVAP ((int)(sizeof(SIM_VAPS)/sizeof(SIM_VAPS[0])))
+-/* Desired per-VAP state (SSID/enable) tracked across the CcspWifi
+- * getRadioVapInfoMap -> createVAP read-modify-write. */
+-static struct { char ssid[WIFI_AP_MAX_SSID_LEN]; int enabled; } g_vap_state[SIM_NVAP];
++/* Desired per-VAP state (SSID/enable/security) tracked across the CcspWifi
++ * getRadioVapInfoMap -> createVAP read-modify-write, plus what the running BSS
++ * was last started with. The security is reported back through
++ * getRadioVapInfoMap: OpenSync's RDK target derives Wifi_VIF_State's
++ * wpa_key_mgmt / wpa_psks / *_pairwise_* from it, and when those stay empty
++ * wm sees config != state forever and re-applies the VAP every 30 s. */
++static struct {
++    char ssid[WIFI_AP_MAX_SSID_LEN];
++    int enabled;
++    wifi_vap_security_t sec;
++    int running;                        /* BSS up with run_* below */
++    int run_freq, run_wpa2;
++    char run_ssid[WIFI_AP_MAX_SSID_LEN];
++    char run_pass[sizeof(((wifi_vap_security_t *)0)->u.key.key)];
++} g_vap_state[SIM_NVAP];
+ 
+ static const sim_vap_t *sim_vap_by_index(int idx) {
+     int i;
+@@ -4445,6 +4457,36 @@ static int sim_dbg(void) {
+ }
+ #define SIM_DBG(...) do { if (sim_dbg()) { fprintf(stderr, "[simhal] " __VA_ARGS__); fflush(stderr); } } while (0)
+ 
++/* Is the BSS on this netdev actually beaconing? mac80211 raises carrier on
++ * START_AP and drops it on STOP_AP, and cfg80211 stops the AP whenever the
++ * netdev goes down -- which happens outside createVAP (e.g. on an OpenSync
++ * restart), so what we last started is not enough to go by. */
++static int sim_bss_up(const char *ifname)
++{
++    char path[96], c = '0';
++    FILE *f;
++    snprintf(path, sizeof(path), "/sys/class/net/%s/carrier", ifname);
++    f = fopen(path, "r");
++    if (!f)
++        return 0;
++    if (fread(&c, 1, 1, f) != 1)
++        c = '0';
++    fclose(f);
++    return c == '1';
++}
++
++/* What to report as a VAP's enable state: wanted AND beaconing. Reporting
++ * the wanted state alone would hide a BSS that went down behind our back;
++ * reporting the truth makes OpenSync's wm see the difference and re-apply. */
++static int sim_vap_enabled_now(int slot)
++{
++    const char *ifn;
++    if (!g_vap_state[slot].enabled)
++        return 0;
++    ifn = sim_apindex_ifname(SIM_VAPS[slot].ap_index);
++    return ifn && sim_bss_up(ifn);
++}
++
+ INT wifi_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
+ {
+     /* Realize EVERY enabled AP VAP in the map, each on its own netdev, rather
+@@ -4486,6 +4528,7 @@ INT wifi_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
+                     sizeof(g_vap_state[slot].ssid) - 1);
+             g_vap_state[slot].ssid[sizeof(g_vap_state[slot].ssid) - 1] = '\0';
+             g_vap_state[slot].enabled = v->u.bss_info.enabled ? 1 : 0;
++            g_vap_state[slot].sec = v->u.bss_info.security;
+         }
+ 
+         if (v->u.bss_info.enabled && v->u.bss_info.ssid[0]) {
+@@ -4505,17 +4548,39 @@ INT wifi_createVAP(wifi_radio_index_t index, wifi_vap_info_map_t *map)
+                     (sv->radio >= 0 && sv->radio < g_sim_nradio)
+                         ? g_sim_radio[sv->radio].wiphy : -1, g_sim_nradio);
+             if (!ifn) { any_err = 1; continue; }
++            /* CcspWifi applies a whole radio's map at once, so a change to one
++             * VAP re-creates all of them. Restarting a BSS (STOP_AP) silently
++             * drops its associated stations -- the MLME sends no deauth -- and
++             * they stay "connected" to nothing. Leave an unchanged BSS that is
++             * still up alone. */
++            if (slot >= 0 && g_vap_state[slot].running && sim_bss_up(ifn) &&
++                g_vap_state[slot].run_freq == freq &&
++                g_vap_state[slot].run_wpa2 == wpa2 &&
++                strcmp(g_vap_state[slot].run_ssid, ssid) == 0 &&
++                strcmp(g_vap_state[slot].run_pass, pass ? pass : "") == 0) {
++                SIM_DBG("  %s: unchanged, BSS left running\n", ifn);
++                continue;
++            }
+             {
+                 int rc = sim_hw_nl_start_ap(ifn, ssid, freq, wpa2, pass);
+                 SIM_DBG("  start_ap(%s, '%s', %d) -> %d\n", ifn, ssid, freq, rc);
+                 if (rc != 0)
+                     any_err = 1;
++                if (slot >= 0) {
++                    g_vap_state[slot].running = (rc == 0);
++                    g_vap_state[slot].run_freq = freq;
++                    g_vap_state[slot].run_wpa2 = wpa2;
++                    snprintf(g_vap_state[slot].run_ssid, sizeof(g_vap_state[slot].run_ssid), "%s", ssid);
++                    snprintf(g_vap_state[slot].run_pass, sizeof(g_vap_state[slot].run_pass), "%s", pass ? pass : "");
++                }
+             }
+         } else {
+             /* Disabled: stop the BSS if its netdev exists (never create one). */
+             ifn = sim_apindex_ifname((int)v->vap_index);
+             if (ifn)
+                 sim_hw_nl_stop_ap(ifn);
++            if (slot >= 0)
++                g_vap_state[slot].running = 0;
+         }
+     }
+     return any_err ? RETURN_ERR : RETURN_OK;
+@@ -4548,8 +4613,9 @@ INT wifi_getRadioVapInfoMap(wifi_radio_index_t index, wifi_vap_info_map_t *map)
+         v->vap_mode = wifi_vap_mode_ap;
+         strncpy(v->u.bss_info.ssid, g_vap_state[i].ssid,
+                 sizeof(v->u.bss_info.ssid) - 1);
+-        v->u.bss_info.enabled = g_vap_state[i].enabled ? TRUE : FALSE;
++        v->u.bss_info.enabled = sim_vap_enabled_now(i) ? TRUE : FALSE;
+         v->u.bss_info.showSsid = TRUE;
++        v->u.bss_info.security = g_vap_state[i].sec;
+         n++;
+     }
+     map->num_vaps = n;
+@@ -4579,8 +4645,9 @@ INT wifi_getRadioVapInfoMap_OpenSync(wifi_radio_index_t index, wifi_vap_info_map
+         snprintf(map->vap_array[n].u.bss_info.ssid,
+                  sizeof(map->vap_array[n].u.bss_info.ssid), "%s",
+                  g_vap_state[_v].ssid);
+-        map->vap_array[n].u.bss_info.enabled  = g_vap_state[_v].enabled ? TRUE : FALSE;
++        map->vap_array[n].u.bss_info.enabled  = sim_vap_enabled_now(_v) ? TRUE : FALSE;
+         map->vap_array[n].u.bss_info.showSsid = TRUE;
++        map->vap_array[n].u.bss_info.security = g_vap_state[_v].sec;
+         n++;
+     }
+     map->num_vaps = n;
+-- 
+2.34.1
+

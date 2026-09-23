@@ -1,0 +1,85 @@
+From 4c3b00fdcfc29f5c0b0027394303db5f98fee52d Mon Sep 17 00:00:00 2001
+From: mvx-opensync <revogelaar@gmail.com>
+Date: Wed, 23 Sep 2026 07:51:36 -0700
+Subject: [PATCH 2/2] mlme: forget a station on deauth/disassoc and on a new
+ authentication
+
+The MLME never removed a station: deauth/disassoc frames were not even
+registered, and a STA that authenticated again found its old, authorized
+kernel entry (with the old keys) still there. NEW_STATION then fails and
+the new 4-way handshake never completes ("Authentication ... timed out"
+on the STA), so a client that drops and comes back -- e.g. an OpenSync
+extender whose managers restart -- can never rejoin.
+
+Do what hostapd does: register disassoc/deauth and, on either, and on a
+new authentication (not an SAE confirm), DEL_STATION and drop the
+handshake state.
+
+Until now this was hidden by the BSS being restarted every 30 s, which
+flushed all stations.
+---
+ sim_hw_nl.c | 32 +++++++++++++++++++++++++++++++-
+ 1 file changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/sim_hw_nl.c b/sim_hw_nl.c
+index 020e7fd..f7f9927 100644
+--- a/sim_hw_nl.c
++++ b/sim_hw_nl.c
+@@ -684,6 +684,23 @@ static int nl_add_station(struct nl_sock *sk, int family, int ifindex,
+     return rc;
+ }
+ 
++/* Forget a station: the kernel entry (with its keys) and our handshake state.
++ * hostapd does this when a STA leaves (deauth/disassoc) and when a known STA
++ * authenticates again; without it a returning STA finds its old, authorized
++ * entry still there, NEW_STATION fails and the new 4-way never completes. */
++static int nl_del_station(struct nl_sock *sk, int family, int ifindex, const unsigned char sta[6])
++{
++    struct nl_msg *msg = nlmsg_alloc();
++    int rc;
++    if (!msg) return -1;
++    genlmsg_put(msg, 0, 0, family, 0, 0, NL80211_CMD_DEL_STATION, 0);
++    nla_put_u32(msg, NL80211_ATTR_IFINDEX, ifindex);
++    nla_put(msg, NL80211_ATTR_MAC, 6, sta);
++    rc = nl_wait(sk, msg);
++    nlmsg_free(msg);
++    return rc;
++}
++
+ static int nl_authorize(struct nl_sock *sk, int family, int ifindex, const unsigned char sta[6])
+ {
+     struct nl_msg *msg = nlmsg_alloc();
+@@ -1117,8 +1134,20 @@ static int frame_cb(struct nl_msg *msg, void *arg)
+                                  freq_to_chan(ctx->freq), band_is_5, ctx->wpa2);
+         memcpy(resp + 4, sta, 6);                  /* DA = the probing STA */
+         nl_tx_frame(ma->tx, ma->family, ctx->ifindex, ctx->freq, resp, n);
++    } else if (subtype == 0xA0 || subtype == 0xC0) {
++        /* Disassociation / deauthentication from the STA */
++        struct sta_sec *st = sta_get(ctx, sta, 0);
++        nl_del_station(ma->tx, ma->family, ctx->ifindex, sta);
++        if (st) st->used = 0;
+     } else if (subtype == 0xB0) {
+         int alg = (flen >= 26) ? (fr[24] | (fr[25] << 8)) : 0;
++        int seq = (flen >= 28) ? (fr[26] | (fr[27] << 8)) : 1;
++        if (!(alg == 3 && seq != 1)) {
++            /* a new authentication (not an SAE confirm): start clean */
++            struct sta_sec *old = sta_get(ctx, sta, 0);
++            nl_del_station(ma->tx, ma->family, ctx->ifindex, sta);
++            if (old) old->used = 0;
++        }
+         if (alg == 3 && ctx->wpa2 == 2) {              /* SAE commit/confirm */
+             sae_handle_auth(ma, sta, fr + 24, flen - 24);
+         } else {
+@@ -1181,7 +1210,8 @@ static void *mlme_loop(void *arg)
+      * response template, so an AP that never sees them is invisible to an
+      * active scan and no client ever starts authenticating. hostapd registers
+      * the same type for the same reason. */
+-    static const unsigned short ftypes[] = { 0x00B0, 0x0000, 0x0020, 0x0040 };
++    static const unsigned short ftypes[] = { 0x00B0, 0x0000, 0x0020, 0x0040,
++                                             0x00A0, 0x00C0 };
+     struct mlme_arg ma;
+     int family, nlfd, eapfd = -1;
+     unsigned int i;
+-- 
+2.34.1
+
