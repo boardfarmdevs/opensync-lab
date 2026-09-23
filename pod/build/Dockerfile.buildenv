@@ -1,0 +1,60 @@
+# Build environment for the mvx-opensync OpenSync pod (HWSIM_POD target).
+#
+# A slim derivative of OpenSync's own core/docker/Dockerfile (Ubuntu 20.04),
+# keeping only what a cfg80211/nl80211 pod needs: the same pinned OVS 2.8.7,
+# c-ares >= 1.18 and hostap at Plume's base commit. The pod runtime image is
+# built on the same Ubuntu release, so the binaries' libraries match.
+FROM ubuntu:20.04
+
+ARG PKGINSTALL="eval apt-get update && DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends"
+
+RUN $PKGINSTALL ca-certificates build-essential gcc g++ flex bison gettext patch perl \
+        automake autoconf libtool cmake pkg-config git wget rsync file gawk \
+        python3 python3-pip python3-setuptools python2 \
+        zlib1g-dev liblzo2-dev uuid-dev libssl-dev libncurses-dev \
+        libmosquitto-dev libev-dev libjansson-dev libpcap-dev libcurl4-openssl-dev \
+        libmxml-dev libmnl-dev libzmq3-dev libprotobuf-c-dev protobuf-c-compiler \
+        libnl-3-dev libnl-genl-3-dev libnl-route-3-dev libjson-c-dev libsqlite3-dev
+RUN pip3 install kconfiglib 'MarkupSafe<2.0.0' 'Jinja2<3.0.0'
+# python2 + six: the OVS 2.8 build generates its IDL with python2
+RUN wget -q https://bootstrap.pypa.io/pip/2.7/get-pip.py && python2 get-pip.py && pip2 install six
+
+# c-ares with ares_getaddrinfo() (as upstream does)
+WORKDIR /tmp
+RUN wget -q http://security.ubuntu.com/ubuntu/pool/main/c/c-ares/libc-ares2_1.18.1-1ubuntu0.22.04.3_amd64.deb \
+            http://security.ubuntu.com/ubuntu/pool/main/c/c-ares/libc-ares-dev_1.18.1-1ubuntu0.22.04.3_amd64.deb \
+    && $PKGINSTALL ./libc-ares2_1.18.1-1ubuntu0.22.04.3_amd64.deb ./libc-ares-dev_1.18.1-1ubuntu0.22.04.3_amd64.deb
+
+# Open vSwitch 2.8.7 (OpenSync's pinned version), installed under /usr
+WORKDIR /usr/src
+RUN wget -q https://www.openvswitch.org/releases/openvswitch-2.8.7.tar.gz \
+    && tar xf openvswitch-2.8.7.tar.gz && cd openvswitch-2.8.7 \
+    && ./boot.sh >/dev/null && ./configure -q --prefix=/usr --localstatedir=/var --sysconfdir=/etc --enable-shared \
+    && make -s -j"$(nproc)" && make -s install
+ENV OVS_SOURCE=/usr/src/openvswitch-2.8.7
+
+# hostapd + wpa_supplicant at Plume's base commit, hwsim test configs
+ARG HOSTAP_COMMIT=d9d5e55c5484b7a206efb7958b5b3ed72ef8a47a
+WORKDIR /usr/src
+RUN git clone -q https://w1.fi/hostap.git
+WORKDIR /usr/src/hostap
+# OpenSync's hostapd patches that matter for a pod (from opensync-sdk-openwrt's
+# overlay, 991 adapted to this commit): hostapd on OVS bridges (br-home) and
+# the NL80211-CMD-FRAME / EVT-FRAME-* events platform-cfg80211's bsal expects.
+COPY hostap-patches /tmp/hostap-patches
+RUN git checkout -q $HOSTAP_COMMIT \
+    && for p in /tmp/hostap-patches/*.patch; do patch -p1 -s < "$p" || exit 1; done \
+    && grep -v -e TRACE -e SQLITE tests/hwsim/example-hostapd.config > hostapd/.config \
+    && grep -v -e TRACE -e SQLITE -e DBUS tests/hwsim/example-wpa_supplicant.config > wpa_supplicant/.config \
+    && make -s -C hostapd -j"$(nproc)" && make -s -C wpa_supplicant -j"$(nproc)" \
+    && make -s -C hostapd install && make -s -C wpa_supplicant install
+ENV HOSTAP_SOURCE=/usr/src/hostap
+# platform-cfg80211 links hostap's os_unix.o + wpa_ctrl.o from $(STAGING_USR_LIB),
+# where OpenWrt's hostapd package would stage them
+RUN mkdir -p /usr/lib/hostap-objs \
+    && cp build/hostapd/src/utils/os_unix.o build/hostapd/src/common/wpa_ctrl.o /usr/lib/hostap-objs/
+
+# python modules OpenSync's build tools import (stam generator: pydot, ...)
+RUN $PKGINSTALL python3-pydot python3-tabulate python3-termcolor python3-pexpect
+
+WORKDIR /src

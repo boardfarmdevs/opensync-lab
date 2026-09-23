@@ -1,0 +1,73 @@
+#!/bin/sh
+# Called by /etc/init.d/openvswitch right after ovsdb-server starts, before dm
+# starts any manager. OpenSync's own bootstrap (CONFIG_OVSDB_BOOTSTRAP_WIFI_*)
+# is keyed by fixed phy names chosen at build time; a pod's hwsim phys have
+# VM-wide names that differ per launch (and cannot be renamed -- wiphy names
+# are global). So insert the same rows at runtime for the phys actually here:
+# one Wifi_Radio_Config per radio (1st 2.4G, 2nd 5G, 3rd 6G), a backhaul STA
+# VIF (bhaul-sta-<band>) on each carrying the onboarding credentials the image
+# was built with (Wifi_Credential_Config), and the STA's Wifi_Inet_Config
+# (DHCP, as core's 20_kconfig.sta_backhaul_inet.json.sh would insert).
+#
+# Only the radios in sta_bands get a backhaul STA (default: 5G only). hwsim
+# radios are multi-band, so a 2.4G STA would join the gateway's 5G backhaul
+# AP as well and cm would bring up a second, redundant GRE uplink.
+set -u
+OVSDB=unix:/var/run/db.sock
+bands="24 50 60"
+sta_bands=${MVX_POD_STA_BANDS:-50}
+
+creds=$(ovsdb-client -f json transact "$OVSDB" \
+    '["Open_vSwitch",{"op":"select","table":"Wifi_Credential_Config","where":[["ssid","!=",""]],"columns":["_uuid","ssid","security"]}]')
+cred_uuids=$(echo "$creds" | grep -o '"_uuid":\["uuid","[0-9a-f-]*"\]' | sed 's/.*"uuid","\([0-9a-f-]*\)".*/["uuid","\1"]/' | paste -sd, -)
+ssid=$(echo "$creds" | grep -o '"ssid":"[^"]*"' | head -1 | cut -d'"' -f4)
+key=$(echo "$creds" | grep -o '"key","[^"]*"' | head -1 | cut -d'"' -f4)
+[ -n "$ssid" ] || { echo "mvx-pod-bootstrap: no onboarding credentials in Wifi_Credential_Config"; exit 1; }
+
+# osw (owm) reads /run/opensync/osw/*.conf as well: tell its nl80211 driver
+# which band each radio is (OSW_DRV_NL80211_PHY_BAND_<phy>, our osw patch)
+mkdir -p /run/opensync/osw
+: > /run/opensync/osw/90_mvx_pod_bands.conf
+
+i=0
+for phy in $(ls /sys/class/ieee80211 | sort -V); do
+    set -- $bands; shift $i; band=${1:-24}; i=$((i + 1))
+    case $band in
+        24) fb=2.4G hw=11n ht=HT20 ;;
+        50) fb=5G   hw=11ac ht=HT80 ;;
+        *)  fb=6G   hw=11ax ht=HT80 ;;
+    esac
+    echo "OSW_DRV_NL80211_PHY_BAND_$phy=$fb" >> /run/opensync/osw/90_mvx_pod_bands.conf
+    vif=bhaul-sta-$band
+    del='{"op":"delete","table":"Wifi_VIF_Config","where":[["if_name","==","'"$vif"'"]]},
+      {"op":"delete","table":"Wifi_Radio_Config","where":[["if_name","==","'"$phy"'"]]},
+      {"op":"delete","table":"Wifi_Inet_Config","where":[["if_name","==","'"$vif"'"]]}'
+    case " $sta_bands " in
+    *" $band "*) ;;
+    *)
+        # radio only (the image's build-time bootstrap rows for this STA go)
+        ovsdb-client transact "$OVSDB" '["Open_vSwitch", '"$del"',
+          {"op":"insert","table":"Wifi_Radio_Config","row":{
+             "enabled":true,"if_name":"'"$phy"'","freq_band":"'"$fb"'","hw_mode":"'"$hw"'",
+             "ht_mode":"'"$ht"'","channel_mode":"cloud","channel_sync":0,
+             "hw_type":"mac80211_hwsim","hw_config":["map",[]],"tx_chainmask":1,
+             "vif_configs":["set",[]]}}]' >/dev/null \
+            && echo "mvx-pod-bootstrap: $phy = $fb (no backhaul STA)"
+        continue ;;
+    esac
+    ovsdb-client transact "$OVSDB" '["Open_vSwitch", '"$del"',
+      {"op":"insert","table":"Wifi_Inet_Config","row":{
+         "if_name":"'"$vif"'","if_type":"vif","enabled":true,"network":false,"NAT":false,
+         "ip_assign_scheme":"dhcp","dhcp_req":["set",[1]],"mtu":1600}},
+      {"op":"insert","table":"Wifi_VIF_Config","uuid-name":"sta","row":{
+         "enabled":true,"if_name":"'"$vif"'","mode":"sta","bridge":"","wds":false,
+         "vif_radio_idx":0,"multi_ap":"none","ssid":"'"$ssid"'",
+         "security":["map",[["encryption","WPA-PSK"],["key","'"$key"'"]]],
+         "credential_configs":["set",['"$cred_uuids"']]}},
+      {"op":"insert","table":"Wifi_Radio_Config","row":{
+         "enabled":true,"if_name":"'"$phy"'","freq_band":"'"$fb"'","hw_mode":"'"$hw"'",
+         "ht_mode":"'"$ht"'","channel_mode":"cloud","channel_sync":0,
+         "hw_type":"mac80211_hwsim","hw_config":["map",[]],"tx_chainmask":1,
+         "vif_configs":["set",[["named-uuid","sta"]]]}}]' >/dev/null \
+        && echo "mvx-pod-bootstrap: $phy = $fb, $vif -> '$ssid'"
+done

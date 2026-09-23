@@ -1,0 +1,12 @@
+[Unit]
+Description=mvx-opensync pod: hand the hwsim radios to OpenSync, eth0 identity
+Before=opensync.service
+After=systemd-udevd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mvx-pod-prep
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

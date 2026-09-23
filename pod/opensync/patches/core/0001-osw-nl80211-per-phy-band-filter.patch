@@ -1,0 +1,47 @@
+diff --git a/src/lib/osw/src/osw_drv_nl80211.c b/src/lib/osw/src/osw_drv_nl80211.c
+index 7b91d1e4..48941bbb 100644
+--- a/src/lib/osw/src/osw_drv_nl80211.c
++++ b/src/lib/osw/src/osw_drv_nl80211.c
+@@ -1628,6 +1628,32 @@ osw_drv_nl80211_phy_state_report_cb(struct rq *q,
+     osw_drv_phy_state_report_free(state);
+ }
+ 
++/* mvx-opensync: a mac80211_hwsim radio offers 2.4, 5 and 6 GHz at once, while
++ * OpenSync (ow_ovsdb) assumes one band per phy: its Wifi_Radio_State channel
++ * sets then carry duplicate numbers (6 GHz reuses 1, 5, 9, ...) and the insert
++ * fails. OSW_DRV_NL80211_PHY_BAND_<phy>=2.4G|5G|6G keeps only that band's
++ * channels, making the phy look like the single-band radio OpenSync expects. */
++static void
++osw_drv_nl80211_phy_band_filter(const char *phy_name,
++                                struct osw_channel_state *arr,
++                                size_t *n)
++{
++    const char *band = phy_name ? osw_etc_get(strfmta("OSW_DRV_NL80211_PHY_BAND_%s", phy_name)) : NULL;
++    size_t i;
++    size_t j = 0;
++
++    if (band == NULL || arr == NULL) return;
++    for (i = 0; i < *n; i++) {
++        const int f = arr[i].channel.control_freq_mhz;
++        const bool keep = (strcmp(band, "2.4G") == 0 && f < 2500)
++                       || (strcmp(band, "5G") == 0 && f >= 4900 && f < 5935)
++                       || (strcmp(band, "6G") == 0 && f >= 5935);
++        if (keep) arr[j++] = arr[i];
++    }
++    LOGI(LOG_PREFIX_PHY(phy_name, "band %s: %zu of %zu channels kept", band, j, *n));
++    *n = j;
++}
++
+ static void
+ osw_drv_nl80211_phy_state_get_wiphy_resp_cb(struct nl_cmd *cmd,
+                                             struct nl_msg *msg,
+@@ -1651,6 +1677,9 @@ osw_drv_nl80211_phy_state_get_wiphy_resp_cb(struct nl_cmd *cmd,
+     nla_band_to_osw_chan_states(&state->channel_states,
+                                 &state->n_channel_states,
+                                 tb[NL80211_ATTR_WIPHY_BANDS]);
++    osw_drv_nl80211_phy_band_filter(info->name,
++                                    state->channel_states,
++                                    &state->n_channel_states);
+ }
+ 
+ static void

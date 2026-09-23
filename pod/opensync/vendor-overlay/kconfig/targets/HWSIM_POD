@@ -1,0 +1,41 @@
+# mvx-opensync OpenSync pod (extender) in a Linux container, radios from
+# mac80211_hwsim, driven through nl80211 + hostapd/wpa_supplicant.
+@include "base_cfg80211"
+CONFIG_TARGET_MODEL="HWSIM_POD"
+CONFIG_TARGET_NAME="mvx-opensync hwsim pod"
+CONFIG_SYSTEMD=y
+# systemd's opensync.service runs ${CONFIG_TARGET_PATH_SCRIPTS}/opensync.init,
+# which core's SYSTEMD rootfs installs in scripts/ (the platform default is bin/)
+CONFIG_TARGET_PATH_SCRIPTS="/usr/opensync/scripts"
+# platform-cfg80211's osw glue links the MTK helper library unconditionally
+# (the driver is told apart at runtime; mac80211_hwsim is not MTK), and that
+# library only builds with this set. Backends stay the generic ones.
+CONFIG_PLATFORM_IS_MTK=y
+# ...but PLATFORM_IS_MTK also defaults the multicast backends to the MTK ones,
+# which need mcproxy and make nm fail to create any interface (br-home, the
+# backhaul STAs): use the null backends (no IGMP/MLD snooping proxy)
+CONFIG_OSN_BACKEND_IGMP_NULL=y
+CONFIG_OSN_BACKEND_MLD_NULL=y
+# no UPnP on an extender (the miniupnpd backend fails every interface's init
+# when the binary is absent)
+CONFIG_OSN_BACKEND_UPNP_NULL=y
+CONFIG_OVSDB_BOOTSTRAP=y
+# cm2's backhaul modules (bh_dhcp / bh_gre / bh_cmu) only manage the STA VIFs
+# listed here -- without it the extender never creates its g-bhaul-sta-* GRE
+# uplink. cm2 uses only the vif half; the phy half is a placeholder (hwsim phy
+# names are VM-wide, the pod's bootstrap binds VIFs to its real phys at runtime).
+CONFIG_OVSDB_BOOTSTRAP_WIFI_STA_LIST="phy0:bhaul-sta-24 phy1:bhaul-sta-50"
+CONFIG_OVSDB_BOOTSTRAP_WIFI_STA_MTU=1600
+CONFIG_TARGET_ETH_LIST=y
+CONFIG_TARGET_ETH0_LIST=y
+CONFIG_TARGET_ETH0_NAME="eth0"
+# platform-cfg80211's dnsmasq glue needs a second port name
+CONFIG_TARGET_ETH1_LIST=y
+CONFIG_TARGET_ETH1_NAME="eth1"
+# A pod has no wired uplink: its only uplink is the Wi-Fi backhaul (cm onboards
+# over bhaul-sta). eth0 is a dummy link (mvx-pod-prep) that only carries the
+# unit identity: serial/AWLAN_Node.id = MVXPOD + eth0 MAC.
+CONFIG_MANAGER_WANO_IFACE_LIST=""
+CONFIG_OSP_UNIT_OPENWRT_TEMPLATE=y
+CONFIG_OSP_UNIT_OPENWRT_TEMPLATE_SERIAL_PREFIX="MVXPOD"
+CONFIG_OSP_UNIT_OPENWRT_TEMPLATE_SERIAL_IFNAME="eth0"

@@ -1,0 +1,27 @@
+#!/bin/sh
+# opensync.init for the mvx-opensync pod (systemd). Core's SYSTEMD rootfs ships
+# this as an empty template for the platform to fill; this does what
+# opensync-vendor-openwrt-template's /etc/init.d/opensync does around dm:
+# start.sh (all start.d hooks: ovsdb-server, wpad, VIF prep, ...) and
+# psm --restore before dm, stop.sh after it.
+INSTALL_PREFIX=/usr/opensync
+BIN_DIR=$INSTALL_PREFIX/bin
+
+case "$1" in
+    pre-start)
+        # the start.d hooks read OneWifi's settings from the environment
+        # (e.g. 52_owm_prep.sh: OSW_DRV_TARGET_DISABLED); owm reads the files
+        set -a
+        for f in "$INSTALL_PREFIX"/etc/opensync/osw/*.conf; do [ -r "$f" ] && . "$f"; done
+        set +a
+        sh -x "$BIN_DIR/start.sh" 2>&1 | logger -t start.sh
+        "$BIN_DIR/psm" --restore
+        ;;
+    post-stop)
+        sh -x "$BIN_DIR/stop.sh" 2>&1 | logger -t stop.sh
+        ;;
+    *)
+        echo "Usage: $0 {pre-start|post-stop}"
+        exit 1
+        ;;
+esac

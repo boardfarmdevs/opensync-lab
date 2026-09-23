@@ -1,0 +1,22 @@
+#!/bin/sh
+# /etc/init.d/wpad for the mvx-opensync pod (Ubuntu). OpenSync's
+# start.d/22_restart_hapd.sh expects OpenWrt's wpad service: hostapd and
+# wpa_supplicant running idle with their global control sockets, which the
+# osw hostap driver then drives (adding/removing BSSes and STA interfaces).
+start() {
+    mkdir -p /var/run/hostapd /var/run/wpa_supplicant
+    /usr/local/bin/hostapd -B -g /var/run/hostapd/global -P /var/run/hostapd-global.pid
+    /usr/local/sbin/wpa_supplicant -B -g /var/run/wpa_supplicant/global -P /var/run/wpa_supplicant-global.pid
+}
+stop() {
+    for p in /var/run/hostapd-global.pid /var/run/wpa_supplicant-global.pid; do
+        [ -f "$p" ] && kill "$(cat "$p")" 2>/dev/null
+        rm -f "$p"
+    done
+}
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; sleep 1; start ;;
+    *) echo "usage: $0 start|stop|restart"; exit 1 ;;
+esac

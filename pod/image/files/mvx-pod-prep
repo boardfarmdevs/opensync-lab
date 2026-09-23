@@ -1,0 +1,28 @@
+#!/bin/sh
+# Runs before opensync.service. LXD moves the hwsim radios into the pod as
+# netdevs wlanN on phys that keep their VM-wide names (phy3, phy7, ...): wiphy
+# names are global to the kernel, so they cannot be renamed phy0.. here (the
+# names are taken by other radios). 52_owm_prep.sh therefore assigns bands by
+# position (build-pod.sh patches it). Drop the netdevs LXD created -- OpenSync
+# creates its own VIFs.
+set -u
+i=0
+for p in $(ls /sys/class/ieee80211 | sort -V); do
+    for nd in $(ls /sys/class/ieee80211/$p/device/net 2>/dev/null); do
+        ip link set "$nd" down 2>/dev/null
+        iw dev "$nd" del 2>/dev/null
+    done
+    i=$((i + 1))
+done
+
+# eth0: identity only (serial/AWLAN_Node.id = MVXPOD + eth0 MAC). A dummy link,
+# never an uplink -- the pod's only uplink is the Wi-Fi backhaul. The MAC is
+# derived from the container name, so a pod keeps its identity across relaunches.
+if ! ip link show eth0 >/dev/null 2>&1; then
+    h=$(hostname | md5sum | cut -c1-10)
+    mac=$(printf '02:%s:%s:%s:%s:%s' $(echo "$h" | sed 's/../& /g'))
+    ip link add eth0 type dummy
+    ip link set eth0 address "$mac"
+    ip link set eth0 up
+fi
+echo "mvx-pod-prep: $i radio(s): $(ls /sys/class/ieee80211 | tr '\n' ' '), eth0 $(cat /sys/class/net/eth0/address)"

@@ -1,0 +1,37 @@
+#!/bin/sh
+# /etc/init.d/openvswitch for the mvx-opensync pod (Ubuntu). Same job as the
+# OpenWrt procd script of opensync-vendor-openwrt-template, which OpenSync's
+# start.d/50_openvswitch.sh calls: a fresh ovsdb-server on OpenSync's
+# bootstrapped database (the platform uses Linux bridges, no ovs-vswitchd).
+INSTALL_PREFIX=/usr/opensync
+RUN=/var/run/openvswitch
+PID=/var/run/ovsdb-server.pid
+
+start() {
+    mkdir -p "$RUN" /tmp/etc/openvswitch
+    cp "$INSTALL_PREFIX/etc/conf.db.bck" /tmp/etc/openvswitch/conf.db
+    /usr/sbin/ovsdb-server \
+        --remote=punix:/var/run/db.sock \
+        --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
+        --private-key=db:Open_vSwitch,SSL,private_key \
+        --certificate=db:Open_vSwitch,SSL,certificate \
+        --ca-cert=db:Open_vSwitch,SSL,ca_cert \
+        --pidfile="$PID" --detach --no-chdir \
+        --log-file=/var/log/ovsdb-server.log \
+        /tmp/etc/openvswitch/conf.db
+    ln -sf "$PID" "$RUN/ovsdb-server.pid"
+    ln -sf /var/run/db.sock "$RUN/db.sock"
+    # radios + backhaul STAs for the phys this pod actually has (see script)
+    for i in 1 2 3 4 5 6 7 8 9 10; do ovsdb-client list-dbs unix:/var/run/db.sock >/dev/null 2>&1 && break; sleep 1; done
+    /usr/local/sbin/mvx-pod-bootstrap 2>&1 | logger -t mvx-pod-bootstrap
+}
+stop() {
+    [ -f "$PID" ] && kill "$(cat "$PID")" 2>/dev/null
+    rm -f "$PID"
+}
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; sleep 1; start ;;
+    *) echo "usage: $0 start|stop|restart"; exit 1 ;;
+esac

@@ -5,11 +5,19 @@
 #   deploy-mvx.sh push     [--image PATH]   push the image + the pinned meta-lxd into the VM
 #   deploy-mvx.sh launch                    launch the container with meta-lxd gen/mv.sh
 #   deploy-mvx.sh check                     WAN connectivity check (+ radios, LAN info)
-#   deploy-mvx.sh opensync                  enable SON, check the cloud connection
+#   deploy-mvx.sh opensync [--cloud C]      enable SON, check the cloud connection
+#                                           C = plume (TLS, real cloud) | local (local-noc)
 #   deploy-mvx.sh gre                       leaf node + OpenSync GRE backhaul + client via it
+#   deploy-mvx.sh pod [NAME]                push the OpenSync pod image (build-pod.sh), launch it,
+#                                           check it onboards over the wifi backhaul (local-noc)
+#   deploy-mvx.sh client [NAME]             Alpine wpa_supplicant client on the pod's fronthaul,
+#                                           DHCP + internet through pod -> GRE -> gateway
+#   deploy-mvx.sh mesh                      opensync --cloud local + pod + client
 #   deploy-mvx.sh all      [--image PATH]   push + launch + check + opensync + gre
 #   deploy-mvx.sh status                    container state + last check result
 #   deploy-mvx.sh shell                     shell inside the mvx container
+#   deploy-mvx.sh noc <noc-ctl args>        query/drive local-noc (nodes, tables, dump,
+#                                           log, transact, request; see local-noc/noc-ctl)
 #
 # The container is launched exactly the way meta-lxd intends: gen/mv.sh with
 #   -b br-wan101   eth0 (WAN) on boardfarm's WAN bridge (dhcp-cpe1 + wan-cpe1)
@@ -102,9 +110,20 @@ cmd_push() {
 }
 
 cmd_launch() { vm_run_guest 30-mvx.sh "$(container_name)"; }
+
+cmd_pod() {
+    local img=${MVX_POD_IMAGE:-} name=${1:-pod}
+    [ -n "$img" ] && [ -e "$img.rootfs.tar.gz" ] || die "no pod image (run: build-pod.sh all)"
+    vm_push_tree
+    log "pod: pushing $(basename "$img") ($(du -h "$img.rootfs.tar.gz" | cut -f1))"
+    vm_push_file "$img.metadata.tar.gz" /opt/mvx-opensync/pod/mvx-pod.metadata.tar.gz
+    vm_push_file "$img.rootfs.tar.gz" /opt/mvx-opensync/pod/mvx-pod.rootfs.tar.gz
+    vm_run_guest 70-pod.sh "$name"
+}
 cmd_check()    { vm_run_guest 40-wan-check.sh "$(container_name)"; }
 cmd_opensync() { vm_run_guest 50-opensync.sh "$(container_name)"; }
 cmd_gre()      { vm_run_guest 60-gre.sh "$(container_name)"; }
+cmd_client()   { vm_run_guest 80-client.sh "${1:-wclient}"; }
 
 cmd_status() {
     local c
@@ -119,17 +138,31 @@ cmd_status() {
     "
 }
 
-usage() { sed -n '3,13p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '3,18p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 cmd=${1:-}; [ $# -gt 0 ] && shift
+# --cloud plume|local (opensync / gre / all): which cloud the nodes connect to
+_args=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --cloud) MVX_OPENSYNC_REDIRECTOR=$(cloud_redirector "$2"); shift 2 ;;
+        *) _args+=("$1"); shift ;;
+    esac
+done
+set -- ${_args[@]+"${_args[@]}"}
 case "$cmd" in
     push)   cmd_push "$@" ;;
     launch)   vm_push_tree; cmd_launch ;;
     check)    vm_push_tree; cmd_check ;;
     opensync) vm_push_tree; cmd_opensync ;;
     gre)      vm_push_tree; cmd_gre ;;
+    pod)      cmd_pod "$@" ;;
+    client)   vm_push_tree; cmd_client "$@" ;;
+    mesh)     start_log "mesh-$MVX_VM"; MVX_OPENSYNC_REDIRECTOR=$(cloud_redirector local)
+              vm_push_tree; cmd_opensync; cmd_pod; cmd_client ;;
     all)      start_log "deploy-$MVX_VM"; cmd_push "$@"; cmd_launch; cmd_check; cmd_opensync; cmd_gre ;;
     status) cmd_status ;;
     shell)  exec lxc exec "$MVX_VM" -t -- /snap/bin/lxc exec "$(container_name)" -- sh -l ;;
+    noc)    exec lxc exec "$MVX_VM" -- docker exec local-noc noc-ctl "$@" ;;
     *)      usage ;;
 esac

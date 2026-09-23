@@ -56,3 +56,43 @@ fix_lan_dhcp() {  # <container>
         && echo "dnsmasq was down (unknown wl0.1/wl1.1 with bind-interfaces); restarted with bind-dynamic" \
         || { echo "dnsmasq still not running"; return 1; }
 }
+
+# Return hwsim radios left behind by deleted containers to the pool. A radio is
+# "free" when its phy sits in the VM netns with exactly one netdev named
+# virt-wlan*. A container that created its own VIFs (the OpenSync pod does)
+# hands the phy back carrying those VIFs -- and possibly without the virt-wlan*
+# netdev at all -- so the pool no longer sees it. Only touches phys in the VM
+# netns, i.e. not held by any running container.
+hwsim_reclaim() {
+    local p n nds keep nd
+    for p in /sys/class/ieee80211/phy*; do
+        [ "$(basename "$(readlink -f "$p/device/driver")")" = mac80211_hwsim ] || continue
+        n=${p##*/phy}
+        nds=$(ls "$p/device/net" 2>/dev/null)
+        keep=$(printf '%s\n' "$nds" | grep -m1 '^virt-wlan[0-9]')
+        [ -n "$keep" ] && [ "$(printf '%s\n' "$nds" | grep -c .)" -eq 1 ] && continue
+        for nd in $nds; do
+            [ "$nd" = "$keep" ] && continue
+            if [ -z "$keep" ]; then
+                ip link set "$nd" down 2>/dev/null
+                ip link set "$nd" name "virt-wlan$n" 2>/dev/null && keep="virt-wlan$n" && continue
+            fi
+            iw dev "$nd" del 2>/dev/null
+        done
+        if [ -z "$keep" ]; then
+            iw phy "phy$n" interface add "virt-wlan$n" type managed 2>/dev/null && keep="virt-wlan$n"
+        fi
+        [ -n "$keep" ] && ip link set "$keep" up 2>/dev/null && log "hwsim: reclaimed phy$n as $keep"
+    done
+}
+
+# Free hwsim radios: VM-resident virt-wlan* whose phy carries nothing else
+# (in pool order). Radios given to a container live in its netns.
+hwsim_free() {
+    local p nds vw
+    for p in /sys/class/ieee80211/phy*; do
+        nds=$(ls "$p/device/net" 2>/dev/null)
+        vw=$(printf '%s\n' "$nds" | grep -m1 '^virt-wlan[0-9]')
+        [ -n "$vw" ] && [ "$(printf '%s\n' "$nds" | grep -c .)" -eq 1 ] && echo "$vw"
+    done | sort -V
+}
