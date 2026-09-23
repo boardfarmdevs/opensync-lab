@@ -1,0 +1,37 @@
+From 47ff7a47250fa2544f62290e2e7eec1f7b228bfb Mon Sep 17 00:00:00 2001
+From: Rob Vogelaar <revogelaar@gmail.com>
+Date: Tue, 22 Sep 2026 18:02:23 -0700
+Subject: [PATCH] wan: build AFTR against the bullseye snapshot (Debian 11 LTS
+ is over)
+
+bullseye-security pool packages now 404 on deb.debian.org while the index
+still lists them, so every fresh bf-lab setup failed building bf-wan
+(apt exit 100). Point the builder stage at the snapshot.debian.org date the
+base image was built from.
+---
+ resources/wan/Dockerfile | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/resources/wan/Dockerfile b/resources/wan/Dockerfile
+index 6089f72..183f921 100644
+--- a/resources/wan/Dockerfile
++++ b/resources/wan/Dockerfile
+@@ -1,6 +1,15 @@
+ # AFTR package build stage.
+ FROM debian:bullseye-slim AS builder
+ 
++# Debian 11 LTS ended 2026-08-31: deb.debian.org still indexes bullseye-security
++# packages that now 404, and dropping -security leaves the image's newer
++# libc6/perl-base unsatisfiable. Use the snapshot the image itself was built
++# from (its sources.list carries it commented out) -- a consistent package set.
++RUN sed -i -e '/^deb /d' \
++        -e 's|^# deb http://snapshot|deb [check-valid-until=no] http://snapshot|' \
++        /etc/apt/sources.list \
++    && grep -q '^deb .*snapshot' /etc/apt/sources.list
++
+ # hadolint ignore=DL3008
+ RUN apt-get update && apt-get install -y --no-install-recommends \
+     build-essential \
+-- 
+2.34.1
+

@@ -1,0 +1,12 @@
+[Unit]
+Description=mac80211_hwsim radio pool with stable virt-wlanN names
+After=systemd-modules-load.service
+Before=snap.lxd.daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mvx-hwsim-pool
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

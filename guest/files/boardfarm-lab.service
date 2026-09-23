@@ -1,0 +1,16 @@
+[Unit]
+Description=Reconstruct and verify the boardfarm WAN side (dhcp-cpe1, wan-cpe1, lan-cpe1)
+Wants=network-online.target
+After=network-online.target docker.service snap.lxd.daemon.service mvx-hwsim-pool.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/default/boardfarm-lab
+Environment=PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/usr/local/sbin/boardfarm-lab-rebuild
+RemainAfterExit=yes
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=multi-user.target

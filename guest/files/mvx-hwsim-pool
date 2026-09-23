@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Ensure the mac80211_hwsim pool and its stable names (boot, before LXD).
+#
+# LXD profiles reference radios by their host name virt-wlanN (meta-lxd mv.sh
+# hwsim_attach_radios). After a reboot the module recreates them as wlanN, so
+# rename every host-resident hwsim netdev back before LXD starts containers.
+# Extra vifs left on a host-resident phy (a container deleted without tearing
+# its VAPs down) would make the radio non-free, so they are removed -- this
+# only runs at boot / provisioning, when no container holds that phy.
+set -euo pipefail
+
+[ -d /sys/module/mac80211_hwsim ] || modprobe mac80211_hwsim
+sleep 1
+
+for phy in /sys/class/ieee80211/phy*; do
+    [ "$(basename "$(readlink -f "$phy/device/driver")")" = mac80211_hwsim ] || continue
+    nets=$(ls "$phy/device/net" 2>/dev/null || true)
+    keep=$(printf '%s\n' "$nets" | grep -m1 '^virt-wlan[0-9]' || true)
+    if [ -z "$keep" ]; then
+        w=$(printf '%s\n' "$nets" | grep -m1 '^wlan[0-9]' || true)
+        [ -n "$w" ] || continue
+        ip link set "$w" down
+        ip link set "$w" name "virt-$w"
+        keep="virt-$w"
+    fi
+    for n in $nets; do
+        [ "$n" = "$keep" ] || [ "$n" = "${keep#virt-}" ] || iw dev "$n" del 2>/dev/null || true
+    done
+    ip link set "$keep" up
+done
+echo "hwsim pool: $(ls /sys/class/net | grep -c '^virt-wlan') host-resident radios"

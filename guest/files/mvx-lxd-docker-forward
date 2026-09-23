@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Docker owns the FORWARD chain and defaults it to DROP. Let traffic from and
+# to LXD's managed bridge through (DOCKER-USER is evaluated first).
+set -euo pipefail
+for _ in $(seq 1 60); do
+    ip link show lxdbr0 >/dev/null 2>&1 && iptables -w -S DOCKER-USER >/dev/null 2>&1 && break
+    sleep 1
+done
+iptables -w -C DOCKER-USER -i lxdbr0 -j ACCEPT 2>/dev/null || iptables -w -I DOCKER-USER 1 -i lxdbr0 -j ACCEPT
+iptables -w -C DOCKER-USER -o lxdbr0 -j ACCEPT 2>/dev/null || iptables -w -I DOCKER-USER 1 -o lxdbr0 -j ACCEPT
