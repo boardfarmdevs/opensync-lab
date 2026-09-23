@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# boardfarm-lab-staging: pinned checkout, uv venv, the opensync-lab lab config
+# boardfarm-lab-staging: pinned checkout, uv venv, the opensync-lab lab
 # config overlay, then bf-lab setup (dhcp-cpe1 + wan-cpe1 + lan-cpe1).
 source "$(dirname "$0")/common.sh"
 

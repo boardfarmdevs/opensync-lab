@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build the mv3 image · opensync-lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<main><div class="wrap">
+<div class="k" style="color:var(--faint);font-size:12px;letter-spacing:.12em;text-transform:uppercase">Stage 1 · build-mvx.sh</div>
+<h1>Build the mv3 image</h1>
+<p class="lead">A fresh <code>repo init</code> of the mv3 tree, pinned to a known-good reference build down to every commit, built offline,
+and checked against the reference package for package.</p>
+
+<pre><code>./build-mvx.sh pin                 <span class="c"># once: capture the pins and the pin store from the reference build</span>
+./build-mvx.sh build               <span class="c"># fresh checkout + pinned bitbake -> ~/yocto/mv3-lxd-r25-oe40-&lt;MMDD&gt;</span>
+./build-mvx.sh build --resume      <span class="c"># continue (or rebuild) an existing build dir</span>
+./build-mvx.sh status</code></pre>
+
+<h2>What is pinned, and why it works offline</h2>
+<p>The reference build (<code>~/yocto/mv3-lxd-r25-oe40-0808</code>) is the definition of "known good". Pinning it means three things:</p>
+<div class="cards">
+  <div class="card"><div class="k">projects</div><h3>Every repo project</h3><p>A revision-locked manifest (<code>pins/…/manifest.xml</code>) with each project at the SHA the reference had checked out.</p></div>
+  <div class="card"><div class="k">layers</div><h3>The LXD layers</h3><p><code>meta-lxd</code>, <code>meta-lxd-mv3</code>, <code>meta-python2</code> at the reference's commits (<code>layers.lock</code>).</p></div>
+  <div class="card"><div class="k">recipes</div><h3>Every SRCREV</h3><p>Most RDK recipes use <code>AUTOREV</code>; the SRCREVs the reference resolved are taken from its buildhistory and forced (<code>srcrev.inc</code>).</p></div>
+</div>
+<p>Offline: the checkout reads only local git. The local repo mirror is older than the reference build, so a <b>pin store</b> holds one
+bare repo per project that borrows the mirror's objects through git alternates and adds only the 11 commits the mirror lacks.
+At build time every remote URL is redirected into the store with process-scoped git config; nothing is written to <code>~/.gitconfig</code>
+and the shared mirror is never modified. bitbake itself needs no redirect: the distro builds the RDK components from the checkout's
+<code>src/</code>, and the remaining git SRC_URIs are pinned and already in the download cache.</p>
+
+<h2>The build, step by step</h2>
+<p>Each step is idempotent (markers in the build dir), so a failed or interrupted build continues where it stopped.</p>
+<div class="js-pipeline">
+<div class="pipeline">
+  <button data-k="pin">pin</button><span class="arr">→</span>
+  <button data-k="checkout">checkout</button><span class="arr">→</span>
+  <button data-k="layers">layers</button><span class="arr">→</span>
+  <button data-k="configure">configure</button><span class="arr">→</span>
+  <button data-k="metamvx">meta-mvx</button><span class="arr">→</span>
+  <button data-k="bitbake">bitbake</button><span class="arr">→</span>
+  <button data-k="verify">verify</button>
+</div>
+<div class="step" data-panel="pin"><h3>pin (once)</h3>
+<p>From the reference build: a revision-locked manifest generated from the project HEADs (the old repo tool cannot run
+<code>repo manifest -r</code> under current Python, so <code>lib/pin-manifest.py</code> writes it), the layer commits, every SRCREV
+(<code>buildhistory-collect-srcrevs -a</code>), the installed package list, and the pin store. The pinned manifest is committed into the store's
+<code>manifests.git</code> on branch <code>mvx/&lt;pins&gt;</code>.</p></div>
+<div class="step" data-panel="checkout"><h3>checkout</h3>
+<p><code>repo init</code> of the store's manifest branch with <code>--reference</code> to the mirror, <code>repo sync</code>, then every project's
+HEAD is compared with its pin. A mismatch stops the build.</p></div>
+<div class="step" data-panel="layers"><h3>layers</h3>
+<p>The layers that live outside the manifest are cloned from the store and checked out at their pinned commits; their <code>origin</code> is
+pointed back at the real upstream.</p></div>
+<div class="step" data-panel="configure"><h3>configure</h3>
+<p>The product's <code>setup-environment</code> creates the build dir; <code>local.conf</code> gets <code>require conf/mvx-srcrev.inc</code> and the
+shared download and sstate directories.</p></div>
+<div class="step" data-panel="metamvx"><h3>meta-mvx</h3>
+<p>This repo's layer of fixes on top of the pinned layers, as bbappends and patches. It is added to <code>bblayers.conf</code> on every build
+(replacing a meta-mvx of another checkout) and its content hash invalidates the build when it changes. Today it carries two patches to
+<code>hal-wifi-hwsim</code>, the Wi-Fi HAL that drives the hwsim radios:</p>
+<ul><li><b>0001</b>: report the VAP security and the real BSS state, and keep a running BSS running. Without it mv3's <code>wm</code> re-applied
+the backhaul VAP every 30 s and each re-apply restarted every BSS, silently dropping the extenders.</li>
+<li><b>0002</b>: forget a station on deauth, disassoc or a new authentication, so an extender that drops and returns can complete the
+WPA2 handshake again.</li></ul>
+<p>The pinned SRCREVs are unchanged; the patches apply on top.</p></div>
+<div class="step" data-panel="bitbake"><h3>bitbake</h3>
+<p><code>bitbake ofw</code>, up to three rounds. A shared sstate object can carry an absolute path into another (possibly deleted) build dir
+(libwebsockets does); such recipes are detected in the output and rebuilt locally before the next round. With a warm sstate cache a
+from-scratch build takes about 5 minutes.</p></div>
+<div class="step" data-panel="verify"><h3>verify</h3>
+<p>The installed package list is compared with the reference's, and every SRCREV both builds recorded with the pins. The last run:
+<span class="badge pass">210 packages identical</span> <span class="badge pass">99 SRCREVs match</span>. The artifact is
+<code>…/build-exm-qemux86-mv3/tmp/deploy/images/exm-qemux86-mv3/ofw-exm-qemux86-mv3.tar.bz2</code>, and the build dir is remembered in
+<code>config/local.conf</code> for the next stages.</p></div>
+</div>
+
+<h2>The pins in the repository</h2>
+<div class="scroll"><table class="t"><thead><tr><th>file</th><th>what</th></tr></thead><tbody>
+<tr><td><code>pins/mv3-r25-oe40-0808/manifest.xml</code></td><td>revision-locked manifest (+ <code>.projects</code>: name path sha branch)</td></tr>
+<tr><td><code>layers.lock</code></td><td>meta-lxd <code>15058aa</code>, meta-lxd-mv3 <code>12fbde1</code>, meta-python2 <code>f02882e</code></td></tr>
+<tr><td><code>srcrev.inc</code></td><td><code>SRCREV:pn-&lt;recipe&gt; = "&lt;sha&gt;"</code> for every recipe the reference built</td></tr>
+<tr><td><code>installed-package-*.txt</code></td><td>the reference image's packages, for the reproducibility check</td></tr>
+<tr><td><code>reference.txt</code></td><td>reference build, image sha256, pin store location</td></tr>
+</tbody></table></div>
+<p>Build names follow <code>&lt;product&gt;-lxd-&lt;release&gt;-&lt;oe&gt;-&lt;suffix&gt;</code>: meta-lxd's launcher reads the product and release from the path.</p>
+
+<footer class="pg">Next: <a href="lab.html">2 · The lab VM</a></footer>
+</div></main>
+</div>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>local-noc · opensync-lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<main><div class="wrap">
+<div class="k" style="color:var(--faint);font-size:12px;letter-spacing:.12em;text-transform:uppercase">Inside · local-noc/</div>
+<h1>local-noc, a local OpenSync cloud</h1>
+<p class="lead">A stand-in for the OpenSync cloud that speaks its protocol, OVSDB JSON-RPC (RFC 7047), over plain TCP, keeps a live copy of
+every node's database, records every message, orchestrates the mesh, and draws the location. Python standard library only.</p>
+
+<div class="cards">
+  <div class="card"><div class="k">:6640</div><h3>Redirector</h3><p>Where the node's <code>AWLAN_Node.redirector_addr</code> (RDK <code>SONURL</code>) points. Reads the node's identity and assigns the controller.</p></div>
+  <div class="card"><div class="k">:6641</div><h3>Controller</h3><p>Monitors every table, answers keepalives, holds the live mirror, sends <code>transact</code>s as the cloud.</p></div>
+  <div class="card"><div class="k">:8640</div><h3>Topology view</h3><p>The web UI and its API, built from the mirrors. See the <a href="topology.html">viewer</a>.</p></div>
+</div>
+
+<h2 id="protocol">The protocol, message by message</h2>
+<p>In OpenSync the cloud is the OVSDB <b>client</b>: the node's <code>ovsdb-server</code> opens the connection (an active remote from
+<code>Manager.target</code>) and the cloud then reads and writes the node's database over it.</p>
+<div class="js-stepper">
+<div class="stepper"></div>
+<div class="steps">
+<div class="step"><h3>1 · The node dials the redirector</h3><p>With SON enabled, <code>cm</code> resolves <code>redirector_addr</code> and points its
+<code>Manager.target</code> at it; <code>ovsdb-server</code> connects to <code>tcp:10.101.0.40:6640</code>.</p></div>
+<div class="step"><h3>2 · Who are you?</h3><p>local-noc reads the node's identity:</p>
+<pre><code>{"id": 1, "method": "transact", "params": ["Open_vSwitch",
+  {"op": "select", "table": "AWLAN_Node", "where": [],
+   "columns": ["id", "serial_number", "model", "firmware_version", "redirector_addr", "manager_addr"]}]}</code></pre></div>
+<div class="step"><h3>3 · Go to the controller</h3><p>…and assigns it the controller. The node's <code>cm</code> sees <code>manager_addr</code> and reconnects there.</p>
+<pre><code>{"id": 2, "method": "transact", "params": ["Open_vSwitch",
+  {"op": "update", "table": "AWLAN_Node", "where": [], "row": {"manager_addr": "tcp:10.101.0.40:6641"}}]}</code></pre></div>
+<div class="step"><h3>4 · Learn the database</h3><p>On the controller connection: <code>list_dbs</code>, then <code>get_schema</code> (mv3's OpenSync 4.4 has 109 tables,
+the extenders' 6.6 has 135).</p>
+<pre><code>{"id": 3, "method": "list_dbs", "params": []}
+{"id": 4, "method": "get_schema", "params": ["Open_vSwitch"]}</code></pre></div>
+<div class="step"><h3>5 · Monitor everything</h3><p>One <code>monitor</code> over every table and column. The reply is the whole database; it seeds the mirror.</p>
+<pre><code>{"id": 5, "method": "monitor", "params": ["Open_vSwitch", "local-noc",
+  {"AWLAN_Node": {}, "Wifi_VIF_State": {}, "Wifi_Inet_State": {}, "Interface": {}, …}]}</code></pre></div>
+<div class="step"><h3>6 · Live updates</h3><p>From then on the node pushes every change as an <code>update</code> notification, applied to the mirror:</p>
+<pre><code>{"id": null, "method": "update", "params": ["local-noc",
+  {"Wifi_Associated_Clients": {"69f2…": {"new": {"mac": "02:00:00:00:08:00", "state": "active", …}}}}]}</code></pre></div>
+<div class="step"><h3>7 · Keepalive</h3><p>The node probes an idle connection (<code>inactivity_probe</code>, 30 s); local-noc answers, so the session stays up.</p>
+<pre><code>{"id": "echo", "method": "echo", "params": []}      <span class="c"># node</span>
+{"id": "echo", "result": [], "error": null}         <span class="c"># local-noc</span></code></pre></div>
+<div class="step"><h3>8 · Acting as the cloud</h3><p>Configuration is a <code>transact</code> on the node's config tables, exactly what the mesh orchestration and
+<code>noc-ctl transact</code> send, for example mv3's end of an extender's tunnel:</p>
+<pre><code>{"id": 9, "method": "transact", "params": ["Open_vSwitch",
+  {"op": "insert", "table": "Wifi_Inet_Config", "row": {"if_name": "pgd1_88", "if_type": "gre",
+   "gre_ifname": "wl1.1", "gre_local_inet_addr": "169.254.1.1", "gre_remote_inet_addr": "169.254.1.88",
+   "enabled": true, "network": true, "mtu": 1562, "ip_assign_scheme": "none"}}]}</code></pre></div>
+</div>
+</div>
+
+<h2>Recordings</h2>
+<p>Every message in both directions, one JSON line each, in <code>/var/lib/local-noc/sessions/&lt;node&gt;/&lt;utc&gt;-&lt;role&gt;-&lt;peer&gt;.jsonl</code>:</p>
+<pre><code>{"t": 1790193722.52, "dir": "tx", "role": "controller", "peer": "10.101.0.20:34652", "msg": {"id": 5, "method": "monitor", …}}</code></pre>
+<p>Each node's schema and a snapshot of its mirror sit in <code>/var/lib/local-noc/nodes/&lt;node&gt;/</code>.</p>
+
+<h2>noc-ctl</h2>
+<p>Drives a running local-noc through its control socket; from the host as <code>./deploy-mvx.sh noc …</code>.</p>
+<div class="scroll"><table class="t"><thead><tr><th>command</th><th>does</th></tr></thead><tbody>
+<tr><td><code>nodes</code></td><td>sessions: node, role, peer, table count, capture file</td></tr>
+<tr><td><code>tables &lt;node&gt;</code></td><td>row count per mirrored table</td></tr>
+<tr><td><code>dump &lt;node&gt; &lt;table&gt;</code></td><td>the rows of one table, from the mirror</td></tr>
+<tr><td><code>log &lt;node&gt; [N]</code></td><td>the last N captured messages of the node's controller session</td></tr>
+<tr><td><code>transact &lt;node&gt; '&lt;op&gt;'…</code></td><td>send an OVSDB transact as the cloud</td></tr>
+<tr><td><code>request &lt;node&gt; &lt;method&gt; ['&lt;params&gt;']</code></td><td>any JSON-RPC request</td></tr>
+</tbody></table></div>
+
+<h2 id="mesh">Mesh orchestration</h2>
+<p>With <code>--mesh-gateway</code>, a reconcile loop does for the location what the cloud does. Every few seconds it compares each node's mirror
+with the desired state and sends only what is missing, so it picks up after restarts and reconnects.</p>
+<div class="scroll"><table class="t"><thead><tr><th>on</th><th>ensures</th></tr></thead><tbody>
+<tr><td>the gateway</td><td>the backhaul AP (<code>wl1.1</code>): enabled, SSID and WPA2 PSK matching the extenders' onboarding credentials</td></tr>
+<tr><td>the gateway</td><td>live OVS counters: <code>stats-update-interval</code> 5 s (mv3 ships 1 hour)</td></tr>
+<tr><td>the gateway</td><td>per extender associated to the backhaul AP with a lease: a gretap <code>pgd&lt;b3&gt;_&lt;b4&gt;</code> to it, as a port of <code>brlan0</code></td></tr>
+<tr><td>each extender</td><td>its fronthaul: <code>home-ap-24</code> in <code>br-home</code> with the home SSID and PSK, its <code>Wifi_Inet_Config</code>, the radio's channel</td></tr>
+</tbody></table></div>
+
+<h2 id="api">Web API</h2>
+<div class="scroll"><table class="t"><thead><tr><th>path</th><th>returns</th></tr></thead><tbody>
+<tr><td><code>GET /</code></td><td>the topology view</td></tr>
+<tr><td><code>GET /api/topology</code></td><td>nodes (router, extenders, clients, internet) and links (wired WAN, Wi-Fi backhaul with both GRE ends and counters, client), counts; from the mirrors</td></tr>
+<tr><td><code>GET /api/node/&lt;id&gt;</code></td><td>one node's raw mirror: every table as local-noc holds it</td></tr>
+</tbody></table></div>
+<p>How <code>topology.py</code> derives the picture: roles from <code>Connection_Manager_Uplink</code> (an Ethernet uplink is a gateway, a GRE uplink an extender);
+an extender's backhaul from which AP lists its STA among its associated clients (mv3 reports its VIF MACs as zero, so the STA's parent BSSID alone
+cannot name the AP's node); clients from the other associations, addressed from the gateway's <code>DHCP_leased_IP</code>; each tunnel's two ends from
+<code>Wifi_Inet_State</code> and its counters from the gateway's OVS <code>Interface.statistics</code>. Nodes that lose their session stay, greyed, for 10 minutes.</p>
+
+<h2>Options</h2>
+<div class="scroll"><table class="t"><thead><tr><th>option</th><th>default</th><th>what</th></tr></thead><tbody>
+<tr><td><code>--advertise</code></td><td>(required)</td><td>the address nodes reach the controller on, written into <code>manager_addr</code></td></tr>
+<tr><td><code>--redirector-port</code> / <code>--controller-port</code></td><td>6640 / 6641</td><td></td></tr>
+<tr><td><code>--http-port</code></td><td>8640</td><td>web UI, 0 = off</td></tr>
+<tr><td><code>--location</code></td><td>opensync-lab</td><td>name shown in the view (provisioning passes the VM name)</td></tr>
+<tr><td><code>--mesh-gateway</code></td><td>(off)</td><td>node id of the gateway; enables the orchestration</td></tr>
+<tr><td><code>--mesh-bhaul-if</code>, <code>--mesh-lan-bridge</code></td><td>wl1.1, brlan0</td><td>the gateway's backhaul AP and LAN bridge</td></tr>
+<tr><td><code>--mesh-bhaul-ssid/-psk</code>, <code>--mesh-home-ssid/-psk</code></td><td>opensync-lab-…</td><td>backhaul and fronthaul credentials</td></tr>
+<tr><td><code>--mesh-fronthaul-band</code></td><td>24</td><td>the extenders' fronthaul band</td></tr>
+<tr><td><code>--mesh-stats-interval</code></td><td>5000</td><td>gateway OVS counter refresh in ms, 0 = leave it</td></tr>
+</tbody></table></div>
+
+<footer class="pg">Next: <a href="reference.html">Reference</a></footer>
+</div></main>
+</div>
+</body>
+</html>

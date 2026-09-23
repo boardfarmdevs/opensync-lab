@@ -173,6 +173,7 @@ opensync-lab/
   setup-vm.sh                     stage 2: create + provision the lab VM (host -> VM)
   deploy-mvx.sh                   stage 3: push image, launch, checks, extender (host -> VM)
   build-pod.sh                    OpenSync 6.6.1.0 extender (pod) image (host, docker)
+  build-docs.sh                   documentation site: viewer, reference, lab recording (docs/)
   config/
     mvx.conf                      defaults (env-overridable)
     local.conf                    untracked; values persisted by the scripts (VM name, ...)
@@ -206,7 +207,7 @@ opensync-lab/
   boardfarm/
     lab/opensync-lab.json         single-CPE mv3 lab (overlaid into boardfarm lab/; bf-lab only)
     patches/                      fixes to boardfarm-lab-staging
-  doc/
+  docs/                           GitHub Pages site (index.html, pages, assets/, data/, topology/)
     PLAN.md
   logs/                           (gitignored) per-run logs
 ```
@@ -632,7 +633,7 @@ VM as boardfarm CPE slots 1..N (`br-wan10N`/`br-lan20N`).
    `--image` can point at the 0808 artifact so VM work proceeds in parallel.
 6. `opensync` + `guest/40` + `check`: confirm **L3** and **L4**, and report L5/L6.
 7. Reboot behaviour (units) and `mesh`.
-8. `doc/RUNBOOK.md`, plus upstreaming the boardfarm lab config as a
+8. `docs/RUNBOOK.md`, plus upstreaming the boardfarm lab config as a
    boardfarm-lab-staging commit (`lab(opensync-lab): …`).
 
 ## 11. Open questions

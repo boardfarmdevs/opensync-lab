@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topology viewer · opensync-lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<main style="padding-top:24px"><div class="wrap" style="max-width:none">
+<h1>Topology viewer</h1>
+<p class="lead" style="max-width:none">This is local-noc's topology view, unchanged, replaying a recording of the lab (12 snapshots, 5 s apart, looped).
+In the lab it is at <code>http://&lt;host&gt;:8640/</code> and live.</p>
+<div class="row" style="margin-bottom:12px;color:var(--muted);font-size:14px">
+  <span><kbd>drag</kbd> a device</span><span><kbd>hover</kbd> for its active configuration</span><span><kbd>click</kbd> for every interface, tunnel and counter</span>
+  <span><kbd>double-click</kbd> to pin</span><span><kbd>wheel</kbd> zoom · <kbd>F</kbd> fit</span><span>▸ <b>Network</b> (top left) for all tunnels and leases</span>
+  <a class="btn" href="topology/" target="_blank" style="margin-left:auto">open full screen ↗</a>
+</div>
+<div class="frame"><iframe src="topology/" title="topology viewer" style="height:calc(100vh - 210px);min-height:520px"></iframe></div>
+</div></main>
+</div>
+</body>
+</html>

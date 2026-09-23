@@ -1,0 +1,156 @@
+{
+ "recorded": 1790199473,
+ "checks": {
+  "base": [
+   "ok lxd=6.9 docker=29.1.3 kernel=6.8.0-139-generic"
+  ],
+  "boardfarm": [
+   "ok eeb4803 dhcp-cpe1,lan-cpe1,wan-cpe1"
+  ],
+  "hwsim": [
+   "ok radios=24 channels=2 free=24"
+  ],
+  "local-noc": [
+   "ok redirector tcp:10.101.0.40:6640 controller tcp:10.101.0.40:6641 web :8640"
+  ],
+  "mvx": [
+   "launched mv3 build=20260923163737 at 2026-09-23T18:51:11+00:00"
+  ],
+  "opensync": [
+   "PASS mv3 2026-09-23T19:46:41+00:00",
+   "INFO client certificates: present: /usr/opensync/etc/certs/client.pem -> theta-dev/client.pem",
+   "PASS managers: ovsdb-server dm cm nm wm running",
+   "INFO uplink address family: cm not connected; erouter0: ipv6 -> blocked (no IPv6 internet); restarted cm (runtime workaround)",
+   "INFO LAN DHCP (dnsmasq): dnsmasq running",
+   "PASS AWLAN_Node.redirector_addr: tcp:10.101.0.40:6640",
+   "PASS controller assigned: AWLAN_Node.manager_addr=tcp:10.101.0.40:6641",
+   "PASS Manager.is_connected: true -> tcp:[10.101.0.40]:6641",
+   "PASS local-noc session: controller from 10.101.0.20:59824 tables=27 capture /var/lib/local-noc/sessions/mv3/20260923T194633Z-controller-10.101.0.20_59824.jsonl",
+   "INFO node identity: id=mv3 serial=mv3 model=F5685LGE",
+   "INFO cloud config (VIFs): onboard-ap-24 onboard-ap-50 wl0 wl0.1 wl1 wl1.1 ",
+   "INFO mqtt topics: [\"map\",[]]",
+   "INFO ovsdb dump: /var/lib/opensync-lab/ovsdb-mv3-20260923-194639.txt"
+  ],
+  "pod-1-wc1": [
+   "PASS pod-1-wc1 via pod-1 2026-09-23T19:54:07+00:00",
+   "INFO interfaces: gre0@NONE gretap0@NONE erspan0@NONE wlan0 (no wired NIC)",
+   "PASS association: 'opensync-lab-home' bssid 82:00:00:00:03:00 (2437 MHz) = pod-1 home-ap-24",
+   "PASS pod station: pod-1 home-ap-24 lists 02:00:00:00:09:00",
+   "PASS DHCP: 192.168.0.143/24 via 192.168.0.1 (mv3 brlan0 192.168.0.1/24, served across the GRE backhaul)",
+   "PASS DHCP client: udhcpc running (pid 452), started at boot by OpenRC local",
+   "PASS gateway lease: mv3 dnsmasq leased to 02:00:00:00:09:00",
+   "PASS internet (ICMP): round-trip min/avg/max = 28.004/28.831/29.403 ms",
+   "PASS DNS: example.com resolves",
+   "PASS internet (HTTP): GET http://example.com -> 200"
+  ],
+  "pod-1-wc2": [
+   "PASS pod-1-wc2 via pod-1 2026-09-23T19:54:36+00:00",
+   "INFO interfaces: gre0@NONE gretap0@NONE erspan0@NONE wlan0 (no wired NIC)",
+   "PASS association: 'opensync-lab-home' bssid 82:00:00:00:03:00 (2437 MHz) = pod-1 home-ap-24",
+   "PASS pod station: pod-1 home-ap-24 lists 02:00:00:00:0a:00",
+   "PASS DHCP: 192.168.0.177/24 via 192.168.0.1 (mv3 brlan0 192.168.0.1/24, served across the GRE backhaul)",
+   "PASS DHCP client: udhcpc running (pid 452), started at boot by OpenRC local",
+   "PASS gateway lease: mv3 dnsmasq leased to 02:00:00:00:0a:00",
+   "PASS internet (ICMP): round-trip min/avg/max = 24.762/27.213/28.466 ms",
+   "PASS DNS: example.com resolves",
+   "PASS internet (HTTP): GET http://example.com -> 200"
+  ],
+  "pod-1": [
+   "PASS pod-1 id=MVXPOD023F87E628DD 2026-09-23T19:48:13+00:00",
+   "PASS backhaul association: bhaul-sta-50 -> mv3 wl1.1 (02:00:00:00:01:04)",
+   "PASS pod GRE (cm): g-bhaul-sta-50 gretap remote 169.254.1.1 local 169.254.1.88 (bhaul 169.254.1.88/25)",
+   "PASS gateway GRE (local-noc): mv3 pgd1_88 gretap remote 169.254.1.88 local 169.254.1.1, port of brlan0",
+   "PASS pod LAN (br-home): 192.168.0.229/24 default via 192.168.0.1 (the gateway, across the GRE)",
+   "PASS cloud (local-noc): MVXPOD023F87E628DD: Manager tcp:[10.101.0.40]:6641 connected=true",
+   "PASS fronthaul (local-noc): home-ap-24 'opensync-lab-home' ch6 in br-home"
+  ],
+  "pod-2-wc1": [
+   "PASS pod-2-wc1 via pod-2 2026-09-23T19:55:05+00:00",
+   "INFO interfaces: gre0@NONE gretap0@NONE erspan0@NONE wlan0 (no wired NIC)",
+   "PASS association: 'opensync-lab-home' bssid 82:00:00:00:05:00 (2437 MHz) = pod-2 home-ap-24",
+   "PASS pod station: pod-2 home-ap-24 lists 02:00:00:00:0b:00",
+   "PASS DHCP: 192.168.0.211/24 via 192.168.0.1 (mv3 brlan0 192.168.0.1/24, served across the GRE backhaul)",
+   "PASS DHCP client: udhcpc running (pid 452), started at boot by OpenRC local",
+   "PASS gateway lease: mv3 dnsmasq leased to 02:00:00:00:0b:00",
+   "PASS internet (ICMP): round-trip min/avg/max = 28.396/30.200/33.545 ms",
+   "PASS DNS: example.com resolves",
+   "PASS internet (HTTP): GET http://example.com -> 200"
+  ],
+  "pod-2-wc2": [
+   "PASS pod-2-wc2 via pod-2 2026-09-23T19:55:35+00:00",
+   "INFO interfaces: gre0@NONE gretap0@NONE erspan0@NONE wlan0 (no wired NIC)",
+   "PASS association: 'opensync-lab-home' bssid 82:00:00:00:05:00 (2437 MHz) = pod-2 home-ap-24",
+   "PASS pod station: pod-2 home-ap-24 lists 02:00:00:00:0c:00",
+   "PASS DHCP: 192.168.0.245/24 via 192.168.0.1 (mv3 brlan0 192.168.0.1/24, served across the GRE backhaul)",
+   "PASS DHCP client: udhcpc running (pid 452), started at boot by OpenRC local",
+   "PASS gateway lease: mv3 dnsmasq leased to 02:00:00:00:0c:00",
+   "PASS internet (ICMP): round-trip min/avg/max = 24.119/27.498/30.654 ms",
+   "PASS DNS: example.com resolves",
+   "PASS internet (HTTP): GET http://example.com -> 200"
+  ],
+  "pod-2": [
+   "PASS pod-2 id=MVXPOD02D7777EF0D9 2026-09-23T19:49:54+00:00",
+   "PASS backhaul association: bhaul-sta-50 -> mv3 wl1.1 (02:00:00:00:01:04)",
+   "PASS pod GRE (cm): g-bhaul-sta-50 gretap remote 169.254.1.1 local 169.254.1.12 (bhaul 169.254.1.12/25)",
+   "PASS gateway GRE (local-noc): mv3 pgd1_12 gretap remote 169.254.1.12 local 169.254.1.1, port of brlan0",
+   "PASS pod LAN (br-home): 192.168.0.101/24 default via 192.168.0.1 (the gateway, across the GRE)",
+   "PASS cloud (local-noc): MVXPOD02D7777EF0D9: Manager tcp:[10.101.0.40]:6641 connected=true",
+   "PASS fronthaul (local-noc): home-ap-24 'opensync-lab-home' ch6 in br-home"
+  ],
+  "pod-3-wc1": [
+   "PASS pod-3-wc1 via pod-3 2026-09-23T19:56:04+00:00",
+   "INFO interfaces: gre0@NONE gretap0@NONE erspan0@NONE wlan0 (no wired NIC)",
+   "PASS association: 'opensync-lab-home' bssid 82:00:00:00:07:00 (2437 MHz) = pod-3 home-ap-24",
+   "PASS pod station: pod-3 home-ap-24 lists 02:00:00:00:0d:00",
+   "PASS DHCP: 192.168.0.124/24 via 192.168.0.1 (mv3 brlan0 192.168.0.1/24, served across the GRE backhaul)",
+   "PASS DHCP client: udhcpc running (pid 452), started at boot by OpenRC local",
+   "PASS gateway lease: mv3 dnsmasq leased to 02:00:00:00:0d:00",
+   "PASS internet (ICMP): round-trip min/avg/max = 28.161/29.410/31.864 ms",
+   "PASS DNS: example.com resolves",
+   "PASS internet (HTTP): GET http://example.com -> 200"
+  ],
+  "pod-3-wc2": [
+   "PASS pod-3-wc2 via pod-3 2026-09-23T19:56:34+00:00",
+   "INFO interfaces: gre0@NONE gretap0@NONE erspan0@NONE wlan0 (no wired NIC)",
+   "PASS association: 'opensync-lab-home' bssid 82:00:00:00:07:00 (2437 MHz) = pod-3 home-ap-24",
+   "PASS pod station: pod-3 home-ap-24 lists 02:00:00:00:0e:00",
+   "PASS DHCP: 192.168.0.158/24 via 192.168.0.1 (mv3 brlan0 192.168.0.1/24, served across the GRE backhaul)",
+   "PASS DHCP client: udhcpc running (pid 452), started at boot by OpenRC local",
+   "PASS gateway lease: mv3 dnsmasq leased to 02:00:00:00:0e:00",
+   "PASS internet (ICMP): round-trip min/avg/max = 28.227/29.416/30.404 ms",
+   "PASS DNS: example.com resolves",
+   "PASS internet (HTTP): GET http://example.com -> 200"
+  ],
+  "pod-3": [
+   "PASS pod-3 id=MVXPOD02288DCB5DCC 2026-09-23T19:50:30+00:00",
+   "PASS backhaul association: bhaul-sta-50 -> mv3 wl1.1 (02:00:00:00:01:04)",
+   "PASS pod GRE (cm): g-bhaul-sta-50 gretap remote 169.254.1.1 local 169.254.1.53 (bhaul 169.254.1.53/25)",
+   "PASS gateway GRE (local-noc): mv3 pgd1_53 gretap remote 169.254.1.53 local 169.254.1.1, port of brlan0",
+   "PASS pod LAN (br-home): 192.168.0.231/24 default via 192.168.0.1 (the gateway, across the GRE)",
+   "PASS cloud (local-noc): MVXPOD02288DCB5DCC: Manager tcp:[10.101.0.40]:6641 connected=true",
+   "PASS fronthaul (local-noc): home-ap-24 'opensync-lab-home' ch6 in br-home"
+  ],
+  "topology": [
+   "PASS mv3+3x2 2026-09-23T19:56:41+00:00",
+   "PASS mv3 backhaul: 3 stations on wl1.1",
+   "PASS mv3 GRE ports: pgd1_12 pgd1_53 pgd1_88 in brlan0",
+   "PASS mv3 cloud: controller session in local-noc",
+   "PASS pod-1: MVXPOD023F87E628DD fronthaul 82:00:00:00:03:00, clients: pod-1-wc1=192.168.0.143 pod-1-wc2=192.168.0.177",
+   "PASS pod-2: MVXPOD02D7777EF0D9 fronthaul 82:00:00:00:05:00, clients: pod-2-wc1=192.168.0.211 pod-2-wc2=192.168.0.245",
+   "PASS pod-3: MVXPOD02288DCB5DCC fronthaul 82:00:00:00:07:00, clients: pod-3-wc1=192.168.0.124 pod-3-wc2=192.168.0.158",
+   "PASS topology view: http://<host>:8640/ shows 1 gateway, 3 extenders, 6 clients, all online"
+  ],
+  "wan": [
+   "PASS mv3 2026-09-23T18:51:49+00:00",
+   "PASS erouter0 IPv4: 10.70.0.100/24 (after 32s)",
+   "PASS default route: via 10.70.0.20",
+   "PASS internet (ICMP): round-trip min/avg/max = 27.108/28.502/30.859 ms",
+   "PASS DNS: wildfire.plume.tech -> 35.85.183.45 (resolver 2001:4860:4860::8888)",
+   "PASS TLS redirector:443: handshake ok, server cert CN=wildfire.plume.tech",
+   "INFO mgmt VLAN (881): no 10.50.0.0/24 address",
+   "INFO erouter0 IPv6: 2001:dead:beef:70::100/128",
+   "INFO hwsim radios: 3 phy(s): wlan0 wlan1 wlan2 ",
+   "INFO LAN client lan-cpe1: eth1 no IPv4"
+  ]
+ }
+}

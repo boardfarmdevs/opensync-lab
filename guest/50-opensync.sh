@@ -34,7 +34,7 @@ cx "test -x /usr/opensync/scripts/opensync.init" || die "no OpenSync in this ima
 # one NOC's directory; that override does not apply to MACHINE
 # exm-qemux86-mv3, so the LXD image ships theta-dev/ + opensync-dev/ but no
 # selection and cm can never complete TLS (BACKOFF). Until meta-lxd-mv3 does
-# the selection itself (see doc/PLAN.md), make it here -- same default NOC as
+# the selection itself (see docs/PLAN.md), make it here -- same default NOC as
 # f5685 without BUILD_OSRT, and what mv27/mv37 ship: theta-dev.
 noc=${MVX_OPENSYNC_NOC:-theta-dev}
 certdir=/usr/opensync/etc/certs

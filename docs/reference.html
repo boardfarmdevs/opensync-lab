@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reference · opensync-lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<main><div class="wrap">
+<h1>Reference</h1>
+<p class="lead">Generated from the repository by <code>build-docs.sh reference</code>: the settings from <code>config/mvx.conf</code>, the commands from each
+script's usage, the guest scripts from their headers, the workarounds and status from the README.</p>
+<div class="toc"><a href="#settings">Settings</a><a href="#commands">Commands</a><a href="#guests">Guest scripts</a><a href="#workarounds">Workarounds</a><a href="#status">Status</a>
+<span id="gen" style="color:var(--faint)"></span></div>
+
+<h2 id="settings">Settings</h2>
+<p>Every value can be overridden from the environment; <code>config/local.conf</code> (untracked, written by the scripts) overrides the defaults.</p>
+<input class="search" id="q-settings" placeholder="filter settings… (e.g. POD, NOC, VM)">
+<div class="scroll"><table class="t" id="t-settings"><thead><tr><th>setting</th><th>default</th><th>what</th></tr></thead><tbody></tbody></table></div>
+
+<h2 id="commands">Commands</h2>
+<div class="js-tabs" id="commands-box"></div>
+
+<h2 id="guests">Guest scripts</h2>
+<p>Run inside the VM by the stage scripts (<code>/opt/opensync-lab/guest</code>).</p>
+<div class="scroll"><table class="t" id="t-guests"><thead><tr><th>script</th><th>purpose</th></tr></thead><tbody></tbody></table></div>
+
+<h2 id="workarounds">Workarounds</h2>
+<p>Everything the lab works around, what it does about it, and where the real fix belongs.</p>
+<div class="row"><input class="search" id="q-work" placeholder="filter workarounds…"></div>
+<div class="chips" id="c-work"></div>
+<div class="scroll"><table class="t" id="t-work"><thead><tr><th>area</th><th>problem</th><th>lab workaround</th><th>proper fix</th></tr></thead><tbody></tbody></table></div>
+
+<h2 id="status">Status</h2>
+<div class="scroll"><table class="t" id="t-status"><thead><tr><th>goal</th><th>result</th></tr></thead><tbody></tbody></table></div>
+
+<footer class="pg">opensync-lab · <a href="https://github.com/boardfarmdevs/opensync-lab">GitHub</a></footer>
+</div></main>
+</div>
+<script>
+const AREA = p => /hal-wifi-hwsim/i.test(p) ? "Wi-Fi HAL" : /OpenSync 6\.6|multi-band|extender|pod/i.test(p) ? "extender"
+  : /boardfarm|IPv6 internet|rev140/i.test(p) ? "lab" : /mirror|sstate|build/i.test(p) ? "build" : "gateway";
+document.addEventListener("DOMContentLoaded", async () => {
+  let r;
+  try { r = await json("data/reference.json"); } catch (e) { document.querySelector(".lead").textContent = "reference data not available"; return; }
+  document.getElementById("gen").textContent = "generated " + new Date(r.generated * 1000).toLocaleString();
+  // settings, grouped by section
+  let sect = null;
+  document.querySelector("#t-settings tbody").innerHTML = r.config.map(c => {
+    const head = c.section !== sect ? `<tr><td colspan="3" style="color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;padding-top:16px">${esc(c.section || "general")}</td></tr>` : "";
+    sect = c.section;
+    return head + `<tr><td><code>${esc(c.name)}</code></td><td class="mono" style="font-size:12.5px;word-break:break-all">${esc(c.default) || "<span style='color:var(--faint)'>(empty)</span>"}</td><td>${md(c.doc)}</td></tr>`;
+  }).join("");
+  filterRows(document.getElementById("q-settings"), document.getElementById("t-settings"));
+  // commands: one tab per script
+  const names = Object.keys(r.scripts), box = document.getElementById("commands-box");
+  box.innerHTML = `<div class="tabs">${names.map(n => `<button data-k="${esc(n)}">${esc(n)}</button>`).join("")}</div>` +
+    names.map(n => `<div data-tab="${esc(n)}"><pre><code>${esc(r.scripts[n])}</code></pre></div>`).join("");
+  tabs(box); copyButtons(box);
+  document.querySelector("#t-guests tbody").innerHTML = r.guests.map(g => `<tr><td><code>${esc(g.name)}</code></td><td>${esc(g.purpose)}</td></tr>`).join("");
+  // workarounds with area chips
+  const rows = r.workarounds.map(w => ({ ...w, area: AREA(w.problem + " " + w.fix) }));
+  const areas = ["all", ...new Set(rows.map(w => w.area))];
+  let area = "all";
+  const tb = document.querySelector("#t-work tbody"), q = document.getElementById("q-work");
+  const draw = () => {
+    const s = q.value.toLowerCase();
+    tb.innerHTML = rows.filter(w => (area === "all" || w.area === area) && (w.problem + w.workaround + w.fix).toLowerCase().includes(s))
+      .map(w => `<tr><td><span class="badge info">${esc(w.area)}</span></td><td>${md(w.problem)}</td><td>${md(w.workaround)}</td><td>${md(w.fix)}</td></tr>`).join("");
+  };
+  document.getElementById("c-work").innerHTML = areas.map(a => `<button class="chip${a === "all" ? " on" : ""}" data-a="${esc(a)}">${esc(a)}${a === "all" ? "" : " · " + rows.filter(w => w.area === a).length}</button>`).join("");
+  document.querySelectorAll("#c-work .chip").forEach(b => b.onclick = () => { area = b.dataset.a;
+    document.querySelectorAll("#c-work .chip").forEach(x => x.classList.toggle("on", x === b)); draw(); });
+  q.addEventListener("input", draw); draw();
+  document.querySelector("#t-status tbody").innerHTML = r.status.map(s => `<tr><td><b>${md(s.goal)}</b></td><td>${md(s.result)}</td></tr>`).join("");
+});
+</script>
+</body>
+</html>

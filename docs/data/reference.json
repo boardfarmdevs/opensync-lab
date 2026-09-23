@@ -1,0 +1,382 @@
+{
+ "generated": 1790200112,
+ "config": [
+  {
+   "name": "MVX_PRODUCT",
+   "default": "mv3",
+   "section": "product / release",
+   "doc": ""
+  },
+  {
+   "name": "MVX_RELEASE",
+   "default": "r25-oe40",
+   "section": "product / release",
+   "doc": ""
+  },
+  {
+   "name": "MVX_REF_BUILD",
+   "default": "$HOME/yocto/mv3-lxd-r25-oe40-0808",
+   "section": "product / release",
+   "doc": "Reference build the pins are captured from, and the pin set name."
+  },
+  {
+   "name": "MVX_PINS",
+   "default": "mv3-r25-oe40-0808",
+   "section": "product / release",
+   "doc": ""
+  },
+  {
+   "name": "MVX_REPO_REF",
+   "default": "$HOME/yocto/repo_reference/${MVX_PRODUCT}-${MVX_RELEASE}-repo_reference",
+   "section": "product / release",
+   "doc": "repo --mirror checkout used both as --reference and as the offline source of every manifest project."
+  },
+  {
+   "name": "MVX_BUILD_DATE",
+   "default": "$(date +%m%d)",
+   "section": "product / release",
+   "doc": "Fresh build directory. Must keep the <product>-lxd-<release>-<MMDD> shape: mv.sh and the mv-builds tooling parse product/release out of it."
+  },
+  {
+   "name": "MVX_BUILD_DIR",
+   "default": "$HOME/yocto/${MVX_PRODUCT}-lxd-${MVX_RELEASE}-${MVX_BUILD_DATE}",
+   "section": "product / release",
+   "doc": ""
+  },
+  {
+   "name": "MVX_DL_DIR",
+   "default": "$HOME/oe/downloads",
+   "section": "product / release",
+   "doc": "Shared bitbake caches (same as every other mvx build on this host)."
+  },
+  {
+   "name": "MVX_SSTATE_DIR",
+   "default": "$HOME/oe/sstate-cache",
+   "section": "product / release",
+   "doc": ""
+  },
+  {
+   "name": "MVX_GIT_DIR",
+   "default": "$HOME/git",
+   "section": "product / release",
+   "doc": "Working clones of the ~rvogelaar layers (offline source for meta-lxd*)."
+  },
+  {
+   "name": "MVX_VM",
+   "default": "opensync-lab-$(date +%m%d)",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_VM_IMAGE",
+   "default": "ubuntu:24.04",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_VM_CPUS",
+   "default": "4",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_VM_MEMORY",
+   "default": "8GiB",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_VM_DISK",
+   "default": "64GiB",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_VM_STORAGE",
+   "default": "default",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_VM_NETWORK",
+   "default": "lxdbr0",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_BOARDFARM_SOURCE",
+   "default": "git@github.com:robvogelaar/boardfarm-lab-staging.git",
+   "section": "lab VM",
+   "doc": "boardfarm-lab-staging revision installed in the VM."
+  },
+  {
+   "name": "MVX_BOARDFARM_COMMIT",
+   "default": "eeb4803c00dc1cae2dda05eb6e1b52c06ad79aa8",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_HWSIM_POOL",
+   "default": "24",
+   "section": "lab VM",
+   "doc": "hwsim pool inside the VM (matches meta-lxd gen-util.sh defaults)."
+  },
+  {
+   "name": "MVX_HWSIM_CHANNELS",
+   "default": "2",
+   "section": "lab VM",
+   "doc": ""
+  },
+  {
+   "name": "MVX_RUNTIME_META_LXD",
+   "default": "pin",
+   "section": "deploy",
+   "doc": "meta-lxd revision whose gen/ (mv.sh) runs in the VM: \"pin\" = the build pin."
+  },
+  {
+   "name": "MVX_IMAGE",
+   "default": "",
+   "section": "deploy",
+   "doc": "Image to deploy; empty = the artifact of MVX_BUILD_DIR."
+  },
+  {
+   "name": "MVX_INSTANCE",
+   "default": "",
+   "section": "deploy",
+   "doc": "mv.sh -i <n>; empty = container named after the product (\"mv3\")."
+  },
+  {
+   "name": "MVX_HWSIM_RADIOS",
+   "default": "3",
+   "section": "deploy",
+   "doc": ""
+  },
+  {
+   "name": "MVX_CLOUD",
+   "default": "plume",
+   "section": "OpenSync cloud",
+   "doc": "plume: the real cloud (TLS, Plume redirector); local: local-noc in the lab VM (plain-TCP OVSDB redirector + controller that records the whole protocol)."
+  },
+  {
+   "name": "MVX_PLUME_REDIRECTOR",
+   "default": "ssl:wildfire.plume.tech:443",
+   "section": "OpenSync cloud",
+   "doc": ""
+  },
+  {
+   "name": "MVX_LOCAL_NOC_IP",
+   "default": "10.101.0.40",
+   "section": "OpenSync cloud",
+   "doc": "local-noc sits on boardfarm's WAN segment (docker network wan-cpe1), next to where boardfarm's own services live; wan-cpe1 NATs the CPE's WAN onto it."
+  },
+  {
+   "name": "MVX_LOCAL_NOC_REDIRECTOR_PORT",
+   "default": "6640",
+   "section": "OpenSync cloud",
+   "doc": ""
+  },
+  {
+   "name": "MVX_LOCAL_NOC_CONTROLLER_PORT",
+   "default": "6641",
+   "section": "OpenSync cloud",
+   "doc": ""
+  },
+  {
+   "name": "MVX_NOC_UI_PORT",
+   "default": "8640",
+   "section": "OpenSync cloud",
+   "doc": "local-noc web UI (topology view), published on the host as http://<MVX_NOC_UI_LISTEN>:<MVX_NOC_UI_PORT>/ (default listen: the host's primary address; LXD's NAT proxy into a VM cannot listen on 0.0.0.0)"
+  },
+  {
+   "name": "MVX_NOC_UI_LISTEN",
+   "default": "",
+   "section": "OpenSync cloud",
+   "doc": ""
+  },
+  {
+   "name": "MVX_MESH_GATEWAY",
+   "default": "$MVX_PRODUCT",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": "local-noc orchestrates the location like the cloud: the gateway's backhaul AP, a GRE per pod, the pods' fronthaul. The backhaul SSID/PSK must match the onboarding credentials built into the pod image (pod/opensync/service-provider/mvx-local/build/provider.mk). AWLAN_Node.id of the gateway"
+  },
+  {
+   "name": "MVX_MESH_BHAUL_IF",
+   "default": "wl1.1",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": ""
+  },
+  {
+   "name": "MVX_MESH_BHAUL_SSID",
+   "default": "opensync-lab-bhaul",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": ""
+  },
+  {
+   "name": "MVX_MESH_BHAUL_PSK",
+   "default": "opensync-lab-bhaul-psk",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": ""
+  },
+  {
+   "name": "MVX_MESH_HOME_SSID",
+   "default": "opensync-lab-home",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": ""
+  },
+  {
+   "name": "MVX_MESH_HOME_PSK",
+   "default": "opensync-lab-home-psk",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": ""
+  },
+  {
+   "name": "MVX_PODS",
+   "default": "3",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": "lab topology (deploy-mvx.sh mesh): extenders pod-1..N, clients pod-N-wc1..M"
+  },
+  {
+   "name": "MVX_POD_CLIENTS",
+   "default": "2",
+   "section": "mesh: OpenSync extender (pod)",
+   "doc": ""
+  }
+ ],
+ "scripts": {
+  "build-mvx.sh": "build-mvx.sh - build an mvx LXD container image from a fresh checkout,\npinned to a known-good reference build, fully offline.\n\n  build-mvx.sh pin    [--from DIR]           capture pins + pin store from a reference build\n  build-mvx.sh build  [--dir DIR] [--resume]  fresh repo init + pinned bitbake\n  build-mvx.sh all                            pin (if missing) + build\n  build-mvx.sh status [DIR]                   show build dir, markers, artifact\n\nPinned: every manifest project at the reference's HEAD sha; the meta-lxd,\nmeta-lxd-<product> and meta-python2 clones at the reference's commits; and\nevery SRCREV bitbake resolved in the reference (from buildhistory), forced\nwith SRCREV:pn-<recipe>. Most RDK recipes are SRCREV ?= ${AUTOREV}.\n\nOffline: the checkout reads only local git. The pin step builds a \"pin store\"\n($MVX_PIN_STORE): one bare repo per project and layer, whose branch points\nat the pinned commit. Each repo borrows objects from the repo_reference\nmirror through alternates and adds only the commits the mirror lacks (the\nmirror is older than the reference build), so the shared mirror is never\nmodified. The pinned manifest is committed to the store's manifests.git on\nbranch mvx/<pins>. At build time every remote URL is redirected into the\nstore with process-scoped git config (GIT_CONFIG_COUNT). Nothing is written\nto ~/.gitconfig.\nbitbake itself needs no redirect: the mng distro builds the RDK components\nfrom the checkout's own src/ (file://), and the other bitbucket SRC_URIs\n(hal-wifi-hwsim, rbus-*, opensync-service-provider-local) are pinned and\nalready cached in $MVX_DL_DIR/git2.\n\nSettings: config/mvx.conf, all overridable from the environment.",
+  "setup-vm.sh": "setup-vm.sh - create and provision the opensync-lab VM (an LXD VM).\n\n  setup-vm.sh create      create + boot the VM (idempotent)\n  setup-vm.sh provision   base packages, docker, nested LXD, hwsim pool, boardfarm lab, local-noc\n  setup-vm.sh all         create + provision\n  setup-vm.sh status      VM state + lab status inside it\n  setup-vm.sh shell       root shell in the VM\n  setup-vm.sh start|stop  VM lifecycle\n  setup-vm.sh delete      delete the VM (asks first)\n\nThe VM (default opensync-lab-<MMDD>, see config/mvx.conf) is the lab host:\nDocker runs the boardfarm WAN side (dhcp-cpe1 + wan-cpe1 on br-wan101,\nlan-cpe1 on br-lan201), nested LXD runs the mvx container, and the\nmac80211_hwsim pool supplies its radios, and local-noc (a plain-TCP OpenSync\ncloud stand-in, local-noc/) sits on the WAN segment at $MVX_LOCAL_NOC_IP.\nDeploying the container is deploy-mvx.sh's job.\n\nGuest scripts are pushed to /opt/opensync-lab in the VM and run as root.\nThe VM cannot reach bitbucket and has no GitHub key, so git inputs go in\nas bundles made on this host.",
+  "deploy-mvx.sh": "deploy-mvx.sh - deploy the mvx container into the lab VM and check it.\n\n  deploy-mvx.sh push     [--image PATH]   push the image + the pinned meta-lxd into the VM\n  deploy-mvx.sh launch                    launch the container with meta-lxd gen/mv.sh\n  deploy-mvx.sh check                     WAN connectivity check (+ radios, LAN info)\n  deploy-mvx.sh opensync [--cloud C]      enable SON, check the cloud connection\n                                          C = plume (TLS, real cloud) | local (local-noc)\n  deploy-mvx.sh pod [NAME]                push the OpenSync pod image (build-pod.sh), launch\n                                          pod NAME (default pod-1), check it onboards over the\n                                          wifi backhaul (local-noc)\n  deploy-mvx.sh client [NAME] [POD]       Alpine wpa_supplicant client on POD's fronthaul,\n                                          DHCP + internet through pod -> GRE -> gateway\n  deploy-mvx.sh mesh                      opensync --cloud local, then MVX_PODS pods (pod-1..N)\n                                          with MVX_POD_CLIENTS clients each (pod-N-wcM), and a\n                                          topology check\n  deploy-mvx.sh all      [--image PATH]   push + launch + check + opensync\n  deploy-mvx.sh status                    container state + last check result\n  deploy-mvx.sh shell                     shell inside the mvx container\n  deploy-mvx.sh noc <noc-ctl args>        query/drive local-noc (nodes, tables, dump,\n                                          log, transact, request; see local-noc/noc-ctl)\n\nThe container is launched exactly the way meta-lxd intends: gen/mv.sh with\n  -b br-wan101   eth0 (WAN) on boardfarm's WAN bridge (dhcp-cpe1 + wan-cpe1)\n  -l br-lan201   eth1 (LAN port 1) on boardfarm's LAN bridge (lan-cpe1)\n  HWSIM_RADIOS   radios moved in from the VM's mac80211_hwsim pool\n(setup-vm.sh must have provisioned the VM first.)\n\nImage: --image PATH, else $MVX_IMAGE, else the artifact of $MVX_BUILD_DIR\n(build-mvx.sh). It is staged in the VM under a directory named after its\nbuild dir, because mv.sh reads product and release from the path and the\nbuild stamp from the real file name.",
+  "build-pod.sh": "build-pod.sh - build the OpenSync pod (extender) LXD image from the\nopen-source OpenSync release.\n\n  build-pod.sh buildenv    docker build environment (Ubuntu 20.04, OVS 2.8.7, hostap)\n  build-pod.sh sources     fetch the pinned OpenSync repos, assemble the tree + overlays\n  build-pod.sh build       make TARGET=HWSIM_POD (+ rootfs)\n  build-pod.sh image       pod runtime image -> LXD image (metadata + rootfs tarballs)\n  build-pod.sh all         everything above\n  build-pod.sh status      what exists\n\nOpenSync 6.6.1.0 from github.com/plume-design (pod/opensync/sources.lock):\ncore + opensync-platform-cfg80211 (nl80211/cfg80211, i.e. mac80211_hwsim)\n+ opensync-vendor-openwrt-template with our HWSIM_POD target overlaid\n(pod/opensync/vendor-overlay) + our mvx-local service provider (redirector\n= local-noc, onboarding credentials). Built natively in docker; the result\nruns as an LXD system container in the lab VM (deploy-mvx.sh pod).",
+  "build-docs.sh": "build-docs.sh - the documentation site (docs/, served by GitHub Pages).\n\n  build-docs.sh viewer            copy local-noc's topology viewer into the site, unchanged\n  build-docs.sh reference         config, commands, scripts, workarounds -> docs/data/reference.json\n  build-docs.sh capture [--frames N] [--interval S]\n                                  record the running lab: topology frames, every node's raw\n                                  tables (secrets redacted), the check results\n  build-docs.sh all               viewer + reference (+ capture when the lab is reachable)\n  build-docs.sh serve [PORT]      preview the site on http://localhost:PORT/ (default 8000)\n\nThe site is static (no build step to publish): GitHub Pages, \"Deploy from a\nbranch\", main, /docs. The viewer on it is the same file local-noc serves; it\nreplays the recording instead of polling a live local-noc."
+ },
+ "guests": [
+  {
+   "name": "00-base.sh",
+   "purpose": "Base lab host: packages, Docker, nested LXD (snap, held), uv, hwsim module."
+  },
+  {
+   "name": "10-hwsim.sh",
+   "purpose": "mac80211_hwsim radio pool, persistent across VM reboots. Same conventions as meta-lxd gen/gen-util.sh: load once, never reload, host-resident radios are named virt-wlanN and are \"free\"."
+  },
+  {
+   "name": "20-boardfarm.sh",
+   "purpose": "boardfarm-lab-staging: pinned checkout, uv venv, the opensync-lab lab config overlay, then bf-lab setup (dhcp-cpe1 + wan-cpe1 + lan-cpe1)."
+  },
+  {
+   "name": "25-local-noc.sh",
+   "purpose": "local-noc: plain-TCP OpenSync cloud stand-in (local-noc/noc.py), a docker container on boardfarm's WAN segment (network wan-cpe1, like boardfarm's own services), so any CPE behind wan-cpe1 reaches it through the WAN NAT."
+  },
+  {
+   "name": "30-mvx.sh",
+   "purpose": "Launch the mvx container with meta-lxd gen/mv.sh: WAN on br-wan101, LAN port 1 on br-lan201, radios from the hwsim pool. Relaunching replaces the container but keeps its nvram volume (mv.sh semantics)."
+  },
+  {
+   "name": "40-wan-check.sh",
+   "purpose": "WAN connectivity check for the mvx container. Hard checks (the result): WAN IPv4 lease from boardfarm, default route via wan-cpe1, internet ping, DNS. Informational: mgmt VLAN lease, IPv6, hwsim radios, LAN client."
+  },
+  {
+   "name": "50-opensync.sh",
+   "purpose": "Enable OpenSync (SON) on the mvx container and check the cloud connection: L3 managers running (dm cm nm wm + ovsdb-server) L4 MeshAgent bridged SONURL -> AWLAN_Node.redirector_addr, cm reached the redirector and was handed a controller, Manager.is_connected Same dmcli sequence as boardfarm tests/opensync/test_opensync_cloud.py."
+  },
+  {
+   "name": "70-pod.sh",
+   "purpose": "Launch the OpenSync pod (extender) container: the mvx-pod LXD image (build-pod.sh), 2 radios from the hwsim pool (1st -> 2.4G fronthaul, 2nd -> 5G backhaul STA), and NO wired network -- the pod's only way out is the Wi-Fi backhaul to the gateway, which OpenSync's cm onboards over. Then check the onboarding end to end (backhaul, both GRE ends, LAN, cloud claim, fronthaul)."
+  },
+  {
+   "name": "80-client.sh",
+   "purpose": "Wireless client behind an extender: a small Alpine container whose only network is one hwsim radio (no wired NIC). wpa_supplicant joins the pod's fronthaul (home SSID, configured by local-noc; every pod uses the same SSID on the one hwsim medium, so the client is pinned to its pod's BSSID), DHCP comes from the gateway across the pod's GRE backhaul, and the internet is reached as 80-client.sh <name> <pod> client -wifi-> pod home-ap -> br-home -> GRE over wifi backhaul -> mv3 brlan0 -> WAN"
+  },
+  {
+   "name": "85-topology.sh",
+   "purpose": "The lab topology as a whole, from the gateway's and the cloud's side: mv3 --wifi backhaul--> pod-1..N (GRE into brlan0) --fronthaul--> pod-N-wc1..M Every pod: associated to mv3's backhaul AP, its GRE a port of mv3's brlan0, claimed by local-noc, its own check PASS. Every client: its own check PASS, leased by mv3, associated to its own pod."
+  }
+ ],
+ "workarounds": [
+  {
+   "problem": "mv3 LXD image selects no OpenSync NOC certificates (only `do_install:append:f5685` does), so `cm` stays in BACKOFF",
+   "workaround": "`guest/50-opensync.sh` links `/usr/opensync/etc/certs/*` -> `theta-dev/` and restarts `cm`",
+   "fix": "`docs/proposed/0001-*.patch` for meta-lxd-mv3 (untested)"
+  },
+  {
+   "problem": "With SON on, `dnsmasq` refuses to start (`bind-interfaces` + missing `wl0.1`/`wl1.1`), so LAN DHCP breaks",
+   "workaround": "`fix_lan_dhcp` in `guest/common.sh` restarts it with `bind-dynamic`",
+   "fix": "same proposed patch (utopia)"
+  },
+  {
+   "problem": "boardfarm `bf-wan` build: Debian bullseye security packages now 404",
+   "workaround": "`boardfarm/patches/0001`",
+   "fix": "boardfarm-lab-staging"
+  },
+  {
+   "problem": "boardfarm `wan-cpe1`: docker 28+ can make the non-masqueraded eth1 the default route, so the WAN side has no internet",
+   "workaround": "`boardfarm/patches/0002`",
+   "fix": "boardfarm-lab-staging"
+  },
+  {
+   "problem": "The lab gives CPEs global IPv6 but rev140 has no IPv6 internet: `cm` prefers IPv6 and waits out a timeout per attempt",
+   "workaround": "boardfarm rebuild hook makes `wan-cpe1` reject non-lab IPv6 (TCP reset), so `cm` fails over to IPv4 at once",
+   "fix": "a lab with IPv6 upstream (the hook then does nothing)"
+  },
+  {
+   "problem": "hal-wifi-hwsim: (1) never reports the VAP security, so mv3's `wm` sees config \u2260 state; this build's `wm` also re-applies non-home VIFs every 30 s regardless, and each re-apply restarted every BSS of the radio (`STOP_AP`), silently dropping associated stations; (2) its MLME never removes a station (no deauth/disassoc handling, stale entry on re-auth), so a returning STA never completes the 4-way handshake. Together the extender lost the backhaul and could not rejoin",
+   "workaround": "`meta-mvx/` patches 0001 (report security and real BSS state, keep a running BSS running) and 0002 (forget a station on deauth/disassoc/re-auth), added by `build-mvx.sh`",
+   "fix": "hal-wifi-hwsim"
+  },
+  {
+   "problem": "mv3's `cm` (OpenSync 4.4) picks the uplink's address family once: with a global IPv6 on erouter0 it takes IPv6 and never evaluates IPv4 until the IPv4 address changes. Whenever OpenSync (re)starts on a WAN that is already up (e.g. a cloud switch), it then retries IPv6 forever, and this lab has no IPv6 upstream. First boot also leaves `Connection_Manager_Uplink.ipv4` unset",
+   "workaround": "`guest/50-opensync.sh`: while `cm` is not connected and there is no IPv6 internet, sets `ipv6=blocked` (and `ipv4=ready`) on the uplink and restarts `cm` via `Node_Services`",
+   "fix": "OpenSync cm2 / RDK target; or a lab with IPv6 upstream"
+  },
+  {
+   "problem": "OpenSync 6.6.1.0 osw: `owm` aborts when its config sync has not settled in 180 s; with a `tx_chainmask` configured it never settles on mac80211_hwsim (no chains reported), so every pod dropped its backhaul, GRE and cloud session every 3 minutes",
+   "workaround": "the pod bootstrap sets no `tx_chainmask`",
+   "fix": "hwsim / OpenSync osw (tolerate an unsupported chainmask)"
+  },
+  {
+   "problem": "OpenSync 6.6.1.0: `cm2` builds an extender's GRE only for the STAs in `CONFIG_OVSDB_BOOTSTRAP_WIFI_STA_LIST`; the OVSDB bootstrap then needs unquoted `BACKHAUL_SSID/PASS` (the `local` provider quotes them)",
+   "workaround": "our `HWSIM_POD` target sets the list; `mvx-local` provider unquoted",
+   "fix": "opensync-service-provider-local"
+  },
+  {
+   "problem": "mac80211_hwsim radios are multi-band; OpenSync assumes one band per phy (duplicate channels, VIF naming)",
+   "workaround": "`pod/opensync/patches/core/0001` (per-phy band filter), `build-pod.sh` band-by-position for `52_owm_prep.sh`, the pod's backhaul STA on 5G only",
+   "fix": "wmediumd/hwsim band config, or OpenSync"
+  },
+  {
+   "problem": "Repo mirror is older than the 0808 build (11 pinned commits missing)",
+   "workaround": "pin store `~/yocto/repo_reference/mvx-pins/<pins>`",
+   "fix": "refresh the mirror"
+  },
+  {
+   "problem": "Shared sstate object with a stale absolute path (libwebsockets)",
+   "workaround": "`build-mvx.sh` rebuilds such recipes locally",
+   "fix": "libwebsockets recipe"
+  }
+ ],
+ "status": [
+  {
+   "goal": "Pinned offline build",
+   "result": "`mv3-lxd-r25-oe40-0923`: installed packages identical to the 0808 reference, all recorded SRCREVs match the pins"
+  },
+  {
+   "goal": "mv3 internet",
+   "result": "erouter0 leases `10.70.0.x` from boardfarm Kea on tagged VLAN 1081; internet, DNS and TLS to the Plume redirector all work"
+  },
+  {
+   "goal": "OpenSync cloud",
+   "result": "`Manager` ACTIVE on the theta dev controller; the `mv3` identity is claimed into a location and receives cloud config"
+  },
+  {
+   "goal": "Local cloud (local-noc)",
+   "result": "the same node connects to `local-noc` over plain TCP (redirector -> controller, all 109 tables monitored and recorded) and switches back and forth with the Plume cloud"
+  },
+  {
+   "goal": "Topology view",
+   "result": "local-noc's web UI on `http://<host>:8640/` shows the live location: 1 gateway, 3 extenders, 6 clients, their Wi-Fi links (band, channel) and the WAN, with draggable spring physics and per-node details"
+  },
+  {
+   "goal": "OpenSync extenders (GRE backhaul)",
+   "result": "three OpenSync 6.6.1.0 pods with only hwsim radios join mv3's backhaul AP, build their GRE uplinks (`cm`), are claimed by local-noc through them and get their fronthaul; local-noc builds mv3's end of each tunnel. Two Alpine `wpa_supplicant` clients per pod, each pinned to its pod's fronthaul, get DHCP from mv3 and reach the internet (ICMP, DNS, HTTP)"
+  }
+ ]
+}

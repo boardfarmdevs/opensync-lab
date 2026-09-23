@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenSync extenders · opensync-lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<main><div class="wrap">
+<div class="k" style="color:var(--faint);font-size:12px;letter-spacing:.12em;text-transform:uppercase">Inside · build-pod.sh · 70-pod.sh · 80-client.sh</div>
+<h1>OpenSync extenders</h1>
+<p class="lead">The extenders ("pods") run the open-source OpenSync release in a Linux container with nothing but two simulated radios.
+They onboard exactly as hardware does: over the gateway's Wi-Fi backhaul, through a GRE tunnel, to the cloud.</p>
+
+<h2>Building the extender</h2>
+<pre><code>./build-pod.sh all        <span class="c"># buildenv + sources + build + image</span>
+./build-pod.sh status</code></pre>
+<div class="cards">
+  <div class="card"><div class="k">sources</div><h3>OpenSync 6.6.1.0</h3><p>From github.com/plume-design, pinned in <code>pod/opensync/sources.lock</code>: core, <code>opensync-platform-cfg80211</code> (nl80211, so mac80211_hwsim), <code>opensync-vendor-openwrt-template</code>, the <code>local</code> service provider.</p></div>
+  <div class="card"><div class="k">overlays</div><h3>HWSIM_POD target</h3><p>This repo's target on the vendor template (systemd, the backhaul STA list, null IGMP/MLD/UPnP backends) and the <code>mvx-local</code> service provider: redirector = local-noc, onboarding credentials.</p></div>
+  <div class="card"><div class="k">toolchain</div><h3>Native Ubuntu build</h3><p>An Ubuntu 20.04 build container with OVS 2.8.7 and hostap <code>d9d5e55</code> plus OpenSync's patches, instead of the OpenWrt SDK.</p></div>
+  <div class="card"><div class="k">image</div><h3>LXD system container</h3><p>Ubuntu 20.04 + systemd, the OpenSync rootfs, <code>ovsdb-server</code>, hostapd/wpa_supplicant, and a runtime bootstrap that binds OpenSync's radio config to the phys the container actually gets.</p></div>
+</div>
+
+<h2 id="onboarding">Onboarding, step by step</h2>
+<p>What happens between <code>deploy-mvx.sh pod pod-1</code> and a client on pod-1 reaching the internet. Nothing here is injected: the
+extender's own OpenSync (<code>cm</code>, <code>owm</code>, <code>nm</code>) and local-noc acting as the cloud do all of it.</p>
+<div class="js-stepper">
+<div class="diagram">
+<svg viewBox="0 0 760 350" role="img" aria-label="onboarding">
+  <g data-steps="6 9"><path class="edge wired" d="M140,42 L300,42"/><text class="mono" x="160" y="34">WAN · NAT</text></g>
+  <g data-steps="5 7 8"><path class="edge gre" d="M460,42 L600,42"/><text class="mono" x="476" y="34">OVSDB (cloud)</text></g>
+  <g data-steps="2 3 4 5 6 7 8 9"><path class="edge b5" d="M370,76 L370,160"/><text class="mono" x="252" y="112">5 GHz · wl1.1</text></g>
+  <g data-steps="4 5 6 7 8 9"><path class="edge gre" d="M392,76 L392,160"/><text class="mono" x="402" y="112">GRE g-bhaul-sta-50 ⇄ pgd1_88</text></g>
+  <g data-steps="7 8"><path class="edge" style="stroke:#37e6b0;stroke-dasharray:2 5" d="M460,186 C560,186 640,120 668,66"/><text class="mono" x="560" y="170">cm → redirector → controller</text></g>
+  <g data-steps="9"><path class="edge b24" d="M380,214 L380,290"/><text class="mono" x="392" y="258">2.4 GHz · home-ap-24</text></g>
+  <g data-steps="1 2 3 4 5 6 7 8 9" data-focus="9"><rect class="box" x="20" y="20" width="120" height="44" rx="10"/><text class="lbl" x="34" y="47">Internet</text></g>
+  <g data-steps="1 2 3 4 5 6 7 8 9" data-focus="2 3 5 6"><rect class="box" x="300" y="18" width="160" height="58" rx="12"/><text class="lbl" x="316" y="42">mv3 · router</text><text class="mono" x="316" y="62">wl1.1 · brlan0 · dnsmasq</text></g>
+  <g data-steps="1 2 3 4 5 6 7 8 9" data-focus="5 7 8"><rect class="box" x="600" y="18" width="140" height="48" rx="10"/><text class="lbl" x="614" y="40">local-noc</text><text class="mono" x="614" y="57">cloud · mesh</text></g>
+  <g data-steps="1 2 3 4 5 6 7 8 9" data-focus="1 4 6 7 8"><rect class="box" x="300" y="160" width="186" height="54" rx="12"/><text class="lbl" x="316" y="184">pod-1</text><text class="mono" x="316" y="203">bhaul-sta-50 · br-home</text></g>
+  <g data-steps="9" data-focus="9"><rect class="box" x="300" y="290" width="160" height="44" rx="10"/><text class="lbl" x="316" y="317">pod-1-wc1</text></g>
+</svg>
+</div>
+<div class="stepper"></div>
+<div class="steps">
+<div class="step"><h3>1 · Launch</h3><p><code>70-pod.sh</code> starts the container with two radios from the pool as <code>wlan0</code>/<code>wlan1</code> and <b>no wired NIC</b>.
+Before any OpenSync manager runs, <code>mvx-pod-bootstrap</code> writes the radio config for the phys actually present (wiphy names are VM-wide):
+the first radio 2.4 GHz for the fronthaul, the second 5 GHz with the backhaul STA <code>bhaul-sta-50</code>, carrying the onboarding credentials the
+image was built with.</p></div>
+<div class="step"><h3>2 · Join the backhaul</h3><p><code>owm</code> brings up <code>bhaul-sta-50</code>, which finds mv3's <code>wl1.1</code> ("opensync-lab-bhaul", WPA2, channel 44) and
+associates. On mv3, the Wi-Fi HAL's own authenticator answers: authentication, association, the WPA2 4-way handshake.</p></div>
+<div class="step"><h3>3 · A backhaul address</h3><p>The STA gets <code>169.254.1.x/25</code> from mv3's dnsmasq on <code>wl1.1</code>. mv3 now lists the extender among the
+backhaul AP's associated clients and in its DHCP leases, both reported to the cloud.</p></div>
+<div class="step"><h3>4 · The extender's end of the tunnel</h3><p><code>cm</code> (its backhaul GRE module) sees a link-local address on a backhaul STA and creates
+<code>g-bhaul-sta-50</code>: a gretap from <code>169.254.1.x</code> to <code>169.254.1.1</code> over <code>bhaul-sta-50</code>, and bridges it into <code>br-home</code>.</p></div>
+<div class="step"><h3>5 · The gateway's end</h3><p>local-noc, like the cloud, sees on mv3 an associated backhaul client with a lease and creates mv3's end:
+<code>Wifi_Inet_Config</code> <code>pgd1_x</code> (gre, over <code>wl1.1</code>, remote the extender), which mv3's <code>nm</code> builds, and the tunnel as an OVS port of
+<code>brlan0</code>. The extender is now on mv3's LAN.</p></div>
+<div class="step"><h3>6 · A LAN address</h3><p>DHCP on <code>br-home</code> crosses the tunnel: the extender gets <code>192.168.0.x</code> from mv3 with mv3 as its default route,
+and so a path to the internet through mv3's WAN.</p></div>
+<div class="step"><h3>7 · The cloud</h3><p><code>cm</code> connects to its redirector (<code>tcp:10.101.0.40:6640</code>, built into the image), is sent to the controller
+(<code>:6641</code>), and local-noc starts monitoring every table of the extender's database. The extender is claimed.</p></div>
+<div class="step"><h3>8 · The fronthaul</h3><p>local-noc gives the extender its fronthaul: <code>home-ap-24</code>, "opensync-lab-home", WPA2, channel 6, in <code>br-home</code>.
+<code>owm</code> brings it up.</p></div>
+<div class="step"><h3>9 · A client on the extender</h3><p><code>80-client.sh</code> starts an Alpine container with one radio and no wired NIC. Its wpa_supplicant joins its extender's
+<code>home-ap-24</code> (pinned to that BSSID: every extender uses the same SSID), udhcpc gets <code>192.168.0.x</code> from mv3 through the extender's tunnel,
+and ICMP, DNS and HTTP reach the internet.</p></div>
+</div>
+</div>
+
+<h2 id="gre">Seeing the GRE at work</h2>
+<p>On the extender, the tunnel and its bridge; then a client's ping inside the tunnel on the backhaul radio, and arriving at mv3:</p>
+<pre><code>V=opensync-lab-0923
+lxc exec $V -- lxc exec pod-1 -- ip -d link show g-bhaul-sta-50
+lxc exec $V -- lxc exec pod-1 -- ls /sys/class/net/br-home/brif
+lxc exec $V -- lxc exec pod-1-wc1 -- ping 8.8.8.8                            <span class="c"># keep it running, then:</span>
+lxc exec $V -- lxc exec pod-1 -- tcpdump -nn -i bhaul-sta-50 'ip proto 47'
+lxc exec $V -- lxc exec mv3 -- tcpdump -nn -i wl1.1 'ip proto 47'</code></pre>
+<pre><code><span class="c"># pod-1, on the backhaul radio: the client's ping, inside the GRE</span>
+169.254.1.88 &gt; 169.254.1.1: GREv0, length 102: IP 192.168.0.143 &gt; 8.8.8.8: ICMP echo request, id 492, seq 2
+169.254.1.1 &gt; 169.254.1.88: GREv0, length 102: IP 8.8.8.8 &gt; 192.168.0.143: ICMP echo reply, id 492, seq 2</code></pre>
+<p>The <a href="topology.html">topology viewer</a> shows the same from the cloud's side: hover an extender for both ends of its tunnel and its traffic,
+counted by mv3's OVS port.</p>
+
+<h2 id="clients">The wireless clients</h2>
+<p>Each client runs its networking like a device: an OpenRC boot script (<code>/etc/local.d/opensync-lab-wlan.start</code>) starts
+<code>wpa_supplicant</code> on its extender's fronthaul and a <code>udhcpc</code> that stays running, keeping and renewing the lease, also after a reassociation or a
+restart. The lab has no IPv6 upstream, so the clients stay on IPv4. The check proves association to the right extender, the lease from mv3,
+the running DHCP client, ICMP, DNS and HTTP.</p>
+
+<h2>What it took</h2>
+<p>OpenSync on simulated radios needed a few fixes, each in this repo and listed with its proper upstream fix in the <a href="reference.html#workarounds">reference</a>:</p>
+<ul>
+<li><b>No GRE without the STA list</b>: OpenSync 6.6's <code>cm</code> builds an extender's tunnel only for the STAs in <code>CONFIG_OVSDB_BOOTSTRAP_WIFI_STA_LIST</code>; the target sets it.</li>
+<li><b>Multi-band radios</b>: a hwsim radio offers 2.4, 5 and 6 GHz at once; a small core patch gives each phy one band.</li>
+<li><b>An owm that aborted every 3 minutes</b>: with a <code>tx_chainmask</code> configured, osw's config sync never settles on hwsim and <code>owm</code> aborts after 180 s, taking the backhaul down; the bootstrap sets none.</li>
+<li><b>The gateway's Wi-Fi HAL</b>: it restarted the backhaul AP on every config re-apply and never forgot a station; two <code>meta-mvx</code> patches fix both.</li>
+</ul>
+
+<footer class="pg">Next: <a href="local-noc.html">local-noc cloud</a></footer>
+</div></main>
+</div>
+</body>
+</html>
