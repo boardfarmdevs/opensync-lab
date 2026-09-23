@@ -64,6 +64,33 @@ if ! wait_ready 15; then
 fi
 wait_ready 60 || { echo "boardfarm WAN side is not serving (see: docker ps; docker logs dhcp-cpe1)" >&2; exit 1; }
 docker update --restart unless-stopped $containers >/dev/null
+# The lab hands CPEs global IPv6 (DHCPv6 + RA on the tagged VLAN), but when
+# this host has no IPv6 path to the internet, wan-cpe1 silently drops what it
+# cannot route. OpenSync cm prefers IPv6 and then waits out a timeout on every
+# IPv6 attempt before flipping to IPv4, so reaching the cloud takes minutes.
+# Make unroutable IPv6 fail fast instead: reject (TCP reset / ICMPv6
+# prohibited) anything forwarded to non-lab IPv6 destinations. Skipped when
+# wan-cpe1 actually reaches the IPv6 internet (a route alone proves nothing:
+# docker gives it one via the VM, which may lead nowhere).
+v6_internet() {
+    docker exec wan-cpe1 ping -6 -c1 -W3 2001:4860:4860::8888 >/dev/null 2>&1 ||
+        docker exec wan-cpe1 ping -6 -c1 -W3 2606:4700:4700::1111 >/dev/null 2>&1
+}
+if ! v6_internet; then
+    docker exec wan-cpe1 sh -c '
+        for r in "-p tcp -j REJECT --reject-with tcp-reset" "-j REJECT --reject-with icmp6-adm-prohibited"; do
+            ip6tables -C FORWARD ! -d 2001:dead:beef::/48 $r 2>/dev/null \
+                || ip6tables -A FORWARD ! -d 2001:dead:beef::/48 $r
+        done
+        # evaluated before the init script'"'"'s ACCEPT rules
+        ip6tables -S FORWARD | grep -q "^-A FORWARD ! -d 2001:dead:beef::/48 -p tcp" &&
+            for r in "-j REJECT --reject-with icmp6-adm-prohibited" "-p tcp -j REJECT --reject-with tcp-reset"; do
+                ip6tables -D FORWARD ! -d 2001:dead:beef::/48 $r
+                ip6tables -I FORWARD 1 ! -d 2001:dead:beef::/48 $r
+            done'
+    echo "wan-cpe1: no IPv6 internet here; non-lab IPv6 is rejected fast"
+fi
+
 # docker re-enables bridge netfilter whenever it creates networks
 modprobe br_netfilter
 sysctl -qw net.bridge.bridge-nf-call-iptables=0 net.bridge.bridge-nf-call-ip6tables=0

@@ -11,19 +11,32 @@ vm_wait_agent() {
         || die "$MVX_VM did not expose its LXD agent"
 }
 
+# The redirector (SONURL) for a cloud name: plume | local.
+cloud_redirector() {
+    case "$1" in
+        plume) echo "$MVX_PLUME_REDIRECTOR" ;;
+        local) echo "tcp:$MVX_LOCAL_NOC_IP:$MVX_LOCAL_NOC_REDIRECTOR_PORT" ;;
+        *) die "unknown cloud '$1' (plume|local)" ;;
+    esac
+}
+: "${MVX_OPENSYNC_REDIRECTOR:=$(cloud_redirector "$MVX_CLOUD")}"
+
 # Everything the guest needs from this repo, plus the resolved settings.
 vm_push_tree() {
     log "push: guest scripts + boardfarm overlay -> $MVX_VM:$GUEST_ROOT"
     lxc exec "$MVX_VM" -- install -d "$GUEST_ROOT/assets" /var/lib/mvx-opensync
     # replace, not overlay: a file removed or renamed here must vanish there too
-    lxc exec "$MVX_VM" -- rm -rf "$GUEST_ROOT/guest" "$GUEST_ROOT/boardfarm"
-    tar -C "$MVX_ROOT" -czf - guest boardfarm \
+    lxc exec "$MVX_VM" -- rm -rf "$GUEST_ROOT/guest" "$GUEST_ROOT/boardfarm" "$GUEST_ROOT/local-noc"
+    tar -C "$MVX_ROOT" -czf - guest boardfarm local-noc \
         | lxc exec "$MVX_VM" -- tar -C "$GUEST_ROOT" -xzf -
     {
         echo "# written by $(basename "$0") on $(hostname) at $(date -Is)"
         local v
         for v in MVX_PRODUCT MVX_RELEASE MVX_BOARDFARM_COMMIT MVX_HWSIM_POOL MVX_HWSIM_CHANNELS \
-                 MVX_HWSIM_RADIOS MVX_INSTANCE; do
+                 MVX_HWSIM_RADIOS MVX_INSTANCE MVX_OPENSYNC_REDIRECTOR MVX_LOCAL_NOC_IP \
+                 MVX_LOCAL_NOC_REDIRECTOR_PORT MVX_LOCAL_NOC_CONTROLLER_PORT MVX_MESH_GATEWAY \
+                 MVX_MESH_BHAUL_IF MVX_MESH_BHAUL_SSID MVX_MESH_BHAUL_PSK MVX_MESH_HOME_SSID \
+                 MVX_MESH_HOME_PSK; do
             printf '%s=%q\n' "$v" "${!v}"
         done
     } | lxc exec "$MVX_VM" -- tee "$GUEST_ROOT/vm.env" >/dev/null

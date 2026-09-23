@@ -4,10 +4,12 @@
 MVX_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 export MVX_ROOT
 
-# config: defaults, then the untracked machine-local overrides
+# config: environment > config/local.conf (untracked, written by the scripts)
+# > config/mvx.conf defaults. Both files only assign unset variables (:=), so
+# local.conf must be read first for its values to win over the defaults.
+[ -f "$MVX_ROOT/config/local.conf" ] && source "$MVX_ROOT/config/local.conf"
 # shellcheck source=../config/mvx.conf
 source "$MVX_ROOT/config/mvx.conf"
-[ -f "$MVX_ROOT/config/local.conf" ] && source "$MVX_ROOT/config/local.conf"
 
 log()  { printf '\033[1;34m[%s]\033[0m %s\n' "$(date +%H:%M:%S)" "$*"; }
 warn() { printf '\033[1;33m[%s] WARN\033[0m %s\n' "$(date +%H:%M:%S)" "$*" >&2; }

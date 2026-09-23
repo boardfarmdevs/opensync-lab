@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Attach the local-noc container to boardfarm's WAN network at its fixed
+# address. bf-lab teardown/setup recreates that network (and disconnects
+# everything from it), so this runs after every boardfarm-lab rebuild.
+set -euo pipefail
+source /etc/default/local-noc
+docker start local-noc >/dev/null
+if [ "$(docker inspect -f '{{with index .NetworkSettings.Networks "wan-cpe1"}}{{.IPAddress}}{{end}}' local-noc)" != "$LOCAL_NOC_IP" ]; then
+    docker network disconnect -f wan-cpe1 local-noc >/dev/null 2>&1 || true
+    docker network connect --ip "$LOCAL_NOC_IP" wan-cpe1 local-noc
+fi
+echo "local-noc on wan-cpe1 at $LOCAL_NOC_IP"

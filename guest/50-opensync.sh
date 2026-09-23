@@ -37,16 +37,19 @@ cx "test -x /usr/opensync/scripts/opensync.init" || die "no OpenSync in this ima
 # the selection itself (see doc/PLAN.md), make it here -- same default NOC as
 # f5685 without BUILD_OSRT, and what mv27/mv37 ship: theta-dev.
 noc=${MVX_OPENSYNC_NOC:-theta-dev}
-missing=$(for f in $(ovsh "-r s SSL private_key certificate ca_cert"); do cx "test -e $f" || echo "$f"; done)
+certdir=/usr/opensync/etc/certs
+# Decided from the files, not the SSL table: on a fresh container OpenSync is
+# not running yet (SON off), so the table cannot be read at this point.
+missing=$(for f in ca.pem client.pem client_dec.key; do cx "test -e $certdir/$f" || echo "$f"; done)
 if [ -n "$missing" ]; then
-    cx "test -d /usr/opensync/etc/certs/$noc" || die "no NOC certificate dir /usr/opensync/etc/certs/$noc in the image"
+    cx "test -d $certdir/$noc" || die "no NOC certificate dir $certdir/$noc in the image"
     for f in $missing; do
-        cx "ln -sfn $noc/$(basename "$f") $f"
+        cx "ln -sfn $noc/$f $certdir/$f"
     done
     result INFO "client certificates" "image selects no NOC; linked $(echo $missing | wc -w) file(s) -> $noc/ (runtime workaround)"
     certs_linked=1
 else
-    result INFO "client certificates" "present: $(ovsh '-r s SSL certificate') -> $(cx "readlink $(ovsh '-r s SSL certificate')")"
+    result INFO "client certificates" "present: $certdir/client.pem -> $(cx "readlink $certdir/client.pem")"
 fi
 
 cur_admin=$(cx "dmcli eRT getv Device.X_LGI-COM_SON.SONAdminStatus" | awk '/value:/ {print $NF}')
@@ -74,6 +77,50 @@ else
     result FAIL "managers" "not running: $missing"
 fi
 
+# Uplink address family. cm only connects over a family it considers usable
+# on the uplink (erouter0). OpenSync 4.4's cm2 decides that when it selects
+# the link: if erouter0 has a global IPv6 address that is not blocked it
+# takes IPv6 and never evaluates IPv4 at all (ipv4.is_ip stays false, "Ares:
+# Skip ipv4 address. IP active: false") until erouter0's IPv4 address changes.
+# That happens whenever OpenSync (re)starts while the WAN is already up, e.g.
+# on a cloud switch. This lab gives the CPE global IPv6 but has no IPv6
+# upstream, so cm then retries IPv6 forever. When cm is stuck and there is no
+# IPv6 internet, mark IPv6 blocked on the uplink (cm's own mechanism for a
+# failing family) and restart cm, so it selects IPv4. First boot also leaves
+# Connection_Manager_Uplink.ipv4 unset; record it as ready.
+# Retried while waiting for the controller below (rate-limited): right after
+# boot the managers can be up before erouter0 has its WAN lease.
+v6_internet=
+cx "ping -6 -c1 -W3 2001:4860:4860::8888 >/dev/null 2>&1" && v6_internet=1
+last_uplink_fix=-999
+fix_uplink() {
+    local uplink what=""
+    [ "$(ovsh '-r s Manager is_connected')" = true ] && return 0
+    [ $((SECONDS - last_uplink_fix)) -ge 90 ] || return 0
+    uplink=$(ovsh "-r s Connection_Manager_Uplink if_name -w is_used==true" | head -1)
+    uplink=${uplink:-erouter0}
+    cx "ip -4 -o addr show $uplink" | grep -q inet || return 0
+    if [ "$(ovsh "-r s Connection_Manager_Uplink ipv4 -w if_name==$uplink")" != ready ]; then
+        ovsh "u Connection_Manager_Uplink -w if_name==$uplink ipv4:=ready" >/dev/null
+        what="ipv4 unset -> ready"
+    fi
+    if [ -z "$v6_internet" ]; then
+        ovsh "u Connection_Manager_Uplink -w if_name==$uplink ipv6:=blocked" >/dev/null
+        what="${what:+$what, }ipv6 -> blocked (no IPv6 internet)"
+    fi
+    [ -n "$what" ] || return 0
+    ovsh "u Node_Services -w service==cm enable:=false" >/dev/null
+    sleep 3
+    ovsh "u Node_Services -w service==cm enable:=true" >/dev/null
+    last_uplink_fix=$SECONDS
+    result INFO "uplink address family" "cm not connected; $uplink: $what; restarted cm (runtime workaround)"
+}
+fix_uplink
+
+# the SSL table (read by ovsdb-server) must point at existing files
+bad=$(for f in $(ovsh "-r s SSL private_key certificate ca_cert"); do cx "test -e $f" || echo "$f"; done)
+[ -z "$bad" ] || result FAIL "SSL table files" "missing: $bad"
+
 # enabling SON leaves the LAN DHCP server down on this image (see common.sh)
 if msg=$(fix_lan_dhcp "$name"); then
     result INFO "LAN DHCP (dnsmasq)" "$msg"
@@ -95,7 +142,7 @@ if [ -n "${certs_linked:-}" ] && [ "$cur_admin" = true ]; then
 fi
 
 # L4a SONURL -> AWLAN_Node.redirector_addr (local MeshAgent bridge)
-redir_ok() { ovsh "-r s AWLAN_Node redirector_addr" | grep -q "$redir_host"; }
+redir_ok() { fix_uplink; ovsh "-r s AWLAN_Node redirector_addr" | grep -q "$redir_host"; }
 if wait_for 90 5 "redirector_addr" redir_ok; then
     result PASS "AWLAN_Node.redirector_addr" "$(ovsh '-r s AWLAN_Node redirector_addr')"
 else
@@ -104,7 +151,8 @@ fi
 
 # L4b redirector -> controller assignment, then the controller connection
 mgr_addr() { ovsh "-r s AWLAN_Node manager_addr" | grep -E '^(ssl|tcp):'; }
-if wait_for 360 5 "manager_addr" mgr_addr; then
+mgr_addr_wait() { fix_uplink; mgr_addr >/dev/null; }
+if wait_for 360 5 "manager_addr" mgr_addr_wait; then
     result PASS "controller assigned" "AWLAN_Node.manager_addr=$(mgr_addr)"
 else
     result FAIL "controller assigned" "AWLAN_Node.manager_addr empty (redirector not reached, or node unknown to the cloud)"
@@ -114,6 +162,20 @@ if wait_for 240 5 "Manager.is_connected" connected; then
     result PASS "Manager.is_connected" "true -> $(ovsh '-r s Manager target')"
 else
     result FAIL "Manager.is_connected" "$(ovsh '-r s Manager is_connected') (target $(ovsh '-r s Manager target'), status $(ovsh '-r s Manager status' | tr '\n' ' '))"
+fi
+
+# local-noc: the controller side must see the node too
+if [ "$redir_host" = "${MVX_LOCAL_NOC_IP:-}" ]; then
+    node_id=$(ovsh '-r s AWLAN_Node id')
+    noc_session() { docker exec local-noc noc-ctl nodes 2>/dev/null | awk -v n="$node_id" '$1 == n && $2 == "controller"' | tail -1; }
+    noc_has_session() { [ -n "$(noc_session)" ]; }
+    wait_for 120 5 "local-noc controller session" noc_has_session
+    sess=$(noc_session)
+    if [ -n "$sess" ]; then
+        result PASS "local-noc session" "$(awk '{print $2, "from", $3, $4}' <<< "$sess") capture $(awk '{print $5}' <<< "$sess")"
+    else
+        result FAIL "local-noc session" "no controller session for this node in local-noc"
+    fi
 fi
 
 # informational: identity the cloud sees, and whether it pushed config

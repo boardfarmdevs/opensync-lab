@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""noc-ctl: talk to a running local-noc through its control socket.
+
+  noc-ctl nodes                          sessions (node, role, peer, capture file)
+  noc-ctl tables   <node>                row count per mirrored table
+  noc-ctl dump     <node> <table>        rows of one table (from the monitor mirror)
+  noc-ctl transact <node> '<op-json>'... send an OVSDB transact, as the cloud would
+  noc-ctl request  <node> <method> ['<params-json>']
+                                         any JSON-RPC request (e.g. list_dbs, get_schema)
+  noc-ctl log      <node> [N]            last N captured messages of the node's
+                                         newest controller session (default 20)
+
+<node> is the AWLAN_Node.id (e.g. mv3) or a peer address.
+Environment: LOCAL_NOC_DATA (default /var/lib/local-noc).
+"""
+
+import glob
+import json
+import os
+import socket
+import sys
+
+DATA = os.environ.get("LOCAL_NOC_DATA", "/var/lib/local-noc")
+
+
+def call(cmd):
+    s = socket.socket(socket.AF_UNIX)
+    s.connect(os.path.join(DATA, "noc.sock"))
+    s.sendall((json.dumps(cmd) + "\n").encode())
+    buf = b""
+    while not buf.endswith(b"\n"):
+        chunk = s.recv(65536)
+        if not chunk:
+            break
+        buf += chunk
+    reply = json.loads(buf)
+    if not reply.get("ok"):
+        sys.exit(f"noc-ctl: {reply.get('error')}")
+    return reply["result"]
+
+
+def show(obj):
+    print(json.dumps(obj, indent=2, sort_keys=True))
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__)
+        return
+    cmd, args = argv[0], argv[1:]
+    if cmd == "nodes":
+        for n in call({"cmd": "nodes"}):
+            print(f"{n['node'] or '?':<12} {n['role']:<10} {n['peer']:<22} tables={n['tables']:<3} {n['capture']}")
+    elif cmd == "tables":
+        for t, n in call({"cmd": "tables", "node": args[0]}).items():
+            print(f"{n:5d}  {t}")
+    elif cmd == "dump":
+        show(call({"cmd": "dump", "node": args[0], "table": args[1]}))
+    elif cmd == "transact":
+        show(call({"cmd": "transact", "node": args[0], "ops": [json.loads(a) for a in args[1:]]}))
+    elif cmd == "request":
+        params = json.loads(args[2]) if len(args) > 2 else []
+        show(call({"cmd": "request", "node": args[0], "method": args[1], "params": params}))
+    elif cmd == "log":
+        n = int(args[1]) if len(args) > 1 else 20
+        files = sorted(glob.glob(os.path.join(DATA, "sessions", args[0], "*-controller-*.jsonl")))
+        if not files:
+            sys.exit(f"noc-ctl: no controller capture for {args[0]}")
+        with open(files[-1]) as f:
+            lines = f.readlines()[-n:]
+        for line in lines:
+            m = json.loads(line)
+            body = json.dumps(m["msg"])
+            print(f"{m['t']:.3f} {m['dir']} {body[:200]}{'...' if len(body) > 200 else ''}")
+    else:
+        sys.exit(f"noc-ctl: unknown command {cmd!r} (see --help)")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

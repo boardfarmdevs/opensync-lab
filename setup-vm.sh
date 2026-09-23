@@ -3,7 +3,7 @@
 # setup-vm.sh - create and provision the mvx-opensync lab VM (an LXD VM).
 #
 #   setup-vm.sh create      create + boot the VM (idempotent)
-#   setup-vm.sh provision   base packages, docker, nested LXD, hwsim pool, boardfarm lab
+#   setup-vm.sh provision   base packages, docker, nested LXD, hwsim pool, boardfarm lab, local-noc
 #   setup-vm.sh all         create + provision
 #   setup-vm.sh status      VM state + lab status inside it
 #   setup-vm.sh shell       root shell in the VM
@@ -13,8 +13,9 @@
 # The VM (default mvx-opensync-<MMDD>, see config/mvx.conf) is the lab host:
 # Docker runs the boardfarm WAN side (dhcp-cpe1 + wan-cpe1 on br-wan101,
 # lan-cpe1 on br-lan201), nested LXD runs the mvx container, and the
-# mac80211_hwsim pool supplies its radios. Deploying the container is
-# deploy-mvx.sh's job.
+# mac80211_hwsim pool supplies its radios, and local-noc (a plain-TCP OpenSync
+# cloud stand-in, local-noc/) sits on the WAN segment at $MVX_LOCAL_NOC_IP.
+# Deploying the container is deploy-mvx.sh's job.
 #
 # Guest scripts are pushed to /opt/mvx-opensync in the VM and run as root.
 # The VM cannot reach bitbucket and has no GitHub key, so git inputs go in
@@ -101,6 +102,7 @@ cmd_provision() {
     fi
     vm_run_guest 10-hwsim.sh
     vm_run_guest 20-boardfarm.sh
+    vm_run_guest 25-local-noc.sh
     log "provision: done"
     cmd_status
 }
