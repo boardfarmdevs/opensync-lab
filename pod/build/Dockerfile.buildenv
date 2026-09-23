@@ -1,4 +1,4 @@
-# Build environment for the mvx-opensync OpenSync pod (HWSIM_POD target).
+# Build environment for the opensync-lab OpenSync pod (HWSIM_POD target).
 #
 # A slim derivative of OpenSync's own core/docker/Dockerfile (Ubuntu 20.04),
 # keeping only what a cfg80211/nl80211 pod needs: the same pinned OVS 2.8.7,

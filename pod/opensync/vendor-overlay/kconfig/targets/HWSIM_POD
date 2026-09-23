@@ -1,8 +1,8 @@
-# mvx-opensync OpenSync pod (extender) in a Linux container, radios from
+# opensync-lab OpenSync pod (extender) in a Linux container, radios from
 # mac80211_hwsim, driven through nl80211 + hostapd/wpa_supplicant.
 @include "base_cfg80211"
 CONFIG_TARGET_MODEL="HWSIM_POD"
-CONFIG_TARGET_NAME="mvx-opensync hwsim pod"
+CONFIG_TARGET_NAME="opensync-lab hwsim pod"
 CONFIG_SYSTEMD=y
 # systemd's opensync.service runs ${CONFIG_TARGET_PATH_SCRIPTS}/opensync.init,
 # which core's SYSTEMD rootfs installs in scripts/ (the platform default is bin/)

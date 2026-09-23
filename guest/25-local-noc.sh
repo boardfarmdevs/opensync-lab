@@ -15,10 +15,10 @@ docker run -d --name local-noc --restart unless-stopped \
     -v local-noc-data:/var/lib/local-noc local-noc:latest \
     --advertise "$ip" --redirector-port "$rport" --controller-port "$cport" \
     --mesh-gateway "${MVX_MESH_GATEWAY:-mv3}" --mesh-bhaul-if "${MVX_MESH_BHAUL_IF:-wl1.1}" \
-    --mesh-bhaul-ssid "${MVX_MESH_BHAUL_SSID:-mvx-opensync-bhaul}" \
-    --mesh-bhaul-psk "${MVX_MESH_BHAUL_PSK:-mvx-opensync-bhaul-psk}" \
-    --mesh-home-ssid "${MVX_MESH_HOME_SSID:-mvx-opensync-home}" \
-    --mesh-home-psk "${MVX_MESH_HOME_PSK:-mvx-opensync-home-psk}" >/dev/null
+    --mesh-bhaul-ssid "${MVX_MESH_BHAUL_SSID:-opensync-lab-bhaul}" \
+    --mesh-bhaul-psk "${MVX_MESH_BHAUL_PSK:-opensync-lab-bhaul-psk}" \
+    --mesh-home-ssid "${MVX_MESH_HOME_SSID:-opensync-lab-home}" \
+    --mesh-home-psk "${MVX_MESH_HOME_PSK:-opensync-lab-home-psk}" >/dev/null
 
 cat > /etc/default/local-noc <<EOT
 LOCAL_NOC_IP=$ip

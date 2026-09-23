@@ -1,7 +1,7 @@
 {
   "base": "base.json",
-  "lab_name": "mvx-opensync",
-  "description": "mvx-opensync lab VM: one mvx LXD vCPE (mv3) -- dhcp + wan + one lan client, no shared services. mv3's WAN DHCP is 802.1Q tagged (data 1081, mgmt 881, as in ca-desk4).",
+  "lab_name": "opensync-lab",
+  "description": "opensync-lab VM: one mvx LXD vCPE (mv3) -- dhcp + wan + one lan client, no shared services. mv3's WAN DHCP is 802.1Q tagged (data 1081, mgmt 881, as in ca-desk4).",
 
   "physical_network": {
     "host_interface": ""

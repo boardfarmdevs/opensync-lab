@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # Host-side helpers for talking to the lab VM. Source after lib/common.sh.
 
-GUEST_ROOT=/opt/mvx-opensync
+GUEST_ROOT=/opt/opensync-lab
 
 vm_exists() { lxc info "$MVX_VM" >/dev/null 2>&1; }
 vm_state()  { lxc info "$MVX_VM" 2>/dev/null | sed -n 's/^Status: //p'; }
@@ -24,7 +24,7 @@ cloud_redirector() {
 # Everything the guest needs from this repo, plus the resolved settings.
 vm_push_tree() {
     log "push: guest scripts + boardfarm overlay -> $MVX_VM:$GUEST_ROOT"
-    lxc exec "$MVX_VM" -- install -d "$GUEST_ROOT/assets" /var/lib/mvx-opensync
+    lxc exec "$MVX_VM" -- install -d "$GUEST_ROOT/assets" /var/lib/opensync-lab
     # replace, not overlay: a file removed or renamed here must vanish there too
     lxc exec "$MVX_VM" -- rm -rf "$GUEST_ROOT/guest" "$GUEST_ROOT/boardfarm" "$GUEST_ROOT/local-noc"
     tar -C "$MVX_ROOT" -czf - guest boardfarm local-noc \

@@ -1,4 +1,4 @@
-# mvx-opensync OpenSync pod: an LXD *system* container image (systemd), built
+# opensync-lab OpenSync pod: an LXD *system* container image (systemd), built
 # with docker and exported as a rootfs. OpenSync 6.6.1.0 HWSIM_POD target
 # (build-pod.sh), OVS ovsdb-server 2.8.7 and hostapd/wpa_supplicant from the
 # build environment, runtime libraries from the same Ubuntu release.

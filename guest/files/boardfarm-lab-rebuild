@@ -5,10 +5,10 @@
 # the tagged sub-interfaces and wan-cpe1 reaching the internet.
 set -euo pipefail
 source /etc/default/boardfarm-lab
-export BF_LAB_CONFIG BF_INVENTORY
+export BF_LAB_CONFIG
 bf=$BOARDFARM_WORKSPACE/.venv/bin/bf-lab
 lab=$BOARDFARM_WORKSPACE/boardfarm-lab-staging/lab
-state=/var/lib/mvx-opensync
+state=/var/lib/opensync-lab
 containers="dhcp-cpe1 wan-cpe1 lan-cpe1"
 
 ready() {

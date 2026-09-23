@@ -95,17 +95,17 @@ cmd_push() {
     git --git-dir="$gitdir" update-ref -d refs/heads/mvx-runtime
 
     vm_push_tree
-    vm_push_file "$stage/meta-lxd.bundle" /opt/mvx-opensync/assets/meta-lxd.bundle
+    vm_push_file "$stage/meta-lxd.bundle" /opt/opensync-lab/assets/meta-lxd.bundle
     log "push: image $real ($(du -h "$real" | cut -f1)) -> images/$bname/"
-    vm_push_file "$real" "/opt/mvx-opensync/images/$bname/$(basename "$real")"
+    vm_push_file "$real" "/opt/opensync-lab/images/$bname/$(basename "$real")"
     lxc exec "$MVX_VM" -- ln -sfn "$(basename "$real")" \
-        "/opt/mvx-opensync/images/$bname/ofw-$PROD_MACHINE.tar.bz2"
+        "/opt/opensync-lab/images/$bname/ofw-$PROD_MACHINE.tar.bz2"
     {
-        echo "image=/opt/mvx-opensync/images/$bname/ofw-$PROD_MACHINE.tar.bz2"
+        echo "image=/opt/opensync-lab/images/$bname/ofw-$PROD_MACHINE.tar.bz2"
         echo "image_src=$(hostname):$real"
         echo "image_sha256=$(sha256sum "$real" | awk '{print $1}')"
         echo "meta_lxd=$sha"
-    } | lxc exec "$MVX_VM" -- tee /opt/mvx-opensync/deploy.env >/dev/null
+    } | lxc exec "$MVX_VM" -- tee /opt/opensync-lab/deploy.env >/dev/null
     log "push: done"
 }
 
@@ -116,8 +116,8 @@ cmd_pod() {
     [ -n "$img" ] && [ -e "$img.rootfs.tar.gz" ] || die "no pod image (run: build-pod.sh all)"
     vm_push_tree
     log "pod: pushing $(basename "$img") ($(du -h "$img.rootfs.tar.gz" | cut -f1))"
-    vm_push_file "$img.metadata.tar.gz" /opt/mvx-opensync/pod/mvx-pod.metadata.tar.gz
-    vm_push_file "$img.rootfs.tar.gz" /opt/mvx-opensync/pod/mvx-pod.rootfs.tar.gz
+    vm_push_file "$img.metadata.tar.gz" /opt/opensync-lab/pod/mvx-pod.metadata.tar.gz
+    vm_push_file "$img.rootfs.tar.gz" /opt/opensync-lab/pod/mvx-pod.rootfs.tar.gz
     vm_run_guest 70-pod.sh "$name"
 }
 cmd_check()    { vm_run_guest 40-wan-check.sh "$(container_name)"; }
@@ -133,7 +133,7 @@ cmd_status() {
         lxc list '^$c\$' -c ns4t --format table
         lxc config get '$c' user.build 2>/dev/null | sed 's/^/build stamp: /'
         for f in wan opensync gre; do
-            [ -f /var/lib/mvx-opensync/\$f.status ] && sed \"s/^/\$f: /\" /var/lib/mvx-opensync/\$f.status
+            [ -f /var/lib/opensync-lab/\$f.status ] && sed \"s/^/\$f: /\" /var/lib/opensync-lab/\$f.status
         done
     "
 }

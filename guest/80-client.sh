@@ -11,8 +11,8 @@ set +o pipefail
 name=${1:-wclient}
 pod=${MVX_POD_NAME:-pod}
 gw=${MVX_MESH_GATEWAY:-mv3}
-ssid=${MVX_MESH_HOME_SSID:-mvx-opensync-home}
-psk=${MVX_MESH_HOME_PSK:-mvx-opensync-home-psk}
+ssid=${MVX_MESH_HOME_SSID:-opensync-lab-home}
+psk=${MVX_MESH_HOME_PSK:-opensync-lab-home-psk}
 image=mvx-wclient
 base=${MVX_CLIENT_BASE_IMAGE:-images:alpine/3.22}
 fail=0 lines=()

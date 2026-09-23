@@ -1,5 +1,5 @@
 #!/bin/sh
-# /etc/init.d/openvswitch for the mvx-opensync pod (Ubuntu). Same job as the
+# /etc/init.d/openvswitch for the opensync-lab pod (Ubuntu). Same job as the
 # OpenWrt procd script of opensync-vendor-openwrt-template, which OpenSync's
 # start.d/50_openvswitch.sh calls: a fresh ovsdb-server on OpenSync's
 # bootstrapped database (the platform uses Linux bridges, no ovs-vswitchd).

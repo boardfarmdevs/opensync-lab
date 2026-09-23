@@ -1,5 +1,5 @@
 #!/bin/sh
-# /etc/init.d/wpad for the mvx-opensync pod (Ubuntu). OpenSync's
+# /etc/init.d/wpad for the opensync-lab pod (Ubuntu). OpenSync's
 # start.d/22_restart_hapd.sh expects OpenWrt's wpad service: hostapd and
 # wpa_supplicant running idle with their global control sockets, which the
 # osw hostap driver then drives (adding/removing BSSes and STA interfaces).

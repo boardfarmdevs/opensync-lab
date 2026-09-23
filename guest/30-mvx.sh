@@ -32,7 +32,7 @@ HWSIM_RADIOS=${MVX_HWSIM_RADIOS:-3} HWSIM_POOL_SIZE=${MVX_HWSIM_POOL:-24} ./mv.s
 
 wait_for 120 2 "$name running" ct_running "$name" \
     || die "$name did not start"
-lxc config set "$name" user.mvx-opensync.image-sha256 "$image_sha256"
+lxc config set "$name" user.opensync-lab.image-sha256 "$image_sha256"
 set_status mvx "launched $name build=$(lxc config get "$name" user.build) at $(date -Is)"
 log "mvx: $(cat "$STATE/mvx.status")"
 lxc list "^$name\$" -c ns4 --format table

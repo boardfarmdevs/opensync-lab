@@ -1,5 +1,5 @@
 From 4c3b00fdcfc29f5c0b0027394303db5f98fee52d Mon Sep 17 00:00:00 2001
-From: mvx-opensync <revogelaar@gmail.com>
+From: opensync-lab <revogelaar@gmail.com>
 Date: Wed, 23 Sep 2026 07:51:36 -0700
 Subject: [PATCH 2/2] mlme: forget a station on deauth/disassoc and on a new
  authentication

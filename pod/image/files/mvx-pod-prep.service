@@ -1,5 +1,5 @@
 [Unit]
-Description=mvx-opensync pod: hand the hwsim radios to OpenSync, eth0 identity
+Description=opensync-lab pod: hand the hwsim radios to OpenSync, eth0 identity
 Before=opensync.service
 After=systemd-udevd.service
 

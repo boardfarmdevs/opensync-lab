@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# boardfarm-lab-staging: pinned checkout, uv venv, the mvx-opensync lab
+# boardfarm-lab-staging: pinned checkout, uv venv, the opensync-lab lab config
 # config overlay, then bf-lab setup (dhcp-cpe1 + wan-cpe1 + lan-cpe1).
 source "$(dirname "$0")/common.sh"
 
@@ -37,7 +37,6 @@ fi
 
 # overlay: lab configs must live in lab/ (relative base/resources paths)
 cp "$MVX_GUEST_ROOT"/boardfarm/lab/*.json "$REPO/lab/"
-[ -d "$MVX_GUEST_ROOT/boardfarm/inventories" ] && cp "$MVX_GUEST_ROOT"/boardfarm/inventories/*.json "$REPO/inventories/" 2>/dev/null || true
 
 if [ ! -x "$BF/.venv/bin/bf-lab" ]; then
     log "boardfarm: uv venv + install"
@@ -47,12 +46,11 @@ VIRTUAL_ENV=$BF/.venv uv pip install -q -e "$REPO"
 "$BF/.venv/bin/python" -c 'import lab.lab' || die "boardfarm import failed"
 
 cat > /etc/default/boardfarm-lab <<EOF
-BF_LAB_CONFIG=mvx-opensync.json
-BF_INVENTORY=mvx-opensync.json
+BF_LAB_CONFIG=opensync-lab.json
 BOARDFARM_WORKSPACE=$BF
 EOF
 cat > /etc/profile.d/boardfarm-lab.sh <<EOF
-export BF_LAB_CONFIG=mvx-opensync.json BF_INVENTORY=mvx-opensync.json
+export BF_LAB_CONFIG=opensync-lab.json
 export PATH=$BF/.venv/bin:\$PATH
 EOF
 

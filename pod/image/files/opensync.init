@@ -1,5 +1,5 @@
 #!/bin/sh
-# opensync.init for the mvx-opensync pod (systemd). Core's SYSTEMD rootfs ships
+# opensync.init for the opensync-lab pod (systemd). Core's SYSTEMD rootfs ships
 # this as an empty template for the platform to fill; this does what
 # opensync-vendor-openwrt-template's /etc/init.d/opensync does around dm:
 # start.sh (all start.d hooks: ovsdb-server, wpad, VIF prep, ...) and

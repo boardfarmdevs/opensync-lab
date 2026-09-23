@@ -1,4 +1,4 @@
-mvx-opensync: adapted from opensync-sdk-openwrt's 991-nl_cmd_frame-event-gen.patch
+opensync-lab: adapted from opensync-sdk-openwrt's 991-nl_cmd_frame-event-gen.patch
 for hostap d9d5e55 without OpenWrt's ubus patch: hunk 4 no longer carries the
 ubus-only 'int ubus_resp;' context line.
 

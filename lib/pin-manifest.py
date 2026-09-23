@@ -76,7 +76,7 @@ def main():
         sys.exit("cannot pin:\n  " + "\n  ".join(errors))
 
     comment = ET.Comment(
-        f" revision-locked from {checkout} ({os.path.basename(src)}) by mvx-opensync lib/pin-manifest.py "
+        f" revision-locked from {checkout} ({os.path.basename(src)}) by opensync-lab lib/pin-manifest.py "
     )
     root.insert(0, comment)
     ET.indent(root, space="  ")

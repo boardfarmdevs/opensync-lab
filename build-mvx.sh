@@ -95,7 +95,7 @@ cmd_pin() {
     git -C "$tmp/m" checkout -q --detach "$(git -C "$mref" rev-parse HEAD)"
     cp "$PINS_DIR/manifest.xml" "$tmp/m/mvx-pinned.xml"
     git -C "$tmp/m" add mvx-pinned.xml
-    git -C "$tmp/m" -c user.name=mvx-opensync -c user.email=mvx-opensync@localhost \
+    git -C "$tmp/m" -c user.name=opensync-lab -c user.email=opensync-lab@localhost \
         commit -q -m "mvx-pinned.xml: $MVX_PINS (from $ref)"
     store_repo "$MVX_PIN_STORE/manifests.git" "$tmp/m" "$(git -C "$tmp/m" rev-parse HEAD)" "$PIN_BRANCH" "$MVX_REPO_REF/manifests.git"
     rm -rf "$tmp"
@@ -246,9 +246,9 @@ step_configure() {
     conf=$(subdir_of "$BUILD_DIR")/build-$PROD_MACHINE/conf
     [ -f "$conf/local.conf" ] || die "setup-environment did not create $conf/local.conf"
     cp "$PINS_DIR/srcrev.inc" "$conf/mvx-srcrev.inc"
-    grep -q 'mvx-opensync' "$conf/local.conf" || cat >> "$conf/local.conf" <<EOF
+    grep -q 'opensync-lab' "$conf/local.conf" || cat >> "$conf/local.conf" <<EOF
 
-# --- mvx-opensync (build-mvx.sh), pins: $MVX_PINS ---
+# --- opensync-lab (build-mvx.sh), pins: $MVX_PINS ---
 require conf/mvx-srcrev.inc
 DL_DIR = "$MVX_DL_DIR"
 SSTATE_DIR = "$MVX_SSTATE_DIR"
@@ -262,8 +262,13 @@ EOF
 step_mvx_layer() {
     local conf layer=$MVX_ROOT/meta-mvx sum
     conf=$(subdir_of "$BUILD_DIR")/build-$PROD_MACHINE/conf
-    grep -qF "$layer" "$conf/bblayers.conf" || {
-        printf '\n# mvx-opensync (build-mvx.sh)\nBBLAYERS += "%s"\n' "$layer" >> "$conf/bblayers.conf"
+    # drop a meta-mvx of another checkout (e.g. the repo was cloned elsewhere)
+    if grep -E '/meta-mvx"' "$conf/bblayers.conf" | grep -qvF "\"$layer\""; then
+        sed -i "\|/meta-mvx\"|{\|\"$layer\"|!d}" "$conf/bblayers.conf"
+        log "meta-mvx: replaced another checkout's meta-mvx in bblayers.conf"
+    fi
+    grep -qF "\"$layer\"" "$conf/bblayers.conf" || {
+        printf '\n# opensync-lab (build-mvx.sh)\nBBLAYERS += "%s"\n' "$layer" >> "$conf/bblayers.conf"
         log "meta-mvx: added to bblayers.conf"
     }
     sum=$(cd "$layer" && find . -type f | sort | xargs sha256sum | sha256sum | cut -c1-16)

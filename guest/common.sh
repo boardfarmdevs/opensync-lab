@@ -4,8 +4,8 @@
 set -euo pipefail
 exec </dev/null   # lxc subcommands try to parse a piped stdin as YAML
 
-MVX_GUEST_ROOT=${MVX_GUEST_ROOT:-/opt/mvx-opensync}
-STATE=/var/lib/mvx-opensync
+MVX_GUEST_ROOT=${MVX_GUEST_ROOT:-/opt/opensync-lab}
+STATE=/var/lib/opensync-lab
 install -d "$STATE"
 # shellcheck source=/dev/null
 [ -f "$MVX_GUEST_ROOT/vm.env" ] && source "$MVX_GUEST_ROOT/vm.env"

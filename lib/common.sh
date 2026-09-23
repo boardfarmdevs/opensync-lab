@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Shared helpers for the mvx-opensync scripts. Source, don't execute.
+# Shared helpers for the opensync-lab scripts. Source, don't execute.
 
 MVX_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 export MVX_ROOT

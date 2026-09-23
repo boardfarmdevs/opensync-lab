@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# setup-vm.sh - create and provision the mvx-opensync lab VM (an LXD VM).
+# setup-vm.sh - create and provision the opensync-lab VM (an LXD VM).
 #
 #   setup-vm.sh create      create + boot the VM (idempotent)
 #   setup-vm.sh provision   base packages, docker, nested LXD, hwsim pool, boardfarm lab, local-noc
@@ -10,14 +10,14 @@
 #   setup-vm.sh start|stop  VM lifecycle
 #   setup-vm.sh delete      delete the VM (asks first)
 #
-# The VM (default mvx-opensync-<MMDD>, see config/mvx.conf) is the lab host:
+# The VM (default opensync-lab-<MMDD>, see config/mvx.conf) is the lab host:
 # Docker runs the boardfarm WAN side (dhcp-cpe1 + wan-cpe1 on br-wan101,
 # lan-cpe1 on br-lan201), nested LXD runs the mvx container, and the
 # mac80211_hwsim pool supplies its radios, and local-noc (a plain-TCP OpenSync
 # cloud stand-in, local-noc/) sits on the WAN segment at $MVX_LOCAL_NOC_IP.
 # Deploying the container is deploy-mvx.sh's job.
 #
-# Guest scripts are pushed to /opt/mvx-opensync in the VM and run as root.
+# Guest scripts are pushed to /opt/opensync-lab in the VM and run as root.
 # The VM cannot reach bitbucket and has no GitHub key, so git inputs go in
 # as bundles made on this host.
 
@@ -25,7 +25,7 @@ set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/lib/common.sh"
 source "$MVX_ROOT/lib/vm.sh"
 
-: "${MVX_CACHE:=$HOME/.cache/mvx-opensync}"
+: "${MVX_CACHE:=$HOME/.cache/opensync-lab}"
 
 cmd_create() {
     require_cmd lxc
@@ -50,7 +50,7 @@ cmd_create() {
     fi
     lxc config device override "$MVX_VM" eth0 network="$MVX_VM_NETWORK" 2>/dev/null \
         || lxc config device add "$MVX_VM" eth0 nic network="$MVX_VM_NETWORK"
-    lxc config set "$MVX_VM" user.mvx-opensync.created "$(date -Is)"
+    lxc config set "$MVX_VM" user.opensync-lab.created "$(date -Is)"
     lxc start "$MVX_VM"
     vm_wait_agent
     log "create: waiting for cloud-init"
@@ -90,14 +90,14 @@ cmd_provision() {
     log "provision: boardfarm-lab-staging @ ${MVX_BOARDFARM_COMMIT:0:12}"
     make_boardfarm_bundle "$stage/boardfarm-lab-staging.bundle"
     vm_push_tree
-    vm_push_file "$stage/boardfarm-lab-staging.bundle" /opt/mvx-opensync/assets/boardfarm-lab-staging.bundle
+    vm_push_file "$stage/boardfarm-lab-staging.bundle" /opt/opensync-lab/assets/boardfarm-lab-staging.bundle
 
     vm_run_guest 00-base.sh
-    if lxc exec "$MVX_VM" -- test -e /var/lib/mvx-opensync/reboot-required; then
+    if lxc exec "$MVX_VM" -- test -e /var/lib/opensync-lab/reboot-required; then
         log "provision: kernel changed, rebooting $MVX_VM"
         lxc restart "$MVX_VM" --timeout 300
         vm_wait_agent
-        lxc exec "$MVX_VM" -- rm -f /var/lib/mvx-opensync/reboot-required
+        lxc exec "$MVX_VM" -- rm -f /var/lib/opensync-lab/reboot-required
         vm_run_guest 00-base.sh
     fi
     vm_run_guest 10-hwsim.sh
@@ -119,7 +119,7 @@ cmd_status() {
             "$(cat /sys/module/mac80211_hwsim/parameters/channels 2>/dev/null)" \
             "$(ls /sys/class/net | grep -c "^virt-wlan")"
         printf "lxd         %s\n" "$(lxd --version 2>/dev/null)"
-        for f in /var/lib/mvx-opensync/*.status; do [ -e "$f" ] && printf "%-11s %s\n" "$(basename "$f" .status)" "$(cat "$f")"; done
+        for f in /var/lib/opensync-lab/*.status; do [ -e "$f" ] && printf "%-11s %s\n" "$(basename "$f" .status)" "$(cat "$f")"; done
         echo "--- docker"; docker ps --format "  {{.Names}}\t{{.Status}}" 2>/dev/null
         echo "--- lxc";    lxc list -c ns4 --format csv 2>/dev/null | sed "s/^/  /"
     '

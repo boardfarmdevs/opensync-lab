@@ -1,4 +1,4 @@
-# mvx-opensync: implementation plan
+# opensync-lab: implementation plan
 
 Date: 2026-09-22 · Host: rev140 · First target: **mv3, r25-oe40, LXD (exm-qemux86-mv3)**
 
@@ -13,7 +13,7 @@ Three entry-point scripts, one per stage, backed by this document:
    AUTOREV source revisions as the known-good reference build
    `~/yocto/mv3-lxd-r25-oe40-0808`. It uses the mirror
    `~/yocto/repo_reference/mv3-r25-oe40-repo_reference`, then runs bitbake.
-2. **Lab VM.** It creates an LXD VM named `mvx-opensync-MMDD`. Inside it,
+2. **Lab VM.** It creates an LXD VM named `opensync-lab-MMDD`. Inside it,
    boardfarm-lab provides the WAN side (DHCP + NAT) and a mac80211_hwsim pool
    provides Wi-Fi radios. `meta-lxd/gen/mv.sh` launches the mv3 container with
    WAN and radios attached.
@@ -167,11 +167,12 @@ it only needs to exist inside our VM.
 ## 2. Repository layout
 
 ```
-mvx-opensync/
+opensync-lab/
   README.md
   build-mvx.sh                    stage 1: pin + pinned offline build (host)
   setup-vm.sh                     stage 2: create + provision the lab VM (host -> VM)
-  deploy-mvx.sh                   stage 3: push image, launch, checks (host -> VM)
+  deploy-mvx.sh                   stage 3: push image, launch, checks, extender (host -> VM)
+  build-pod.sh                    OpenSync 6.6.1.0 extender (pod) image (host, docker)
   config/
     mvx.conf                      defaults (env-overridable)
     local.conf                    untracked; values persisted by the scripts (VM name, ...)
@@ -186,18 +187,25 @@ mvx-opensync/
       srcrev.inc                  SRCREV:pn-<recipe> = "<sha>" (incl. SRCREV_<name>:pn-opensync)
       installed-package-*.txt     reference image package list (reproducibility check)
       reference.txt               ref build path, image sha256, pin store location
-  guest/                          pushed to /opt/mvx-opensync in the VM, run as root
+  meta-mvx/                       bbappends + patches on the pinned layers (hal-wifi-hwsim)
+  guest/                          pushed to /opt/opensync-lab in the VM, run as root
     common.sh
     00-base.sh                    apt, docker, snap lxd (held), uv, lxd init (btrfs)
     10-hwsim.sh                   mac80211_hwsim modprobe.d + pool service
-    20-boardfarm.sh               bundle -> checkout, uv venv, lab overlay, bf-lab setup
+    20-boardfarm.sh               bundle -> checkout, uv venv, lab + inventory overlay, bf-lab setup
+    25-local-noc.sh               local-noc container (local OpenSync cloud)
     30-mvx.sh                     meta-lxd checkout, mv.sh launch
     40-wan-check.sh               WAN connectivity gate (L1) + radio/LAN info
-    50-opensync.sh, 60-mesh.sh, 90-check.sh   (planned)
+    50-opensync.sh                SON on, cloud connection (plume | local)
+    60-gre.sh                     injected GRE backhaul to a second mv3 (sim-mesh.sh)
+    70-pod.sh, 80-client.sh       OpenSync extender + wireless client (§5.9)
     files/                        mvx-hwsim-pool(.service), mvx-lxd-docker-forward(.service),
-                                  boardfarm-lab-rebuild, boardfarm-lab.service
+                                  boardfarm-lab-rebuild, boardfarm-lab.service, local-noc-net(.service)
+  local-noc/                      noc.py, mesh.py, noc-ctl, Dockerfile
+  pod/                            extender: sources.lock, target/provider overlays, patches, build env, image
   boardfarm/
-    lab/mvx-opensync.json         single-CPE mv3 lab (overlaid into boardfarm lab/)
+    lab/opensync-lab.json         single-CPE mv3 lab (overlaid into boardfarm lab/; bf-lab only)
+    patches/                      fixes to boardfarm-lab-staging
   doc/
     PLAN.md
   logs/                           (gitignored) per-run logs
@@ -309,8 +317,8 @@ build directory. A re-run resumes at the first missing marker.
 
 ## 5. Phase 3: lab VM (`setup-vm.sh`) and deployment (`deploy-mvx.sh`)
 
-Host-side. Default name `mvx-opensync-$(date +%m%d)`; the date is fixed once
-and stored in `config/mvx-opensync.conf.local` so later subcommands target the
+Host-side. Default name `opensync-lab-$(date +%m%d)`; the date is fixed once
+and stored in `config/local.conf` so later subcommands target the
 same VM.
 
 1. **Create.** `lxc init ubuntu:24.04 $VM --vm -c limits.cpu=4 -c limits.memory=8GiB`
@@ -332,7 +340,7 @@ same VM.
      (default `eeb4803`), cloned or bundled on the host from GitHub;
    - the image `ofw-exm-qemux86-mv3-<stamp>.rootfs.tar.bz2` from the Phase 2 build
      (or from `--image <path>`, e.g. the 0808 reference);
-   - `guest/*`, `boardfarm/*`, and `config/mvx-opensync.conf`.
+   - `guest/*`, `boardfarm/*`, and `config/mvx.conf`.
 4. **Provision**, running guest scripts in order through
    `lxc exec $VM -- env … bash /home/mvx/provision/NN-*.sh`, with
    `exec </dev/null` in each (LXD's stdin YAML-parsing gotcha).
@@ -371,11 +379,12 @@ same VM.
   verify.
 - `uv venv` and `uv pip install -e .` into `/home/mvx/boardfarm/.venv`
   (`requires-python >= 3.9`; we use uv's managed Python and record the version).
-- **Overlay** `boardfarm/lab/mvx-opensync.json` into `lab/` and
-  `boardfarm/inventories/mvx-opensync.json` into `inventories/`. The lab config
+- **Overlay** `boardfarm/lab/opensync-lab.json` into `lab/`. Boardfarm is used
+  only for `bf-lab` (the containers of one vCPE); its testsuite is not run, so
+  no inventory is needed. The lab config
   is based on ca-desk6 and ca-desk4:
   ```json
-  { "base": "base.json", "lab_name": "mvx-opensync",
+  { "base": "base.json", "lab_name": "opensync-lab",
     "physical_network": {"host_interface": ""},
     "switch": {"mgmt_ip": "", "username": "", "password": ""},
     "components": {"dhcp": true, "wan": true, "lan": true, "lan2": false, "services": false},
@@ -384,8 +393,7 @@ same VM.
   ```
   `lan: true` gives `lan-cpe1` on `br-lan201`, a LAN client used to prove the
   datapath *before* SON is enabled.
-- `/etc/default/boardfarm-lab` sets `BF_LAB_CONFIG=mvx-opensync.json` and
-  `BF_INVENTORY=mvx-opensync.json`.
+- `/etc/default/boardfarm-lab` sets `BF_LAB_CONFIG=opensync-lab.json`.
 - `bf-lab teardown,setup,status`, retried up to 3 times. The first run builds
   the `bf-dhcp-kea`, `bf-wan`, and `bf-lan` Docker images from Debian bookworm,
   which needs internet access and several minutes.
@@ -419,7 +427,7 @@ same VM.
   `grep -a -c sim_hw_nl_enum /usr/lib/libhal_wifi.so*` is greater than 0, and
   CcspWifi has brought up the home VAPs (`iw dev` shows type AP interfaces).
 - Record `lxc config get mv3 user.build` and the launched image in
-  `/var/lib/mvx-opensync/deploy.json`.
+  `/var/lib/opensync-lab/deploy.json`.
 
 ### 5.5 `guest/50-opensync.sh` (planned: `deploy-mvx.sh opensync`)
 
@@ -444,7 +452,7 @@ same VM.
   `g-<mac>` gretap appears in `Wifi_Inet_State` (if_type `gre`) and is a port of
   the home bridge. With no pod present, L6 is reported as "waiting for extender".
 - Dump the OVSDB tables `AWLAN_Node`, `Manager`, `Wifi_Radio_State`,
-  `Wifi_VIF_State`, and `Wifi_Inet_State` to `/var/lib/mvx-opensync/ovsdb-<ts>.txt`.
+  `Wifi_VIF_State`, and `Wifi_Inet_State` to `/var/lib/opensync-lab/ovsdb-<ts>.txt`.
 
 ### 5.6 `guest/60-mesh.sh` (optional, planned: `deploy-mvx.sh mesh`)
 
@@ -464,9 +472,8 @@ This proves the GRE side without waiting for claiming. It follows
 
 This prints and writes `status.json` for tiers L0 through L6, with PASS, FAIL,
 WAIT, or SKIP and a one-line reason each. The host subcommand runs it through
-`lxc exec`. Optionally, `deploy-mvx.sh bftest` runs
-`BFT_OPENSYNC_TESTS=1 bf-tests tests/opensync/` in the VM against the
-`mvx-opensync` inventory.
+`lxc exec`. The boardfarm testsuite is out of scope: boardfarm provides the
+lab containers (`bf-lab`) only.
 
 ### 5.8 Reboot behaviour
 
@@ -475,6 +482,46 @@ WAIT, or SKIP and a one-line reason each. The host subcommand runs it through
 (created with `boot.autostart=false`) only after the WAN gate passes. The VM
 itself is `boot.autostart=false`, so it never starts just because rev140
 rebooted.
+
+### 5.9 OpenSync extender (pod) and local-noc mesh (`build-pod.sh`, `deploy-mvx.sh pod|client|mesh`)
+
+The extender is built from the open-source OpenSync release, not from the
+RDK tree, and runs as an LXD system container in the same VM (the hwsim
+medium is per kernel):
+
+- **Build** (`build-pod.sh`, host): OpenSync **6.6.1.0** from
+  github.com/plume-design, pinned in `pod/opensync/sources.lock`: core,
+  `opensync-platform-cfg80211` (nl80211, i.e. mac80211_hwsim),
+  `opensync-vendor-openwrt-template` with our `HWSIM_POD` target overlaid
+  (`pod/opensync/vendor-overlay`), and our `mvx-local` service provider
+  (redirector `tcp:10.101.0.40:6640`, onboarding backhaul credentials).
+  Compiled natively in an Ubuntu 20.04 docker build environment (OVS 2.8.7,
+  hostap `d9d5e55` with OpenSync's patches), not with the OpenWrt SDK. Our
+  patches to upstream live in `pod/opensync/patches/<repo>/`. Output: an LXD
+  image (`mvx-pod-<stamp>.{metadata,rootfs}.tar.gz`, Ubuntu 20.04 + systemd).
+- **Pod** (`guest/70-pod.sh`): two hwsim radios as `wlan0/1` and **no wired
+  NIC**. A runtime bootstrap (`mvx-pod-bootstrap`) binds OpenSync's radio
+  config to the phys actually present (wiphy names are VM-wide and cannot be
+  renamed): 1st radio 2.4G (fronthaul), 2nd 5G with the `bhaul-sta-50` VIF.
+  `cm` then onboards exactly as on hardware: the STA joins the gateway's
+  backhaul AP, DHCPs a 169.254 address, builds `g-bhaul-sta-50` to the
+  gateway, bridges it into `br-home`, gets a LAN lease through it, and
+  reaches the redirector/controller.
+- **local-noc mesh** (`local-noc/mesh.py`, `--mesh-gateway`): does for the
+  location what the cloud does -- enables the gateway's backhaul AP
+  (`wl1.1`, WPA2 with the pod's onboarding credentials), creates the
+  gateway's end of each pod's tunnel (`Wifi_Inet_Config` `pgd<b3>_<b4>`, if_type
+  gre) and adds it to `brlan0` via the OVS tables once the pod is associated
+  and leased, and gives each pod that connects its fronthaul (`home-ap-24`
+  in `br-home`, home SSID). All over OVSDB, recorded like everything else.
+- **Client** (`guest/80-client.sh`): an Alpine container with one hwsim radio
+  and no wired NIC; `wpa_supplicant` joins the pod's fronthaul, DHCP comes
+  from mv3 across the tunnel, and ICMP/DNS/HTTP reach the internet.
+
+The Plume-cloud variant (pod claimed into the theta location, the cloud
+building the GRE) needs the pod's identity registered with that cloud and is
+a follow-up; the injected `sim-mesh.sh` path (§5.6, `deploy-mvx.sh gre`) is
+kept alongside.
 
 ## 6. Success criteria
 
@@ -488,6 +535,7 @@ rebooted.
 | L4 | Cloud connection | redirector_addr set; `Manager.is_connected=true` |
 | L5 | Cloud config (claimed node) | bhaul-ap VAPs configured and beaconing |
 | L6 | GRE backhaul | `g-*` gretap in `Wifi_Inet_State` when a pod joins (cloud) **or** `sim-mesh.sh` client internet over the GRE (injected) |
+| L7 | OpenSync extender | pod onboards over the Wi-Fi backhaul (both GRE ends, LAN lease), is claimed by local-noc and gets its fronthaul; a wireless client behind it reaches the internet (`deploy-mvx.sh mesh`) |
 
 The v1 "done" bar is **B + L0–L4 automated and green**. L5 and L6 are reported
 honestly: they depend on claiming and on an external pod.
@@ -519,12 +567,16 @@ setup-vm.sh   status | shell | start | stop | delete
 
 deploy-mvx.sh push [--image PATH]         image + pinned meta-lxd bundle into the VM
 deploy-mvx.sh launch | check | all        mv.sh launch, WAN check
-deploy-mvx.sh status | shell
-              (planned: opensync, mesh, report, bftest)
+deploy-mvx.sh opensync [--cloud plume|local] | gre
+deploy-mvx.sh pod | client | mesh         OpenSync extender, wireless client, both (§5.9)
+deploy-mvx.sh noc <noc-ctl args> | status | shell
+              (planned: report)
+
+build-pod.sh  buildenv | sources | build | image | all | status
 ```
 
 Conventions: `set -euo pipefail`. Every step is idempotent: markers in the
-build directory, and `/var/lib/mvx-opensync/*.status` in the VM. Logs go to
+build directory, and `/var/lib/opensync-lab/*.status` in the VM. Logs go to
 `logs/<cmd>-<ts>.log`. Nothing prompts except `setup-vm.sh delete`. All
 settings are in `config/mvx.conf` and can be overridden from the environment.
 
@@ -555,9 +607,9 @@ VM as boardfarm CPE slots 1..N (`br-wan10N`/`br-lan20N`).
 5. `deploy` + `guest/30`: confirm **L1** and **L2**. Until step 3 is green,
    `--image` can point at the 0808 artifact so VM work proceeds in parallel.
 6. `opensync` + `guest/40` + `check`: confirm **L3** and **L4**, and report L5/L6.
-7. Reboot behaviour (units), `bftest`, and `mesh`.
+7. Reboot behaviour (units) and `mesh`.
 8. `doc/RUNBOOK.md`, plus upstreaming the boardfarm lab config as a
-   boardfarm-lab-staging commit (`lab(mvx-opensync): …`).
+   boardfarm-lab-staging commit (`lab(opensync-lab): …`).
 
 ## 11. Open questions
 
@@ -568,13 +620,15 @@ VM as boardfarm CPE slots 1..N (`br-wan10N`/`br-lan20N`).
   for the cloud? The plain `mv3` identity is the same one a bare-metal `mv3` on
   rev140 would present. Is `mv3` (or an `mv3-0NN`) already claimed into a Plume
   location, and which location or NOC (thetadev)? L5 and L6 need a claimed node.
-- **Q2: external OpenSync clients.** The hwsim medium is per kernel, so pods must
+- **Q2: external OpenSync clients.** *(2026-09-23: answered by §5.9 -- an
+  OpenSync 6.6.1.0 pod built from the open-source release, claimed by
+  local-noc; the Plume-claimed variant is a follow-up.)* The hwsim medium is per kernel, so pods must
   run **inside the same VM**. Is there a pod or extender image (e.g. a
   bpi/OpenSync pod build) that should be claimed into the same location as the
   extender? Or is the injected `sim-mesh.sh` leaf acceptable for v1?
 - **Q3: runtime meta-lxd.** Should the VM use the build pin (`15058aa`) or HEAD
   (`e3d4f23`, with wmediumd/patched hwsim tooling) for `gen/`?
-- **Q4: boardfarm lab config.** Is it OK to upstream `lab/mvx-opensync.json` and
+- **Q4: boardfarm lab config.** Is it OK to upstream `lab/opensync-lab.json` and
   the inventory to boardfarm-lab-staging? Until then this repo overlays them.
 - **Q5: redirector.** Is `ssl:wildfire.plume.tech:443` the right default, or
   should it be a different cloud or service-provider endpoint?

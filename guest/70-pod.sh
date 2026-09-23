@@ -37,7 +37,7 @@ for i in $(seq 0 $((radios - 1))); do
         && log "pod: wlan$i <- ${free[$i]}"
 done
 lxc launch "mvx-pod-$fp" "$name" -p "$name" >/dev/null || die "launch failed"
-lxc config set "$name" user.mvx-opensync.image "$fp"
+lxc config set "$name" user.opensync-lab.image "$fp"
 
 wait_for 120 2 "$name running" ct_running "$name" || die "$name did not start"
 up() { [ "$(lxc exec "$name" -- systemctl is-active opensync.service 2>/dev/null)" = active ]; }
@@ -111,9 +111,9 @@ if noc_claimed; then
 else
     result FAIL "cloud (local-noc)" "$id has no controller session in local-noc"
 fi
-fh() { px "iw dev home-ap-24 info" | grep -q "ssid ${MVX_MESH_HOME_SSID:-mvx-opensync-home}"; }
+fh() { px "iw dev home-ap-24 info" | grep -q "ssid ${MVX_MESH_HOME_SSID:-opensync-lab-home}"; }
 if wait_for 60 3 "fronthaul home-ap-24" fh; then
-    result PASS "fronthaul (local-noc)" "home-ap-24 '${MVX_MESH_HOME_SSID:-mvx-opensync-home}' $(px "iw dev home-ap-24 info" | awk '/channel/{print "ch"$2}') in br-home"
+    result PASS "fronthaul (local-noc)" "home-ap-24 '${MVX_MESH_HOME_SSID:-opensync-lab-home}' $(px "iw dev home-ap-24 info" | awk '/channel/{print "ch"$2}') in br-home"
 else
     result FAIL "fronthaul (local-noc)" "home-ap-24 not up: $(px "ovsh -r s Wifi_VIF_State -w if_name==home-ap-24 enabled")"
 fi

@@ -25,7 +25,7 @@ POD=$MVX_ROOT/pod
 : "${MVX_POD_BUILDENV:=mvx-pod-buildenv:focal}"
 : "${MVX_POD_OUT:=$MVX_POD_WORK/out}"
 : "${MVX_POD_JOBS:=$(nproc)}"
-SRC_CACHE=${MVX_CACHE:-$HOME/.cache/mvx-opensync}/pod-src
+SRC_CACHE=${MVX_CACHE:-$HOME/.cache/opensync-lab}/pod-src
 TARGET=HWSIM_POD
 PROFILE=mvx-local
 
@@ -106,7 +106,7 @@ import re, sys
 p = sys.argv[1]
 s = open(p).read()
 new = '''radio_suffix() {
-    # mvx-opensync pod: hwsim radios are all multi-band, so the band cannot be
+    # opensync-lab pod: hwsim radios are all multi-band, so the band cannot be
     # read from the phy. Assign by position: 1st radio -> 24, 2nd -> 50, 3rd -> 60
     # (override with MVX_POD_RADIO_BANDS).
     # position of this phy among the unit's radios (phy names are VM-wide)
@@ -143,7 +143,7 @@ cmd_image() {
 architecture: x86_64
 creation_date: $(date +%s)
 properties:
-  description: "mvx-opensync OpenSync pod (HWSIM_POD, OpenSync 6.6.1.0) $stamp"
+  description: "opensync-lab OpenSync pod (HWSIM_POD, OpenSync 6.6.1.0) $stamp"
   os: ubuntu
   release: focal
 EOF

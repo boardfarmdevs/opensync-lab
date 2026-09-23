@@ -4,7 +4,7 @@ Date: Tue, 22 Sep 2026 20:34:09 -0700
 Subject: [PATCH] mv3: select OpenSync NOC certificates; dnsmasq bind-dynamic
 
 Two gaps that keep OpenSync from working on the LXD mv3 (found by
-mvx-opensync, 2026-09-22):
+opensync-lab, 2026-09-22):
 
 - opensync: the NOC certificate selection lives in
   meta-rdk-opensync-sagemcom's do_install:append:f5685, which never applies to
