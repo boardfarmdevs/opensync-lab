@@ -25,6 +25,13 @@ JSON-RPC message: {"t": epoch, "dir": "rx"|"tx", "role", "peer", "msg"}.
 The latest schema per node is kept in <data>/nodes/<node>/schema.json and a
 mirror snapshot in <data>/nodes/<node>/tables.json (rewritten on change).
 
+Redirect (--redirect NODE=TARGET, or noc-ctl redirect): hand a node to another
+manager. NODE is an AWLAN_Node.id or serial_number; the redirector answers that
+node with TARGET instead of this controller, a node already connected here is
+moved at once (its manager_addr is rewritten), and the mesh leaves its
+fronthaul alone. The gateway side of its backhaul (the GRE on the gateway) is
+kept. Runtime changes persist in <data>/redirects.json. Off by default.
+
 Mesh (--mesh-gateway): orchestrates a location -- the gateway's backhaul AP,
 a GRE per extender (pod) on it, and the pods' fronthaul -- as the cloud does
 (mesh.py).
@@ -214,7 +221,8 @@ class Session:
             log.info("redirector: node %s serial %s model %s fw %s",
                      rows[0].get("id"), rows[0].get("serial_number"),
                      rows[0].get("model"), rows[0].get("firmware_version"))
-        target = f"tcp:{self.noc.advertise}:{self.noc.controller_port}"
+        row = rows[0] if rows else {}
+        target = self.noc.target_for(row.get("id"), row.get("serial_number"))
         r = await self.request("transact", ["Open_vSwitch", {
             "op": "update", "table": "AWLAN_Node", "where": [],
             "row": {"manager_addr": target}}])
@@ -233,6 +241,7 @@ class Session:
         self.noc.save_schema(self)
         log.info("controller: monitoring %d tables of %s on %s", len(requests), db,
                  self.node or self.peer)
+        await self.noc.hand_over(self)
 
 
 class Noc:
@@ -244,6 +253,51 @@ class Noc:
         self.sessions = set()
         self.topology = topology.Topology(self)
         os.makedirs(self.data, exist_ok=True)
+        self.redirects = {}                 # AWLAN_Node.id or serial -> manager_addr
+        try:
+            with open(os.path.join(self.data, "redirects.json")) as f:
+                self.redirects.update(json.load(f))
+        except (OSError, ValueError):
+            pass
+        for spec in args.redirect or []:
+            node, _, target = spec.partition("=")
+            if not node or not target:
+                raise SystemExit(f"--redirect {spec!r}: expected NODE=TARGET")
+            self.redirects[node] = target
+
+    # -- redirect (hand a node to another manager) ------------------------------
+    def home(self):
+        return f"tcp:{self.advertise}:{self.controller_port}"
+
+    def redirected(self, *keys):
+        """The foreign manager_addr for a node, or None if it stays here."""
+        return next((self.redirects[k] for k in keys if k and k in self.redirects), None)
+
+    def target_for(self, node_id, serial=None):
+        return self.redirected(node_id, serial) or self.home()
+
+    @staticmethod
+    def serial(s):
+        return next(iter(s.tables.get("AWLAN_Node", {}).values()), {}).get("serial_number")
+
+    async def hand_over(self, s):
+        """Move a node that is connected here but redirected elsewhere."""
+        target = self.redirected(s.node, self.serial(s))
+        if not target:
+            return
+        r = await s.request("transact", ["Open_vSwitch", {
+            "op": "update", "table": "AWLAN_Node", "where": [], "row": {"manager_addr": target}}])
+        log.info("redirect: %s handed over to %s (%s)", s.node or s.peer, target,
+                 "ok" if not r.get("error") else r.get("error"))
+        # cm acts on a new manager_addr only while not connected to a manager:
+        # end this session, as a cloud does when it moves a node.
+        s.writer.close()
+
+    def save_redirects(self):
+        path = os.path.join(self.data, "redirects.json")
+        with open(path + ".tmp", "w") as f:
+            json.dump(self.redirects, f, indent=1, sort_keys=True)
+        os.replace(path + ".tmp", path)
 
     def node_dir(self, s):
         d = os.path.join(self.data, "nodes", s.node or s.peer.split(":")[0])
@@ -332,6 +386,20 @@ class Noc:
             return [{"node": s.node, "role": s.role, "peer": s.peer,
                      "since": round(s.started), "tables": len(s.tables),
                      "capture": s.capture_path} for s in sorted(self.sessions, key=lambda s: s.started)]
+        if c == "redirects":
+            return self.redirects
+        if c == "redirect":
+            node, target = cmd["node"], cmd.get("target")
+            if target:
+                self.redirects[node] = target
+            else:
+                self.redirects.pop(node, None)
+            self.save_redirects()
+            log.info("redirect: %s -> %s", node, target or "local-noc")
+            for sess in [x for x in self.sessions if x.role == "controller"]:
+                if node in (sess.node, self.serial(sess)):
+                    await self.hand_over(sess)
+            return self.redirects
         s = self.find(cmd["node"])
         if c == "tables":
             return {t: len(rows) for t, rows in sorted(s.tables.items())}
@@ -354,6 +422,9 @@ async def main():
     ap.add_argument("--data", default="/var/lib/local-noc")
     ap.add_argument("--http-port", type=int, default=8640, help="web UI (0 = off)")
     ap.add_argument("--location", default="opensync-lab", help="location name shown in the web UI")
+    ap.add_argument("--redirect", action="append", metavar="NODE=TARGET",
+                    help="send node NODE (AWLAN_Node.id or serial) to manager TARGET "
+                         "(e.g. tcp:10.101.0.1:6651) instead of this controller; repeatable")
     mesh.add_args(ap)
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

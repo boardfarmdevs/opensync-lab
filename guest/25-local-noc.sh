@@ -11,6 +11,8 @@ cport=${MVX_LOCAL_NOC_CONTROLLER_PORT:-6641}
 log "local-noc: building image"
 docker build -q -t local-noc:latest "$MVX_GUEST_ROOT/local-noc" >/dev/null
 docker rm -f local-noc >/dev/null 2>&1 || true
+redirect=()                             # MVX_NOC_REDIRECT="NODE=TARGET ..." (default none)
+for r in ${MVX_NOC_REDIRECT:-}; do redirect+=(--redirect "$r"); done
 ui=${MVX_NOC_UI_PORT:-8640}
 # the web UI is published on the VM (setup-vm.sh proxies the host port to it)
 docker run -d --name local-noc --restart unless-stopped -p "$ui:$ui" \
@@ -21,7 +23,7 @@ docker run -d --name local-noc --restart unless-stopped -p "$ui:$ui" \
     --mesh-bhaul-ssid "${MVX_MESH_BHAUL_SSID:-opensync-lab-bhaul}" \
     --mesh-bhaul-psk "${MVX_MESH_BHAUL_PSK:-opensync-lab-bhaul-psk}" \
     --mesh-home-ssid "${MVX_MESH_HOME_SSID:-opensync-lab-home}" \
-    --mesh-home-psk "${MVX_MESH_HOME_PSK:-opensync-lab-home-psk}" >/dev/null
+    --mesh-home-psk "${MVX_MESH_HOME_PSK:-opensync-lab-home-psk}" "${redirect[@]}" >/dev/null
 
 cat > /etc/default/local-noc <<EOT
 LOCAL_NOC_IP=$ip

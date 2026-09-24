@@ -7,6 +7,9 @@
   noc-ctl transact <node> '<op-json>'... send an OVSDB transact, as the cloud would
   noc-ctl request  <node> <method> ['<params-json>']
                                          any JSON-RPC request (e.g. list_dbs, get_schema)
+  noc-ctl redirects                      nodes handed to another manager
+  noc-ctl redirect <node> <target>|-     hand <node> (id or serial) to manager <target>
+                                         (e.g. tcp:10.101.0.1:6651); - gives it back
   noc-ctl log      <node> [N]            last N captured messages of the node's
                                          newest controller session (default 20)
 
@@ -56,6 +59,11 @@ def main(argv):
             print(f"{n:5d}  {t}")
     elif cmd == "dump":
         show(call({"cmd": "dump", "node": args[0], "table": args[1]}))
+    elif cmd == "redirects":
+        show(call({"cmd": "redirects"}))
+    elif cmd == "redirect":
+        show(call({"cmd": "redirect", "node": args[0],
+                   "target": None if args[1] == "-" else args[1]}))
     elif cmd == "transact":
         show(call({"cmd": "transact", "node": args[0], "ops": [json.loads(a) for a in args[1:]]}))
     elif cmd == "request":

@@ -15,8 +15,9 @@ set +o pipefail
 name=${1:-pod-1-wc1}
 pod=${2:-pod-1}
 gw=${MVX_MESH_GATEWAY:-mv3}
-ssid=${MVX_MESH_HOME_SSID:-opensync-lab-home}
-psk=${MVX_MESH_HOME_PSK:-opensync-lab-home-psk}
+# MVX_CLIENT_SSID/PSK: join a fronthaul another manager configured (default: local-noc's)
+ssid=${MVX_CLIENT_SSID:-${MVX_MESH_HOME_SSID:-opensync-lab-home}}
+psk=${MVX_CLIENT_PSK:-${MVX_MESH_HOME_PSK:-opensync-lab-home-psk}}
 image=mvx-wclient
 base=${MVX_CLIENT_BASE_IMAGE:-images:alpine/3.22}
 fail=0 lines=()

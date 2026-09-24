@@ -85,7 +85,8 @@ class Mesh:
                 try:
                     if s.node == self.gateway:
                         await self.gateway_step(s)
-                    else:
+                    elif not self.noc.redirected(s.node, self.noc.serial(s)):
+                        # a redirected pod's fronthaul belongs to its new manager
                         await self.pod_step(s)
                 except Exception as e:                      # noqa: BLE001
                     log.warning("mesh: %s: %r", s.node, e)
