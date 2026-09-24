@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The lab VM · opensync-lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<main><div class="wrap">
+<div class="k" style="color:var(--faint);font-size:12px;letter-spacing:.12em;text-transform:uppercase">Stage 2 · setup-vm.sh</div>
+<h1>The lab VM</h1>
+<p class="lead">One LXD virtual machine is the whole lab: its own kernel (for the simulated radios), Docker for boardfarm's WAN side and
+local-noc, and nested LXD for the gateway, the extenders and the clients.</p>
+
+<pre><code>./setup-vm.sh all          <span class="c"># create + provision opensync-lab-&lt;MMDD&gt;</span>
+./setup-vm.sh status       <span class="c"># VM, radios, containers, check results, the topology view URL</span>
+./setup-vm.sh shell | stop | start | delete</code></pre>
+
+<h2>Provisioning</h2>
+<p><code>create</code> makes the VM (Ubuntu 24.04, 4 CPU, 8 GiB, 64 GiB, UEFI without secure boot). <code>provision</code> pushes the guest
+scripts to <code>/opt/opensync-lab</code> and runs them as root; every one is safe to re-run.</p>
+<div class="js-pipeline">
+<div class="pipeline">
+  <button data-k="base">00 base</button><span class="arr">→</span>
+  <button data-k="hwsim">10 hwsim</button><span class="arr">→</span>
+  <button data-k="bf">20 boardfarm</button><span class="arr">→</span>
+  <button data-k="noc">25 local-noc</button><span class="arr">→</span>
+  <button data-k="ui">view on the host</button>
+</div>
+<div class="step" data-panel="base"><h3>00-base.sh</h3><p>Packages, Docker, snap LXD (held), <code>uv</code>, <code>lxd init</code> on btrfs, the kernel modules for
+mac80211_hwsim (a reboot if they had to be installed), and a unit that keeps Docker's firewall from eating LXD bridge traffic.</p></div>
+<div class="step" data-panel="hwsim"><h3 id="hwsim">10-hwsim.sh</h3><p>The radio pool: mac80211_hwsim with 24 radios on 2 channels, named <code>virt-wlanN</code>, loaded at boot.
+Containers take radios from the pool as physical NICs (mv3 three, each extender two, each client one); radios a deleted container leaves
+behind are reclaimed. All radios share one medium: any BSS is visible to every radio.</p></div>
+<div class="step" data-panel="bf"><h3>20-boardfarm.sh</h3><p>boardfarm-lab-staging at a pinned commit (a bundle from the host), this repo's patches to it, a uv venv, and
+the lab config <code>opensync-lab.json</code>. <code>bf-lab</code> builds and starts the WAN side of one vCPE: <b>dhcp-cpe1</b> (Kea),
+<b>wan-cpe1</b> (NAT), <b>lan-cpe1</b>. Boardfarm is used only for this; its testsuite is not run. A rebuild service keeps the WAN side
+healthy across reboots and makes <code>wan-cpe1</code> reject non-lab IPv6 at once when the host has no IPv6 upstream.</p></div>
+<div class="step" data-panel="noc"><h3>25-local-noc.sh</h3><p>The local cloud as a Docker container on boardfarm's WAN network at <code>10.101.0.40</code>, so the gateway
+reaches it through its WAN like the real cloud, with the mesh orchestration for the gateway <code>mv3</code> and the web UI on port 8640.
+The step waits for the redirector, the controller and the UI to answer. See <a href="local-noc.html">local-noc</a>.</p></div>
+<div class="step" data-panel="ui"><h3>The topology view on the host</h3><p>Docker publishes the UI port on the VM; <code>setup-vm.sh</code> reserves the VM's
+address on <code>lxdbr0</code> and adds an LXD NAT proxy device <code>noc-ui</code> from the host's primary address (a NAT proxy into a VM cannot
+listen on 0.0.0.0). <code>setup-vm.sh status</code> prints the URL.</p></div>
+</div>
+
+<h2>Networks and addresses</h2>
+<div class="scroll"><table class="t"><thead><tr><th>network</th><th>what is on it</th><th>addresses</th></tr></thead><tbody>
+<tr><td><code>br-wan101</code></td><td>mv3 WAN (<code>eth0</code> → <code>erouter0</code>), dhcp-cpe1, wan-cpe1; 802.1Q data VLAN 1081, management 881, as on the real product</td><td>mv3 <code>10.70.0.x</code> via Kea, gateway wan-cpe1 <code>10.70.0.20</code></td></tr>
+<tr><td>docker <code>wan-cpe1</code></td><td>boardfarm's WAN service segment and local-noc</td><td>local-noc <code>10.101.0.40</code>, redirector <code>:6640</code>, controller <code>:6641</code>, UI <code>:8640</code></td></tr>
+<tr><td><code>br-lan201</code></td><td>mv3 LAN port 1 (<code>eth1</code>) and lan-cpe1</td><td>mv3 LAN <code>192.168.0.1/24</code></td></tr>
+<tr><td>mv3 <code>wl1.1</code></td><td>the 5 GHz backhaul AP the extenders join (WPA2, SSID <code>opensync-lab-bhaul</code>)</td><td><code>169.254.1.1/25</code>, extenders lease <code>169.254.1.x</code></td></tr>
+<tr><td>mv3 <code>brlan0</code></td><td>the LAN bridge (OVS with OpenSync on): LAN ports and one GRE port <code>pgd*</code> per extender</td><td>extender <code>br-home</code> and clients lease <code>192.168.0.x</code></td></tr>
+<tr><td>extender <code>home-ap-24</code></td><td>each extender's 2.4 GHz fronthaul (SSID <code>opensync-lab-home</code>, ch 6)</td><td>clients on mv3's LAN, through the extender's tunnel</td></tr>
+</tbody></table></div>
+
+<h2>Guest scripts</h2>
+<p>What each script in <code>guest/</code> does, from its own header:</p>
+<div id="guests" class="scroll"></div>
+
+<footer class="pg">Next: <a href="deploy.html">3 · Deploy and check</a></footer>
+</div></main>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const r = await json("data/reference.json");
+    document.getElementById("guests").innerHTML = `<table class="t"><thead><tr><th>script</th><th>purpose</th></tr></thead><tbody>` +
+      r.guests.map(g => `<tr><td><code>${esc(g.name)}</code></td><td>${esc(g.purpose)}</td></tr>`).join("") + "</tbody></table>";
+  } catch (e) { document.getElementById("guests").textContent = "reference data not available"; }
+});
+</script>
+</body>
+</html>

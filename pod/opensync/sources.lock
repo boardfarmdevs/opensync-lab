@@ -1,0 +1,6 @@
+# OpenSync sources for the HWSIM_POD pod, all at release 6.6.1.0.
+# <dir under the source root>  <git url>  <commit>
+core                           https://github.com/plume-design/opensync.git                          1dad64e97fa014616ec383ce9499369e50c9eb7f
+platform/cfg80211              https://github.com/plume-design/opensync-platform-cfg80211.git        8d84c5eed29eeea5c02e8ba9681ce59ba20f9d7c
+vendor/openwrt-template        https://github.com/plume-design/opensync-vendor-openwrt-template.git  c8057e54a1a2c9248ffb1cb502cce677a1ec00c5
+service-provider/local         https://github.com/plume-design/opensync-service-provider-local.git   c6940b6e588fc0465738d3f569d32349d311b403

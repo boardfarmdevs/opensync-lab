@@ -1,0 +1,4653 @@
+{
+ "node": "MVXPOD02D7777EF0D9",
+ "peer": "10.101.0.20:33288",
+ "tables": {
+  "Wifi_Associated_Clients": {
+   "f33d05d6-a105-43c6-b664-5ff5e013c721": {
+    "key_id": "key",
+    "_version": [
+     "uuid",
+     "1de85267-e0e2-4e43-a6af-f27f51201b99"
+    ],
+    "state": "active",
+    "mac": "02:00:00:00:01:04",
+    "pmf": false,
+    "capabilities": [
+     "set",
+     []
+    ],
+    "uapsd": [
+     "set",
+     []
+    ],
+    "wpa_key_mgmt": [
+     "set",
+     []
+    ],
+    "dpp_netaccesskey_sha256_hex": [
+     "set",
+     []
+    ],
+    "pairwise_cipher": [
+     "set",
+     []
+    ],
+    "mld_addr": [
+     "set",
+     []
+    ],
+    "oftag": [
+     "set",
+     []
+    ],
+    "kick": [
+     "map",
+     []
+    ]
+   },
+   "0b962cc8-9a9f-47c6-866d-5c6c7f8bd226": {
+    "key_id": "key--1",
+    "_version": [
+     "uuid",
+     "2f2c7730-921e-4f26-891e-1ceae78aad4d"
+    ],
+    "state": "active",
+    "mac": "02:00:00:00:0c:00",
+    "pmf": false,
+    "capabilities": [
+     "set",
+     []
+    ],
+    "uapsd": [
+     "set",
+     []
+    ],
+    "wpa_key_mgmt": "wpa-psk",
+    "dpp_netaccesskey_sha256_hex": [
+     "set",
+     []
+    ],
+    "pairwise_cipher": "rsn-ccmp",
+    "mld_addr": [
+     "set",
+     []
+    ],
+    "oftag": [
+     "set",
+     []
+    ],
+    "kick": [
+     "map",
+     []
+    ]
+   },
+   "3992c481-92ba-4438-b142-3d81d3650400": {
+    "key_id": "key--1",
+    "_version": [
+     "uuid",
+     "7041321c-751a-407c-8a52-76845ca554ee"
+    ],
+    "state": "active",
+    "mac": "02:00:00:00:0b:00",
+    "pmf": false,
+    "capabilities": [
+     "set",
+     []
+    ],
+    "uapsd": [
+     "set",
+     []
+    ],
+    "wpa_key_mgmt": "wpa-psk",
+    "dpp_netaccesskey_sha256_hex": [
+     "set",
+     []
+    ],
+    "pairwise_cipher": "rsn-ccmp",
+    "mld_addr": [
+     "set",
+     []
+    ],
+    "oftag": [
+     "set",
+     []
+    ],
+    "kick": [
+     "map",
+     []
+    ]
+   }
+  },
+  "Node_State": {
+   "c394a372-a0dd-4bd3-941a-ffa0accbe5ec": {
+    "persist": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "3082f991-9cca-4831-adbe-1fc992c76ac5"
+    ],
+    "module": "fcm",
+    "value": "102400 kB",
+    "key": "(redacted)"
+   },
+   "66c640f3-ed09-407d-b603-fbeace70c7bd": {
+    "persist": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "1aeedecc-9b0a-4181-92bb-3dc7a2e1e7ab"
+    ],
+    "module": "fsm",
+    "value": "163840 kB",
+    "key": "(redacted)"
+   }
+  },
+  "Wifi_Route_State": {
+   "0479b6fa-ee57-4b65-99c6-11828bb99c8f": {
+    "if_name": "br-home",
+    "_version": [
+     "uuid",
+     "94beb168-d07e-44fc-bc88-f77bd12e2b4a"
+    ],
+    "gateway_hwaddr": "00:16:3e:72:fe:2d",
+    "dest_addr": "0.0.0.0",
+    "pref_src": [
+     "set",
+     []
+    ],
+    "dest_mask": "0.0.0.0",
+    "gateway": "192.168.0.1",
+    "metric": [
+     "set",
+     []
+    ],
+    "table": [
+     "set",
+     []
+    ]
+   },
+   "a08d182e-cc16-4918-af0a-d00179fe171a": {
+    "if_name": "br-home",
+    "_version": [
+     "uuid",
+     "9a79a3c6-bd08-45b1-8e60-24aec7c8a322"
+    ],
+    "gateway_hwaddr": [
+     "set",
+     []
+    ],
+    "dest_addr": "192.168.0.0",
+    "pref_src": "192.168.0.101",
+    "dest_mask": "255.255.255.0",
+    "gateway": "0.0.0.0",
+    "metric": [
+     "set",
+     []
+    ],
+    "table": [
+     "set",
+     []
+    ]
+   },
+   "96e5ccea-efd3-47b6-925b-60ab86b6e996": {
+    "if_name": "bhaul-sta-50",
+    "_version": [
+     "uuid",
+     "20fdaf0e-830a-40de-8c23-6f0632147416"
+    ],
+    "gateway_hwaddr": [
+     "set",
+     []
+    ],
+    "dest_addr": "169.254.1.0",
+    "pref_src": "169.254.1.12",
+    "dest_mask": "255.255.255.128",
+    "gateway": "0.0.0.0",
+    "metric": [
+     "set",
+     []
+    ],
+    "table": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Bridge": {
+   "db9830f1-b3bc-4ce0-a4bf-87cfa025e388": {
+    "name": "br-home",
+    "flood_vlans": [
+     "set",
+     []
+    ],
+    "auto_attach": [
+     "set",
+     []
+    ],
+    "ports": [
+     "set",
+     [
+      [
+       "uuid",
+       "3edb62f9-cb40-4d5f-b944-5d843a79c182"
+      ],
+      [
+       "uuid",
+       "7921f402-6642-4995-a7a8-59b6910c1987"
+      ],
+      [
+       "uuid",
+       "a613ed34-93f6-4006-b1f5-7dbea4b30ccc"
+      ]
+     ]
+    ],
+    "stp_enable": true,
+    "fail_mode": [
+     "set",
+     []
+    ],
+    "rstp_enable": false,
+    "rstp_status": [
+     "map",
+     []
+    ],
+    "flow_tables": [
+     "map",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "fa91c222-ceb3-416c-b089-ae46299e9959"
+    ],
+    "netflow": [
+     "set",
+     []
+    ],
+    "datapath_type": "",
+    "controller": [
+     "set",
+     []
+    ],
+    "other_config": [
+     "map",
+     []
+    ],
+    "status": [
+     "map",
+     []
+    ],
+    "ipfix": [
+     "set",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "datapath_id": "000002D7777EF0D9",
+    "mirrors": [
+     "set",
+     []
+    ],
+    "mcast_snooping_enable": true,
+    "datapath_version": "",
+    "sflow": [
+     "set",
+     []
+    ],
+    "protocols": [
+     "set",
+     []
+    ]
+   }
+  },
+  "IPv6_Address": {
+   "358850fb-0c6d-4508-a775-b74912f17fee": {
+    "prefix": "2001:dead:bed0:0:d7:77ff:fe7e:f0d9/64",
+    "_version": [
+     "uuid",
+     "0f0dcbd3-0b14-4c88-bf6b-93ad9745a081"
+    ],
+    "valid_lifetime": [
+     "set",
+     []
+    ],
+    "status": [
+     "set",
+     []
+    ],
+    "address": "2001:dead:bed0:0:d7:77ff:fe7e:f0d9/64",
+    "preferred_lifetime": [
+     "set",
+     []
+    ],
+    "origin": "auto_configured",
+    "enable": true,
+    "address_status": [
+     "set",
+     []
+    ]
+   },
+   "7870cc56-152f-4abf-8798-1b875496497b": {
+    "prefix": "2001:dead:bed0:0:5ad:2bf0:4eb8:417f/64",
+    "_version": [
+     "uuid",
+     "eae7ded4-8800-452c-aa3e-cf09de644c60"
+    ],
+    "valid_lifetime": [
+     "set",
+     []
+    ],
+    "status": [
+     "set",
+     []
+    ],
+    "address": "2001:dead:bed0:0:5ad:2bf0:4eb8:417f/64",
+    "preferred_lifetime": [
+     "set",
+     []
+    ],
+    "origin": "auto_configured",
+    "enable": true,
+    "address_status": [
+     "set",
+     []
+    ]
+   },
+   "edbb95de-1d44-464c-ba51-9794d4f6abbc": {
+    "prefix": "fe80::d7:77ff:fe7e:f0d9/64",
+    "_version": [
+     "uuid",
+     "752099fc-daad-4fb1-800c-c8a94ee53c2b"
+    ],
+    "valid_lifetime": [
+     "set",
+     []
+    ],
+    "status": [
+     "set",
+     []
+    ],
+    "address": "fe80::d7:77ff:fe7e:f0d9/64",
+    "preferred_lifetime": [
+     "set",
+     []
+    ],
+    "origin": "auto_configured",
+    "enable": true,
+    "address_status": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Wifi_Radio_Config": {
+   "a61e51b6-111f-4719-b4f4-2c86e6a35e41": {
+    "dfs_demo": [
+     "set",
+     []
+    ],
+    "temperature_control": [
+     "map",
+     []
+    ],
+    "if_name": "phy5",
+    "bcn_int": [
+     "set",
+     []
+    ],
+    "puncture_bitmap": [
+     "set",
+     []
+    ],
+    "thermal_tx_chainmask": [
+     "set",
+     []
+    ],
+    "thermal_shutdown": [
+     "set",
+     []
+    ],
+    "channel_sync": 0,
+    "hw_type": "mac80211_hwsim",
+    "vif_configs": [
+     "uuid",
+     "74359da9-9a52-4bcc-ac13-a04a87100506"
+    ],
+    "country": [
+     "set",
+     []
+    ],
+    "tx_chainmask": [
+     "set",
+     []
+    ],
+    "fallback_parents": [
+     "map",
+     []
+    ],
+    "beacon_rate": [
+     "set",
+     []
+    ],
+    "hw_config": [
+     "map",
+     []
+    ],
+    "channel": 6,
+    "tx_power": [
+     "set",
+     []
+    ],
+    "supported_rates": [
+     "set",
+     []
+    ],
+    "ht_mode": "HT20",
+    "thermal_downgrade_temp": [
+     "set",
+     []
+    ],
+    "hw_mode": "11n",
+    "zero_wait_dfs": [
+     "set",
+     []
+    ],
+    "mcast_rate": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "thermal_upgrade_temp": [
+     "set",
+     []
+    ],
+    "mgmt_rate": [
+     "set",
+     []
+    ],
+    "center_freq0_chan": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "9d30ab9a-fe91-4be2-90d6-a9c1845fb4c7"
+    ],
+    "basic_rates": [
+     "set",
+     []
+    ],
+    "freq_band": "2.4G",
+    "thermal_integration": [
+     "set",
+     []
+    ],
+    "channel_mode": "cloud"
+   },
+   "47b4cfe6-ef44-4037-8ee6-4848465ea0ce": {
+    "dfs_demo": [
+     "set",
+     []
+    ],
+    "temperature_control": [
+     "map",
+     []
+    ],
+    "if_name": "phy6",
+    "bcn_int": [
+     "set",
+     []
+    ],
+    "puncture_bitmap": [
+     "set",
+     []
+    ],
+    "thermal_tx_chainmask": [
+     "set",
+     []
+    ],
+    "thermal_shutdown": [
+     "set",
+     []
+    ],
+    "channel_sync": 0,
+    "hw_type": "mac80211_hwsim",
+    "vif_configs": [
+     "uuid",
+     "303efd40-dd25-40d7-a666-de8d4215a74f"
+    ],
+    "country": [
+     "set",
+     []
+    ],
+    "tx_chainmask": [
+     "set",
+     []
+    ],
+    "fallback_parents": [
+     "map",
+     []
+    ],
+    "beacon_rate": [
+     "set",
+     []
+    ],
+    "hw_config": [
+     "map",
+     []
+    ],
+    "channel": [
+     "set",
+     []
+    ],
+    "tx_power": [
+     "set",
+     []
+    ],
+    "supported_rates": [
+     "set",
+     []
+    ],
+    "ht_mode": "HT80",
+    "thermal_downgrade_temp": [
+     "set",
+     []
+    ],
+    "hw_mode": "11ac",
+    "zero_wait_dfs": [
+     "set",
+     []
+    ],
+    "mcast_rate": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "thermal_upgrade_temp": [
+     "set",
+     []
+    ],
+    "mgmt_rate": [
+     "set",
+     []
+    ],
+    "center_freq0_chan": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "46345647-afdf-412b-b0a4-57e69e862471"
+    ],
+    "basic_rates": [
+     "set",
+     []
+    ],
+    "freq_band": "5G",
+    "thermal_integration": [
+     "set",
+     []
+    ],
+    "channel_mode": "cloud"
+   }
+  },
+  "Wifi_Inet_Config": {
+   "f5c7cf92-78b6-476d-961f-e675cae692bd": {
+    "if_name": "home-ap-24",
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "upnp_mode": [
+     "set",
+     []
+    ],
+    "dhcp_sniff": [
+     "set",
+     []
+    ],
+    "if_type": "vif",
+    "netmask": [
+     "set",
+     []
+    ],
+    "softwds_wrap": [
+     "set",
+     []
+    ],
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "NAT": false,
+    "dhcp_req": [
+     "set",
+     []
+    ],
+    "os_persist": false,
+    "network": true,
+    "mtu": 1500,
+    "igmp_proxy": [
+     "set",
+     []
+    ],
+    "ppp_options": [
+     "map",
+     []
+    ],
+    "igmp_tsize": [
+     "set",
+     []
+    ],
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "broadcast": [
+     "set",
+     []
+    ],
+    "collect_stats": [
+     "set",
+     []
+    ],
+    "gateway": [
+     "set",
+     []
+    ],
+    "mac_reporting": false,
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ],
+    "igmp_age": [
+     "set",
+     []
+    ],
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "gre_remote_mac_addr": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "role": [
+     "set",
+     []
+    ],
+    "inet_addr": [
+     "set",
+     []
+    ],
+    "igmp": [
+     "set",
+     []
+    ],
+    "if_uuid": "",
+    "_version": [
+     "uuid",
+     "71073071-31bb-4f53-93fb-59502205a707"
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dhcp_renew": 0,
+    "no_flood": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "none",
+    "mld_proxy": [
+     "set",
+     []
+    ]
+   },
+   "a09fd739-b145-4386-879f-c7ee3656a934": {
+    "if_name": "eth0",
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "upnp_mode": [
+     "set",
+     []
+    ],
+    "dhcp_sniff": [
+     "set",
+     []
+    ],
+    "if_type": "eth",
+    "netmask": [
+     "set",
+     []
+    ],
+    "softwds_wrap": [
+     "set",
+     []
+    ],
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "NAT": false,
+    "dhcp_req": [
+     "set",
+     []
+    ],
+    "os_persist": false,
+    "network": true,
+    "mtu": 1500,
+    "igmp_proxy": [
+     "set",
+     []
+    ],
+    "ppp_options": [
+     "map",
+     []
+    ],
+    "igmp_tsize": [
+     "set",
+     []
+    ],
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "broadcast": [
+     "set",
+     []
+    ],
+    "collect_stats": [
+     "set",
+     []
+    ],
+    "gateway": [
+     "set",
+     []
+    ],
+    "mac_reporting": false,
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ],
+    "igmp_age": [
+     "set",
+     []
+    ],
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "gre_remote_mac_addr": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "role": [
+     "set",
+     []
+    ],
+    "inet_addr": [
+     "set",
+     []
+    ],
+    "igmp": [
+     "set",
+     []
+    ],
+    "if_uuid": "",
+    "_version": [
+     "uuid",
+     "18e3ec90-7ff9-4853-b33f-9aca5a799fbc"
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dhcp_renew": 0,
+    "no_flood": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "none",
+    "mld_proxy": [
+     "set",
+     []
+    ]
+   },
+   "e9fc2d54-0571-4355-9e2d-46f8bf8e7d19": {
+    "if_name": "g-bhaul-sta-50",
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "upnp_mode": [
+     "set",
+     []
+    ],
+    "dhcp_sniff": [
+     "set",
+     []
+    ],
+    "if_type": "gre",
+    "netmask": [
+     "set",
+     []
+    ],
+    "softwds_wrap": [
+     "set",
+     []
+    ],
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "NAT": [
+     "set",
+     []
+    ],
+    "dhcp_req": [
+     "set",
+     []
+    ],
+    "os_persist": false,
+    "network": true,
+    "mtu": 1500,
+    "igmp_proxy": [
+     "set",
+     []
+    ],
+    "ppp_options": [
+     "map",
+     []
+    ],
+    "igmp_tsize": [
+     "set",
+     []
+    ],
+    "gre_ifname": "bhaul-sta-50",
+    "broadcast": [
+     "set",
+     []
+    ],
+    "collect_stats": [
+     "set",
+     []
+    ],
+    "gateway": [
+     "set",
+     []
+    ],
+    "mac_reporting": false,
+    "gre_local_inet_addr": "169.254.1.12",
+    "igmp_age": [
+     "set",
+     []
+    ],
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "gre_remote_mac_addr": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "gre_remote_inet_addr": "169.254.1.1",
+    "role": [
+     "set",
+     []
+    ],
+    "inet_addr": [
+     "set",
+     []
+    ],
+    "igmp": [
+     "set",
+     []
+    ],
+    "if_uuid": "",
+    "_version": [
+     "uuid",
+     "9da5fa4a-cc33-4633-950d-c60d26615ea9"
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dhcp_renew": 0,
+    "no_flood": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "none",
+    "mld_proxy": [
+     "set",
+     []
+    ]
+   },
+   "e5a639e8-c0d6-4ec0-abb3-ffc0eaae5da0": {
+    "if_name": "bhaul-sta-50",
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "upnp_mode": [
+     "set",
+     []
+    ],
+    "dhcp_sniff": [
+     "set",
+     []
+    ],
+    "if_type": "vif",
+    "netmask": [
+     "set",
+     []
+    ],
+    "softwds_wrap": [
+     "set",
+     []
+    ],
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "NAT": false,
+    "dhcp_req": 1,
+    "os_persist": false,
+    "network": true,
+    "mtu": 1600,
+    "igmp_proxy": [
+     "set",
+     []
+    ],
+    "ppp_options": [
+     "map",
+     []
+    ],
+    "igmp_tsize": [
+     "set",
+     []
+    ],
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "broadcast": [
+     "set",
+     []
+    ],
+    "collect_stats": [
+     "set",
+     []
+    ],
+    "gateway": [
+     "set",
+     []
+    ],
+    "mac_reporting": false,
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ],
+    "igmp_age": [
+     "set",
+     []
+    ],
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "gre_remote_mac_addr": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "role": [
+     "set",
+     []
+    ],
+    "inet_addr": [
+     "set",
+     []
+    ],
+    "igmp": [
+     "set",
+     []
+    ],
+    "if_uuid": "",
+    "_version": [
+     "uuid",
+     "9dc5e014-9fa7-4763-88fe-89d9359d441c"
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dhcp_renew": 0,
+    "no_flood": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "dhcp",
+    "mld_proxy": [
+     "set",
+     []
+    ]
+   },
+   "cf8f4fc4-bac5-4119-b130-367a38519ed3": {
+    "if_name": "br-home",
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "upnp_mode": [
+     "set",
+     []
+    ],
+    "dhcp_sniff": [
+     "set",
+     []
+    ],
+    "if_type": "bridge",
+    "netmask": [
+     "set",
+     []
+    ],
+    "softwds_wrap": [
+     "set",
+     []
+    ],
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "NAT": [
+     "set",
+     []
+    ],
+    "dhcp_req": [
+     "set",
+     []
+    ],
+    "os_persist": false,
+    "network": true,
+    "mtu": [
+     "set",
+     []
+    ],
+    "igmp_proxy": [
+     "set",
+     []
+    ],
+    "ppp_options": [
+     "map",
+     []
+    ],
+    "igmp_tsize": [
+     "set",
+     []
+    ],
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "broadcast": [
+     "set",
+     []
+    ],
+    "collect_stats": [
+     "set",
+     []
+    ],
+    "gateway": [
+     "set",
+     []
+    ],
+    "mac_reporting": false,
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ],
+    "igmp_age": [
+     "set",
+     []
+    ],
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "gre_remote_mac_addr": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "role": [
+     "set",
+     []
+    ],
+    "inet_addr": [
+     "set",
+     []
+    ],
+    "igmp": [
+     "set",
+     []
+    ],
+    "if_uuid": "",
+    "_version": [
+     "uuid",
+     "575b33b4-91c3-4414-bf95-1e5b62c0a48e"
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dhcp_renew": 0,
+    "no_flood": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "dhcp",
+    "mld_proxy": [
+     "set",
+     []
+    ]
+   },
+   "02570d25-cf78-46ec-9510-3e170dfed701": {
+    "if_name": "eth1",
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "upnp_mode": [
+     "set",
+     []
+    ],
+    "dhcp_sniff": [
+     "set",
+     []
+    ],
+    "if_type": "eth",
+    "netmask": [
+     "set",
+     []
+    ],
+    "softwds_wrap": [
+     "set",
+     []
+    ],
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "NAT": false,
+    "dhcp_req": [
+     "set",
+     []
+    ],
+    "os_persist": false,
+    "network": true,
+    "mtu": 1500,
+    "igmp_proxy": [
+     "set",
+     []
+    ],
+    "ppp_options": [
+     "map",
+     []
+    ],
+    "igmp_tsize": [
+     "set",
+     []
+    ],
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "broadcast": [
+     "set",
+     []
+    ],
+    "collect_stats": [
+     "set",
+     []
+    ],
+    "gateway": [
+     "set",
+     []
+    ],
+    "mac_reporting": false,
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ],
+    "igmp_age": [
+     "set",
+     []
+    ],
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "gre_remote_mac_addr": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "role": [
+     "set",
+     []
+    ],
+    "inet_addr": [
+     "set",
+     []
+    ],
+    "igmp": [
+     "set",
+     []
+    ],
+    "if_uuid": "",
+    "_version": [
+     "uuid",
+     "af2fae13-9e28-488f-81e7-e3e40c5b6a8c"
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dhcp_renew": 0,
+    "no_flood": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "none",
+    "mld_proxy": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Node_Services": {
+   "0f4ecb33-f57e-4b5d-a808-1c7d3d3c927a": {
+    "_version": [
+     "uuid",
+     "e91aa260-baa3-4a8f-9fdb-43a5b78c9749"
+    ],
+    "service": "fsm",
+    "other_config": [
+     "map",
+     [
+      [
+       "always_restart",
+       "true"
+      ],
+      [
+       "restart_delay",
+       "-1"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "c9758e69-820e-4f9e-90a2-8bca3d72287b": {
+    "_version": [
+     "uuid",
+     "6d271e5f-56e5-414a-b40f-3786204b13ec"
+    ],
+    "service": "pm",
+    "other_config": [
+     "map",
+     []
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "45204729-492f-4f31-b1e7-d0d9ae33e35b": {
+    "_version": [
+     "uuid",
+     "b81b3eb5-f947-46a5-afb7-55ab1e2673ba"
+    ],
+    "service": "wano",
+    "other_config": [
+     "map",
+     [
+      [
+       "needs_plan_b",
+       "true"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "6e9ae333-7a99-49fb-aa0c-702f2919030d": {
+    "_version": [
+     "uuid",
+     "3bfcdb50-4e86-430a-8955-8d21535b586d"
+    ],
+    "service": "psm",
+    "other_config": [
+     "map",
+     []
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "727a0326-3b9f-43f4-bcae-67991f997942": {
+    "_version": [
+     "uuid",
+     "bce6a1eb-6e89-40e2-9f3c-26e68e714022"
+    ],
+    "service": "fcm",
+    "other_config": [
+     "map",
+     [
+      [
+       "always_restart",
+       "true"
+      ],
+      [
+       "restart_delay",
+       "-1"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "bb9e6eba-aae9-4cc4-bd09-db0d4bb92380": {
+    "_version": [
+     "uuid",
+     "e0ab0b2e-cd5c-48ff-9e75-e4e804909976"
+    ],
+    "service": "tpsm",
+    "other_config": [
+     "map",
+     [
+      [
+       "needs_plan_b",
+       "false"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "4e8f4bf6-292d-4d73-bbd8-06b17cd1efd4": {
+    "_version": [
+     "uuid",
+     "c3eac322-d9be-4ec0-abc6-f574b5184198"
+    ],
+    "service": "owm",
+    "other_config": [
+     "map",
+     [
+      [
+       "needs_plan_b",
+       "false"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "e224802c-9d47-4457-9c4b-28c40bf19f66": {
+    "_version": [
+     "uuid",
+     "2d78c845-3442-4a9e-a8d0-1d6feee72664"
+    ],
+    "service": "nm",
+    "other_config": [
+     "map",
+     [
+      [
+       "needs_plan_b",
+       "true"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "74b25ef5-a4a2-46b6-b5a3-aaa232808f61": {
+    "_version": [
+     "uuid",
+     "d3e7de64-c9f0-4dc8-a5f7-035f8c8970ef"
+    ],
+    "service": "qm",
+    "other_config": [
+     "map",
+     []
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "f007f7e8-f16a-495a-ab28-9bac8989ac23": {
+    "_version": [
+     "uuid",
+     "899f4d6c-1ad8-40c1-84c4-ab6fcb4faf56"
+    ],
+    "service": "um",
+    "other_config": [
+     "map",
+     [
+      [
+       "needs_plan_b",
+       "true"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "7fe4670b-090a-4b71-90cc-98b526039128": {
+    "_version": [
+     "uuid",
+     "eb16c0c7-e07a-4959-961e-90cd58375a10"
+    ],
+    "service": "cm",
+    "other_config": [
+     "map",
+     [
+      [
+       "needs_plan_b",
+       "true"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "4bc0f42c-4008-4d61-8c6a-dd3d6dc96e00": {
+    "_version": [
+     "uuid",
+     "d749e805-1e62-442c-85bc-7022034333b3"
+    ],
+    "service": "om",
+    "other_config": [
+     "map",
+     [
+      [
+       "needs_plan_b",
+       "true"
+      ]
+     ]
+    ],
+    "status": "enabled",
+    "enable": true
+   },
+   "ee849080-884e-40ae-9c83-2b0f6eaab594": {
+    "_version": [
+     "uuid",
+     "ef905d68-2959-48f1-b039-bdb2b593a276"
+    ],
+    "service": "cpm",
+    "other_config": [
+     "map",
+     []
+    ],
+    "status": "disabled",
+    "enable": false
+   },
+   "f8b18e43-945c-486e-8bbf-c7e2ba625ea7": {
+    "_version": [
+     "uuid",
+     "621e7fbd-1c48-4833-ab30-5f5eb60fa876"
+    ],
+    "service": "sm",
+    "other_config": [
+     "map",
+     []
+    ],
+    "status": "enabled",
+    "enable": true
+   }
+  },
+  "Wifi_VIF_Config": {
+   "303efd40-dd25-40d7-a666-de8d4215a74f": {
+    "wpa": [
+     "set",
+     []
+    ],
+    "min_rssi": [
+     "set",
+     []
+    ],
+    "ap_bridge": [
+     "set",
+     []
+    ],
+    "uapsd_enable": [
+     "set",
+     []
+    ],
+    "ssid": "opensync-lab-bhaul",
+    "wps_pbc": [
+     "set",
+     []
+    ],
+    "pmf": [
+     "set",
+     []
+    ],
+    "wpa_pairwise_tkip": [
+     "set",
+     []
+    ],
+    "radius_srv_secret": [
+     "set",
+     []
+    ],
+    "primary_accounting": [
+     "set",
+     []
+    ],
+    "btm": [
+     "set",
+     []
+    ],
+    "passpoint_config": [
+     "set",
+     []
+    ],
+    "dpp_csign_hex": [
+     "set",
+     []
+    ],
+    "dpp_netaccesskey_hex": [
+     "set",
+     []
+    ],
+    "ft_pmk_r0_key_lifetime_sec": [
+     "set",
+     []
+    ],
+    "wps": [
+     "set",
+     []
+    ],
+    "mode": "sta",
+    "wps_pbc_key_id": "",
+    "ft_psk": [
+     "set",
+     []
+    ],
+    "credential_configs": [
+     "uuid",
+     "ffe9e16c-3c8b-43b7-9371-fe1aea4439b7"
+    ],
+    "wpa_psks": [
+     "map",
+     []
+    ],
+    "ft_encr_key": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp": [
+     "set",
+     []
+    ],
+    "ft_over_ds": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_gcmp256": [
+     "set",
+     []
+    ],
+    "multi_ap": "none",
+    "primary_radius": [
+     "set",
+     []
+    ],
+    "dpp_cc": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "min_hw_mode": [
+     "set",
+     []
+    ],
+    "passpoint_hessid": [
+     "set",
+     []
+    ],
+    "bridge": "",
+    "wpa_key_mgmt": [
+     "set",
+     []
+    ],
+    "secondary_accounting": [
+     "set",
+     []
+    ],
+    "rrm": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_tkip": [
+     "set",
+     []
+    ],
+    "secondary_radius": [
+     "set",
+     []
+    ],
+    "wpa_pairwise_ccmp": [
+     "set",
+     []
+    ],
+    "dpp_connector": [
+     "set",
+     []
+    ],
+    "vif_radio_idx": 0,
+    "if_name": "bhaul-sta-50",
+    "mac_list": [
+     "set",
+     []
+    ],
+    "radius_srv_port": [
+     "set",
+     []
+    ],
+    "ssid_broadcast": [
+     "set",
+     []
+    ],
+    "mcast2ucast": [
+     "set",
+     []
+    ],
+    "wpa_oftags": [
+     "map",
+     []
+    ],
+    "mac_list_type": [
+     "set",
+     []
+    ],
+    "beacon_protection": [
+     "set",
+     []
+    ],
+    "airtime_precedence": [
+     "set",
+     []
+    ],
+    "parent": [
+     "set",
+     []
+    ],
+    "wds": false,
+    "security": [
+     "map",
+     [
+      [
+       "encryption",
+       "WPA-PSK"
+      ],
+      [
+       "key",
+       "(redacted)"
+      ]
+     ]
+    ],
+    "default_oftag": [
+     "set",
+     []
+    ],
+    "vif_dbg_lvl": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp256": [
+     "set",
+     []
+    ],
+    "max_sta": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "ca2bd4db-1396-4928-a77c-9c36bc67113f"
+    ],
+    "ft_pmk_r1_push": [
+     "set",
+     []
+    ],
+    "ft_pmk_r1_max_key_lifetime_sec": [
+     "set",
+     []
+    ],
+    "group_rekey": [
+     "set",
+     []
+    ],
+    "radius_srv_addr": [
+     "set",
+     []
+    ],
+    "ft_mobility_domain": [
+     "set",
+     []
+    ],
+    "nas_identifier": [
+     "set",
+     []
+    ],
+    "dynamic_beacon": [
+     "set",
+     []
+    ],
+    "ft_psk_generate_local": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_gcmp": [
+     "set",
+     []
+    ]
+   },
+   "74359da9-9a52-4bcc-ac13-a04a87100506": {
+    "wpa": true,
+    "min_rssi": [
+     "set",
+     []
+    ],
+    "ap_bridge": true,
+    "uapsd_enable": [
+     "set",
+     []
+    ],
+    "ssid": "opensync-lab-home",
+    "wps_pbc": [
+     "set",
+     []
+    ],
+    "pmf": [
+     "set",
+     []
+    ],
+    "wpa_pairwise_tkip": [
+     "set",
+     []
+    ],
+    "radius_srv_secret": [
+     "set",
+     []
+    ],
+    "primary_accounting": [
+     "set",
+     []
+    ],
+    "btm": [
+     "set",
+     []
+    ],
+    "passpoint_config": [
+     "set",
+     []
+    ],
+    "dpp_csign_hex": [
+     "set",
+     []
+    ],
+    "dpp_netaccesskey_hex": [
+     "set",
+     []
+    ],
+    "ft_pmk_r0_key_lifetime_sec": [
+     "set",
+     []
+    ],
+    "wps": [
+     "set",
+     []
+    ],
+    "mode": "ap",
+    "wps_pbc_key_id": "",
+    "ft_psk": [
+     "set",
+     []
+    ],
+    "credential_configs": [
+     "set",
+     []
+    ],
+    "wpa_psks": [
+     "map",
+     [
+      [
+       "key--1",
+       "(redacted)"
+      ]
+     ]
+    ],
+    "ft_encr_key": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp": true,
+    "ft_over_ds": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_gcmp256": [
+     "set",
+     []
+    ],
+    "multi_ap": [
+     "set",
+     []
+    ],
+    "primary_radius": [
+     "set",
+     []
+    ],
+    "dpp_cc": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "min_hw_mode": [
+     "set",
+     []
+    ],
+    "passpoint_hessid": [
+     "set",
+     []
+    ],
+    "bridge": "br-home",
+    "wpa_key_mgmt": "wpa-psk",
+    "secondary_accounting": [
+     "set",
+     []
+    ],
+    "rrm": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_tkip": [
+     "set",
+     []
+    ],
+    "secondary_radius": [
+     "set",
+     []
+    ],
+    "wpa_pairwise_ccmp": [
+     "set",
+     []
+    ],
+    "dpp_connector": [
+     "set",
+     []
+    ],
+    "vif_radio_idx": 1,
+    "if_name": "home-ap-24",
+    "mac_list": [
+     "set",
+     []
+    ],
+    "radius_srv_port": [
+     "set",
+     []
+    ],
+    "ssid_broadcast": "enabled",
+    "mcast2ucast": [
+     "set",
+     []
+    ],
+    "wpa_oftags": [
+     "map",
+     []
+    ],
+    "mac_list_type": "none",
+    "beacon_protection": [
+     "set",
+     []
+    ],
+    "airtime_precedence": [
+     "set",
+     []
+    ],
+    "parent": [
+     "set",
+     []
+    ],
+    "wds": [
+     "set",
+     []
+    ],
+    "security": [
+     "map",
+     []
+    ],
+    "default_oftag": [
+     "set",
+     []
+    ],
+    "vif_dbg_lvl": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp256": [
+     "set",
+     []
+    ],
+    "max_sta": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "a404898a-2153-49c8-829d-0c31e8621064"
+    ],
+    "ft_pmk_r1_push": [
+     "set",
+     []
+    ],
+    "ft_pmk_r1_max_key_lifetime_sec": [
+     "set",
+     []
+    ],
+    "group_rekey": [
+     "set",
+     []
+    ],
+    "radius_srv_addr": [
+     "set",
+     []
+    ],
+    "ft_mobility_domain": [
+     "set",
+     []
+    ],
+    "nas_identifier": [
+     "set",
+     []
+    ],
+    "dynamic_beacon": [
+     "set",
+     []
+    ],
+    "ft_psk_generate_local": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_gcmp": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Open_vSwitch": {
+   "024c0331-8a6b-4e97-923e-5e07b14e93a6": {
+    "dpdk_initialized": false,
+    "statistics": [
+     "map",
+     []
+    ],
+    "manager_options": [
+     "uuid",
+     "ded7ab24-061e-46ce-821f-d09313fe35d4"
+    ],
+    "cur_cfg": 0,
+    "dpdk_version": [
+     "set",
+     []
+    ],
+    "next_cfg": 0,
+    "datapath_types": [
+     "set",
+     []
+    ],
+    "iface_types": [
+     "set",
+     []
+    ],
+    "db_version": [
+     "set",
+     []
+    ],
+    "system_version": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "dc2b3525-3d75-4ba4-abd3-b1ec0bd6a12b"
+    ],
+    "bridges": [
+     "uuid",
+     "db9830f1-b3bc-4ce0-a4bf-87cfa025e388"
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "other_config": [
+     "map",
+     [
+      [
+       "stats-update-interval",
+       "3600000"
+      ]
+     ]
+    ],
+    "ovs_version": [
+     "set",
+     []
+    ],
+    "ssl": [
+     "uuid",
+     "0573c359-0149-44ac-8311-bde07e791ceb"
+    ],
+    "system_type": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Wifi_Route6_State": {
+   "4194b142-7c8c-4015-bc1c-9b2d3502f9e7": {
+    "if_name": "br-home",
+    "_version": [
+     "uuid",
+     "667f1a9f-d40c-46b5-a3db-32f92fe0ac0e"
+    ],
+    "gateway_hwaddr": "00:16:3e:72:fe:2d",
+    "dest_addr": "::/0",
+    "pref_src": [
+     "set",
+     []
+    ],
+    "gateway": "fe80::216:3eff:fe72:fe2d",
+    "metric": 1024,
+    "table": [
+     "set",
+     []
+    ]
+   },
+   "efe57184-4c3a-4546-a46d-2fd181a4afed": {
+    "if_name": "br-home",
+    "_version": [
+     "uuid",
+     "eb17cb3e-91e5-4f04-b472-e8ea88c70762"
+    ],
+    "gateway_hwaddr": [
+     "set",
+     []
+    ],
+    "dest_addr": "2001:dead:bed0::/64",
+    "pref_src": [
+     "set",
+     []
+    ],
+    "gateway": "::",
+    "metric": 256,
+    "table": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Wifi_Radio_State": {
+   "dd2e979d-7008-4459-88ad-f74889327c2f": {
+    "if_name": "phy5",
+    "dfs_demo": false,
+    "thermal_downgraded": [
+     "set",
+     []
+    ],
+    "temperature_control": [
+     "map",
+     []
+    ],
+    "mac": "02:00:00:00:05:00",
+    "bcn_int": 100,
+    "puncture_bitmap": [
+     "set",
+     []
+    ],
+    "radio_config": [
+     "uuid",
+     "a61e51b6-111f-4719-b4f4-2c86e6a35e41"
+    ],
+    "allowed_channels": [
+     "set",
+     [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+     ]
+    ],
+    "thermal_tx_chainmask": [
+     "set",
+     []
+    ],
+    "channel_sync": [
+     "set",
+     []
+    ],
+    "thermal_shutdown": [
+     "set",
+     []
+    ],
+    "hw_type": "mac80211_hwsim",
+    "vif_states": [
+     "uuid",
+     "2d4902d7-6434-4032-9ade-4a64e4734488"
+    ],
+    "beacon_rate": [
+     "set",
+     []
+    ],
+    "country": "US",
+    "radar": [
+     "map",
+     []
+    ],
+    "tx_chainmask": 0,
+    "fallback_parents": [
+     "map",
+     []
+    ],
+    "hw_config": [
+     "map",
+     []
+    ],
+    "channel": 6,
+    "supported_rates": [
+     "set",
+     [
+      "1",
+      "11",
+      "12",
+      "18",
+      "2",
+      "24",
+      "36",
+      "48",
+      "5.5",
+      "54",
+      "6",
+      "9"
+     ]
+    ],
+    "tx_power": 30,
+    "ht_mode": "HT20",
+    "thermal_downgrade_temp": [
+     "set",
+     []
+    ],
+    "mcast_rate": [
+     "set",
+     []
+    ],
+    "zero_wait_dfs": [
+     "set",
+     []
+    ],
+    "hw_mode": "11n",
+    "enabled": true,
+    "hw_params": [
+     "map",
+     []
+    ],
+    "channels": [
+     "map",
+     [
+      [
+       "1",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "10",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "11",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "2",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "3",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "4",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "5",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "6",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "7",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "8",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "9",
+       "{\"state\": \"allowed\"}"
+      ]
+     ]
+    ],
+    "thermal_upgrade_temp": [
+     "set",
+     []
+    ],
+    "mgmt_rate": [
+     "set",
+     []
+    ],
+    "center_freq0_chan": 6,
+    "basic_rates": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "b575a2a4-5d45-4760-a023-5a0c9d826874"
+    ],
+    "tpc_uuid": [
+     "set",
+     []
+    ],
+    "freq_band": "2.4G",
+    "channel_mode": "cloud",
+    "thermal_integration": [
+     "set",
+     []
+    ]
+   },
+   "60c21896-ea18-4ee8-b0b7-246a991353fe": {
+    "if_name": "phy6",
+    "dfs_demo": false,
+    "thermal_downgraded": [
+     "set",
+     []
+    ],
+    "temperature_control": [
+     "map",
+     []
+    ],
+    "mac": "02:00:00:00:06:00",
+    "bcn_int": [
+     "set",
+     []
+    ],
+    "puncture_bitmap": [
+     "set",
+     []
+    ],
+    "radio_config": [
+     "uuid",
+     "47b4cfe6-ef44-4037-8ee6-4848465ea0ce"
+    ],
+    "allowed_channels": [
+     "set",
+     [
+      36,
+      40,
+      44,
+      48,
+      52,
+      56,
+      60,
+      64,
+      100,
+      104,
+      108,
+      112,
+      116,
+      120,
+      124,
+      128,
+      132,
+      136,
+      140,
+      149,
+      153,
+      157,
+      161,
+      165,
+      169,
+      171,
+      172,
+      173,
+      174,
+      175,
+      176,
+      177
+     ]
+    ],
+    "thermal_tx_chainmask": [
+     "set",
+     []
+    ],
+    "channel_sync": [
+     "set",
+     []
+    ],
+    "thermal_shutdown": [
+     "set",
+     []
+    ],
+    "hw_type": "mac80211_hwsim",
+    "vif_states": [
+     "uuid",
+     "727a8374-d328-4862-9550-a6dee260d3fb"
+    ],
+    "beacon_rate": [
+     "set",
+     []
+    ],
+    "country": "US",
+    "radar": [
+     "map",
+     []
+    ],
+    "tx_chainmask": 0,
+    "fallback_parents": [
+     "map",
+     []
+    ],
+    "hw_config": [
+     "map",
+     []
+    ],
+    "channel": 44,
+    "supported_rates": [
+     "set",
+     []
+    ],
+    "tx_power": 23,
+    "ht_mode": "HT20",
+    "thermal_downgrade_temp": [
+     "set",
+     []
+    ],
+    "mcast_rate": [
+     "set",
+     []
+    ],
+    "zero_wait_dfs": [
+     "set",
+     []
+    ],
+    "hw_mode": "11a",
+    "enabled": true,
+    "hw_params": [
+     "map",
+     []
+    ],
+    "channels": [
+     "map",
+     [
+      [
+       "100",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "104",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "108",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "112",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "116",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "120",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "124",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "128",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "132",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "136",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "140",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "149",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "153",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "157",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "161",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "165",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "169",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "171",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "172",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "173",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "174",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "175",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "176",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "177",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "36",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "40",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "44",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "48",
+       "{\"state\": \"allowed\"}"
+      ],
+      [
+       "52",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "56",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "60",
+       "{\"state\": \"nop_finished\"}"
+      ],
+      [
+       "64",
+       "{\"state\": \"nop_finished\"}"
+      ]
+     ]
+    ],
+    "thermal_upgrade_temp": [
+     "set",
+     []
+    ],
+    "mgmt_rate": [
+     "set",
+     []
+    ],
+    "center_freq0_chan": 44,
+    "basic_rates": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "964d05a3-c2d6-4e1b-afe7-75cdc0d42b29"
+    ],
+    "tpc_uuid": [
+     "set",
+     []
+    ],
+    "freq_band": "5G",
+    "channel_mode": "cloud",
+    "thermal_integration": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Wifi_Inet_State": {
+   "41a8a49a-3a60-4c10-8568-f081c5e1c792": {
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "if_name": "bhaul-sta-50",
+    "upnp_mode": "disabled",
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "if_type": "vif",
+    "enabled": true,
+    "softwds_wrap": false,
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "netmask": "255.255.255.128",
+    "NAT": false,
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "if_uuid": "e5a639e8-c0d6-4ec0-abb3-ffc0eaae5da0",
+    "inet_addr": "169.254.1.12",
+    "_version": [
+     "uuid",
+     "59a198a6-5307-4ca8-a11f-5c6198a6b843"
+    ],
+    "hwaddr": "02:00:00:00:06:00",
+    "network": true,
+    "mtu": 1600,
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "broadcast": "169.254.1.127",
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "dhcpc": [
+     "map",
+     [
+      [
+       "subnet",
+       "255.255.255.128"
+      ]
+     ]
+    ],
+    "link_speed": [
+     "set",
+     []
+    ],
+    "link_duplex": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "dhcp",
+    "gateway": "0.0.0.0",
+    "inet_config": [
+     "set",
+     []
+    ],
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ]
+   },
+   "aeef6e11-c597-47cb-90cd-404ae17be79c": {
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "if_name": "br-home",
+    "upnp_mode": "disabled",
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "if_type": "bridge",
+    "enabled": true,
+    "softwds_wrap": false,
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "netmask": "255.255.255.0",
+    "NAT": false,
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "if_uuid": "cf8f4fc4-bac5-4119-b130-367a38519ed3",
+    "inet_addr": "192.168.0.101",
+    "_version": [
+     "uuid",
+     "0b7a46cf-3364-4822-a353-db7a20420067"
+    ],
+    "hwaddr": "02:d7:77:7e:f0:d9",
+    "network": true,
+    "mtu": 1500,
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "broadcast": "192.168.0.255",
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "dhcpc": [
+     "map",
+     [
+      [
+       "broadcast",
+       "192.168.0.255"
+      ],
+      [
+       "dns",
+       "8.8.8.8 8.8.4.4"
+      ],
+      [
+       "gateway",
+       "192.168.0.1"
+      ],
+      [
+       "subnet",
+       "255.255.255.0"
+      ]
+     ]
+    ],
+    "link_speed": [
+     "set",
+     []
+    ],
+    "link_duplex": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "dhcp",
+    "gateway": "0.0.0.0",
+    "inet_config": [
+     "set",
+     []
+    ],
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ]
+   },
+   "4edcb093-66a6-4242-ad67-0f855622cbb6": {
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "if_name": "home-ap-24",
+    "upnp_mode": "disabled",
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "if_type": "vif",
+    "enabled": true,
+    "softwds_wrap": false,
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "netmask": "0.0.0.0",
+    "NAT": false,
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "if_uuid": "f5c7cf92-78b6-476d-961f-e675cae692bd",
+    "inet_addr": "0.0.0.0",
+    "_version": [
+     "uuid",
+     "3140b91e-e97e-4d34-bee6-e9bff36b6c6c"
+    ],
+    "hwaddr": "82:00:00:00:05:00",
+    "network": true,
+    "mtu": 1500,
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "broadcast": "0.0.0.0",
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "link_speed": [
+     "set",
+     []
+    ],
+    "link_duplex": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "none",
+    "gateway": "0.0.0.0",
+    "inet_config": [
+     "set",
+     []
+    ],
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ]
+   },
+   "452055d7-3ee3-4816-b1a4-f3be0460a8a8": {
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "if_name": "g-bhaul-sta-50",
+    "upnp_mode": "disabled",
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "if_type": "gre",
+    "enabled": true,
+    "softwds_wrap": false,
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "netmask": "0.0.0.0",
+    "NAT": false,
+    "gre_remote_inet_addr": "169.254.1.1",
+    "if_uuid": "e9fc2d54-0571-4355-9e2d-46f8bf8e7d19",
+    "inet_addr": "0.0.0.0",
+    "_version": [
+     "uuid",
+     "71f849db-ac1c-471f-baae-eb16a0e532af"
+    ],
+    "hwaddr": "0e:0d:ed:77:73:75",
+    "network": true,
+    "mtu": 1500,
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "broadcast": "0.0.0.0",
+    "gre_ifname": "bhaul-sta-50",
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "link_speed": [
+     "set",
+     []
+    ],
+    "link_duplex": [
+     "set",
+     []
+    ],
+    "ip_assign_scheme": "none",
+    "gateway": "0.0.0.0",
+    "inet_config": [
+     "set",
+     []
+    ],
+    "gre_local_inet_addr": "169.254.1.12"
+   },
+   "bb488ef8-58fd-43b1-b9a1-af04a190e0d6": {
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "if_name": "eth0",
+    "upnp_mode": "disabled",
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "if_type": "eth",
+    "enabled": true,
+    "softwds_wrap": false,
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "netmask": "0.0.0.0",
+    "NAT": false,
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "if_uuid": "a09fd739-b145-4386-879f-c7ee3656a934",
+    "inet_addr": "0.0.0.0",
+    "_version": [
+     "uuid",
+     "ce0eb0e1-4e9e-4738-95e9-cc8bf4385507"
+    ],
+    "hwaddr": "02:d7:77:7e:f0:d9",
+    "network": true,
+    "mtu": 1500,
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "broadcast": "0.0.0.0",
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "link_speed": -1,
+    "link_duplex": "unknown",
+    "ip_assign_scheme": "none",
+    "gateway": "0.0.0.0",
+    "inet_config": [
+     "set",
+     []
+    ],
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ]
+   },
+   "4c657cee-4f28-4e19-91b2-4972334f6aac": {
+    "dhcpd": [
+     "map",
+     []
+    ],
+    "if_name": "eth1",
+    "upnp_mode": "disabled",
+    "softwds_mac_addr": [
+     "set",
+     []
+    ],
+    "if_type": "eth",
+    "enabled": true,
+    "softwds_wrap": false,
+    "vlan_egress_qos_map": [
+     "set",
+     []
+    ],
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "netmask": "0.0.0.0",
+    "NAT": false,
+    "gre_remote_inet_addr": [
+     "set",
+     []
+    ],
+    "if_uuid": "02570d25-cf78-46ec-9510-3e170dfed701",
+    "inet_addr": "0.0.0.0",
+    "_version": [
+     "uuid",
+     "7dca41f8-bb94-49d6-83b7-20c4654c4b4d"
+    ],
+    "hwaddr": "00:00:00:00:00:00",
+    "network": false,
+    "mtu": 0,
+    "parent_ifname": [
+     "set",
+     []
+    ],
+    "dns": [
+     "map",
+     []
+    ],
+    "broadcast": "0.0.0.0",
+    "gre_ifname": [
+     "set",
+     []
+    ],
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "link_speed": 0,
+    "link_duplex": "unknown",
+    "ip_assign_scheme": "none",
+    "gateway": "0.0.0.0",
+    "inet_config": [
+     "set",
+     []
+    ],
+    "gre_local_inet_addr": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Reboot_Status": {
+   "e6461f83-1486-4fcc-a785-63db702903af": {
+    "_version": [
+     "uuid",
+     "dae0e29b-055f-4ef5-94bc-906701ade101"
+    ],
+    "reason": "Power up.",
+    "count": 1,
+    "type": "COLD_BOOT"
+   }
+  },
+  "AW_LM_Config": {
+   "29ab605b-ba0c-4146-b9bc-a055bb789997": {
+    "_version": [
+     "uuid",
+     "b5de3b45-1a29-4c68-a72d-f8ea3f2cb868"
+    ],
+    "name": "lm",
+    "upload_token": "",
+    "periodicity": "weekly",
+    "upload_location": ""
+   }
+  },
+  "Port": {
+   "a613ed34-93f6-4006-b1f5-7dbea4b30ccc": {
+    "statistics": [
+     "map",
+     []
+    ],
+    "protected": false,
+    "bond_downdelay": 0,
+    "name": "g-bhaul-sta-50",
+    "mac": [
+     "set",
+     []
+    ],
+    "fake_bridge": false,
+    "trunks": [
+     "set",
+     []
+    ],
+    "rstp_status": [
+     "map",
+     []
+    ],
+    "tag": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "213f533b-6ad1-47d0-9625-c9fcd57163b9"
+    ],
+    "cvlans": [
+     "set",
+     []
+    ],
+    "bond_updelay": 0,
+    "bond_active_slave": [
+     "set",
+     []
+    ],
+    "status": [
+     "map",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "other_config": [
+     "map",
+     []
+    ],
+    "qos": [
+     "set",
+     []
+    ],
+    "bond_mode": [
+     "set",
+     []
+    ],
+    "rstp_statistics": [
+     "map",
+     []
+    ],
+    "vlan_mode": [
+     "set",
+     []
+    ],
+    "interfaces": [
+     "uuid",
+     "e29e6dc1-c3bf-4a0b-b794-80bb499d782a"
+    ],
+    "bond_fake_iface": false,
+    "lacp": [
+     "set",
+     []
+    ]
+   },
+   "7921f402-6642-4995-a7a8-59b6910c1987": {
+    "statistics": [
+     "map",
+     []
+    ],
+    "protected": false,
+    "bond_downdelay": 0,
+    "name": "br-home.ethc",
+    "mac": [
+     "set",
+     []
+    ],
+    "fake_bridge": false,
+    "trunks": [
+     "set",
+     []
+    ],
+    "rstp_status": [
+     "map",
+     []
+    ],
+    "tag": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "b17a808b-196c-4eba-abc0-a7d1f1850995"
+    ],
+    "cvlans": [
+     "set",
+     []
+    ],
+    "bond_updelay": 0,
+    "bond_active_slave": [
+     "set",
+     []
+    ],
+    "status": [
+     "map",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "other_config": [
+     "map",
+     []
+    ],
+    "qos": [
+     "set",
+     []
+    ],
+    "bond_mode": [
+     "set",
+     []
+    ],
+    "rstp_statistics": [
+     "map",
+     []
+    ],
+    "vlan_mode": [
+     "set",
+     []
+    ],
+    "interfaces": [
+     "uuid",
+     "6281892f-5567-4bba-a8f7-815285b0509a"
+    ],
+    "bond_fake_iface": false,
+    "lacp": [
+     "set",
+     []
+    ]
+   },
+   "3edb62f9-cb40-4d5f-b944-5d843a79c182": {
+    "statistics": [
+     "map",
+     []
+    ],
+    "protected": false,
+    "bond_downdelay": 0,
+    "name": "br-home",
+    "mac": [
+     "set",
+     []
+    ],
+    "fake_bridge": false,
+    "trunks": [
+     "set",
+     []
+    ],
+    "rstp_status": [
+     "map",
+     []
+    ],
+    "tag": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "b1db17ee-6be7-4802-86bb-7708612cbf0f"
+    ],
+    "cvlans": [
+     "set",
+     []
+    ],
+    "bond_updelay": 0,
+    "bond_active_slave": [
+     "set",
+     []
+    ],
+    "status": [
+     "map",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "other_config": [
+     "map",
+     []
+    ],
+    "qos": [
+     "set",
+     []
+    ],
+    "bond_mode": [
+     "set",
+     []
+    ],
+    "rstp_statistics": [
+     "map",
+     []
+    ],
+    "vlan_mode": [
+     "set",
+     []
+    ],
+    "interfaces": [
+     "uuid",
+     "f26dd15d-dd34-4d27-9e30-18ecb2f67111"
+    ],
+    "bond_fake_iface": false,
+    "lacp": [
+     "set",
+     []
+    ]
+   }
+  },
+  "SSL": {
+   "0573c359-0149-44ac-8311-bde07e791ceb": {
+    "_version": [
+     "uuid",
+     "89e46783-e0f5-4c35-8f06-854ee5913e72"
+    ],
+    "bootstrap_ca_cert": false,
+    "private_key": "(redacted)",
+    "certificate": "/var/certs/client.pem",
+    "external_ids": [
+     "map",
+     []
+    ],
+    "ca_cert": "/var/certs/ca.pem"
+   }
+  },
+  "IPv6_Neighbors": {
+   "6eca3ef6-30f2-4f5c-8d64-b9e485c45cfe": {
+    "hwaddr": "00:16:3e:72:fe:2d",
+    "if_name": "br-home",
+    "_version": [
+     "uuid",
+     "188a69f5-3d69-4770-a54b-5c33ab9dd76c"
+    ],
+    "address": "fe80::216:3eff:fe72:fe2d"
+   }
+  },
+  "Wifi_Master_State": {
+   "0fc35851-9788-4828-bca9-22337427927b": {
+    "uplink_priority": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "70b4e332-cd2f-414e-b68f-90e37b6a2e60"
+    ],
+    "onboard_type": [
+     "set",
+     []
+    ],
+    "if_name": "eth1",
+    "if_type": "eth",
+    "netmask": "0.0.0.0",
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "port_state": "inactive",
+    "if_uuid": [
+     "uuid",
+     "00000000-0000-0000-0000-000000000000"
+    ],
+    "inet_addr": "0.0.0.0",
+    "network_state": "down"
+   },
+   "fb53ccc3-d0eb-4f2d-873d-592155ac2ce6": {
+    "uplink_priority": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "87d96a7b-10fa-4067-a895-ddfdde09ef7b"
+    ],
+    "onboard_type": [
+     "set",
+     []
+    ],
+    "if_name": "br-home",
+    "if_type": "bridge",
+    "netmask": "255.255.255.0",
+    "dhcpc": [
+     "map",
+     [
+      [
+       "broadcast",
+       "192.168.0.255"
+      ],
+      [
+       "dns",
+       "8.8.8.8 8.8.4.4"
+      ],
+      [
+       "gateway",
+       "192.168.0.1"
+      ],
+      [
+       "subnet",
+       "255.255.255.0"
+      ]
+     ]
+    ],
+    "port_state": "active",
+    "if_uuid": [
+     "uuid",
+     "00000000-0000-0000-0000-000000000000"
+    ],
+    "inet_addr": "192.168.0.101",
+    "network_state": "up"
+   },
+   "282717bd-a711-4cbd-88dd-387a334d3946": {
+    "uplink_priority": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "abe523bb-01a0-4c4a-812a-e45dfb2f34ea"
+    ],
+    "onboard_type": [
+     "set",
+     []
+    ],
+    "if_name": "home-ap-24",
+    "if_type": "vif",
+    "netmask": "0.0.0.0",
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "port_state": "active",
+    "if_uuid": [
+     "uuid",
+     "00000000-0000-0000-0000-000000000000"
+    ],
+    "inet_addr": "0.0.0.0",
+    "network_state": "up"
+   },
+   "bdf94162-c42b-4e6f-aed1-b85567926ad5": {
+    "uplink_priority": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "a727acfb-67e2-4744-bb88-7aed7e127d67"
+    ],
+    "onboard_type": [
+     "set",
+     []
+    ],
+    "if_name": "eth0",
+    "if_type": "eth",
+    "netmask": "0.0.0.0",
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "port_state": "active",
+    "if_uuid": [
+     "uuid",
+     "00000000-0000-0000-0000-000000000000"
+    ],
+    "inet_addr": "0.0.0.0",
+    "network_state": "up"
+   },
+   "abaab750-1807-47df-aeb7-336a5fdaf6a1": {
+    "uplink_priority": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "08267743-f490-4ed3-a79a-fc2c0ca2185d"
+    ],
+    "onboard_type": [
+     "set",
+     []
+    ],
+    "if_name": "g-bhaul-sta-50",
+    "if_type": "gre",
+    "netmask": "0.0.0.0",
+    "dhcpc": [
+     "map",
+     []
+    ],
+    "port_state": "active",
+    "if_uuid": [
+     "uuid",
+     "00000000-0000-0000-0000-000000000000"
+    ],
+    "inet_addr": "0.0.0.0",
+    "network_state": "up"
+   },
+   "39cea898-0d3f-45f1-9e13-9b5ecab12a9d": {
+    "uplink_priority": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "cdb34024-c6db-4eb5-8058-59b6a19dc064"
+    ],
+    "onboard_type": [
+     "set",
+     []
+    ],
+    "if_name": "bhaul-sta-50",
+    "if_type": "vif",
+    "netmask": "255.255.255.128",
+    "dhcpc": [
+     "map",
+     [
+      [
+       "subnet",
+       "255.255.255.128"
+      ]
+     ]
+    ],
+    "port_state": "active",
+    "if_uuid": [
+     "uuid",
+     "00000000-0000-0000-0000-000000000000"
+    ],
+    "inet_addr": "169.254.1.12",
+    "network_state": "up"
+   }
+  },
+  "Openflow_Tag": {
+   "32cb7401-b658-477e-93a2-8a5f77025ba5": {
+    "name": "eth_devices",
+    "_version": [
+     "uuid",
+     "15b16510-b73b-499d-b9f5-7bde120a628c"
+    ],
+    "device_value": [
+     "set",
+     []
+    ],
+    "cloud_value": [
+     "set",
+     []
+    ]
+   }
+  },
+  "Interface": {
+   "6281892f-5567-4bba-a8f7-815285b0509a": {
+    "statistics": [
+     "map",
+     []
+    ],
+    "mac": [
+     "set",
+     []
+    ],
+    "options": [
+     "map",
+     []
+    ],
+    "bfd_status": [
+     "map",
+     []
+    ],
+    "cfm_health": [
+     "set",
+     []
+    ],
+    "ofport": [
+     "set",
+     []
+    ],
+    "admin_state": "up",
+    "error": [
+     "set",
+     []
+    ],
+    "cfm_fault_status": [
+     "set",
+     []
+    ],
+    "lacp_current": [
+     "set",
+     []
+    ],
+    "mtu": 1500,
+    "ofport_request": [
+     "set",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "status": [
+     "map",
+     []
+    ],
+    "link_state": [
+     "set",
+     []
+    ],
+    "cfm_remote_opstate": [
+     "set",
+     []
+    ],
+    "cfm_fault": [
+     "set",
+     []
+    ],
+    "link_speed": [
+     "set",
+     []
+    ],
+    "duplex": [
+     "set",
+     []
+    ],
+    "ingress_policing_rate": 0,
+    "name": "br-home.ethc",
+    "mtu_request": [
+     "set",
+     []
+    ],
+    "cfm_flap_count": [
+     "set",
+     []
+    ],
+    "ifindex": 23,
+    "type": "",
+    "_version": [
+     "uuid",
+     "ad4e6414-92f2-42a2-9316-4c363b034eb0"
+    ],
+    "mac_in_use": "7E:AD:5D:1C:4B:B8",
+    "link_resets": [
+     "set",
+     []
+    ],
+    "lldp": [
+     "map",
+     []
+    ],
+    "other_config": [
+     "map",
+     []
+    ],
+    "bfd": [
+     "map",
+     []
+    ],
+    "cfm_remote_mpids": [
+     "set",
+     []
+    ],
+    "cfm_mpid": [
+     "set",
+     []
+    ],
+    "ingress_policing_burst": 0
+   },
+   "e29e6dc1-c3bf-4a0b-b794-80bb499d782a": {
+    "statistics": [
+     "map",
+     []
+    ],
+    "mac": [
+     "set",
+     []
+    ],
+    "options": [
+     "map",
+     []
+    ],
+    "bfd_status": [
+     "map",
+     []
+    ],
+    "cfm_health": [
+     "set",
+     []
+    ],
+    "ofport": [
+     "set",
+     []
+    ],
+    "admin_state": "up",
+    "error": [
+     "set",
+     []
+    ],
+    "cfm_fault_status": [
+     "set",
+     []
+    ],
+    "lacp_current": [
+     "set",
+     []
+    ],
+    "mtu": 1500,
+    "ofport_request": [
+     "set",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "status": [
+     "map",
+     []
+    ],
+    "link_state": [
+     "set",
+     []
+    ],
+    "cfm_remote_opstate": [
+     "set",
+     []
+    ],
+    "cfm_fault": [
+     "set",
+     []
+    ],
+    "link_speed": [
+     "set",
+     []
+    ],
+    "duplex": [
+     "set",
+     []
+    ],
+    "ingress_policing_rate": 0,
+    "name": "g-bhaul-sta-50",
+    "mtu_request": [
+     "set",
+     []
+    ],
+    "cfm_flap_count": [
+     "set",
+     []
+    ],
+    "ifindex": 24,
+    "type": "",
+    "_version": [
+     "uuid",
+     "660f00b2-4e2e-4769-939a-e7a2b7b89ec5"
+    ],
+    "mac_in_use": "0E:0D:ED:77:73:75",
+    "link_resets": [
+     "set",
+     []
+    ],
+    "lldp": [
+     "map",
+     []
+    ],
+    "other_config": [
+     "map",
+     []
+    ],
+    "bfd": [
+     "map",
+     []
+    ],
+    "cfm_remote_mpids": [
+     "set",
+     []
+    ],
+    "cfm_mpid": [
+     "set",
+     []
+    ],
+    "ingress_policing_burst": 0
+   },
+   "f26dd15d-dd34-4d27-9e30-18ecb2f67111": {
+    "statistics": [
+     "map",
+     []
+    ],
+    "mac": [
+     "set",
+     []
+    ],
+    "options": [
+     "map",
+     []
+    ],
+    "bfd_status": [
+     "map",
+     []
+    ],
+    "cfm_health": [
+     "set",
+     []
+    ],
+    "ofport": [
+     "set",
+     []
+    ],
+    "admin_state": "up",
+    "error": [
+     "set",
+     []
+    ],
+    "cfm_fault_status": [
+     "set",
+     []
+    ],
+    "lacp_current": [
+     "set",
+     []
+    ],
+    "mtu": 1500,
+    "ofport_request": [
+     "set",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "status": [
+     "map",
+     []
+    ],
+    "link_state": "up",
+    "cfm_remote_opstate": [
+     "set",
+     []
+    ],
+    "cfm_fault": [
+     "set",
+     []
+    ],
+    "link_speed": [
+     "set",
+     []
+    ],
+    "duplex": [
+     "set",
+     []
+    ],
+    "ingress_policing_rate": 0,
+    "name": "br-home",
+    "mtu_request": [
+     "set",
+     []
+    ],
+    "cfm_flap_count": [
+     "set",
+     []
+    ],
+    "ifindex": 22,
+    "type": "internal",
+    "_version": [
+     "uuid",
+     "ab9980ff-fda8-4d70-aec3-7127b40ca77b"
+    ],
+    "mac_in_use": "02:D7:77:7E:F0:D9",
+    "link_resets": [
+     "set",
+     []
+    ],
+    "lldp": [
+     "map",
+     []
+    ],
+    "other_config": [
+     "map",
+     []
+    ],
+    "bfd": [
+     "map",
+     []
+    ],
+    "cfm_remote_mpids": [
+     "set",
+     []
+    ],
+    "cfm_mpid": [
+     "set",
+     []
+    ],
+    "ingress_policing_burst": 0
+   }
+  },
+  "IP_Interface": {
+   "06dc90db-8ee8-4937-8fcf-d81ebe85d395": {
+    "name": "br-home",
+    "_version": [
+     "uuid",
+     "bc63d37c-1646-4be1-8523-6ef02337b9c4"
+    ],
+    "if_name": "br-home",
+    "ipv6_prefix": [
+     "set",
+     []
+    ],
+    "ingress_classifier": [
+     "set",
+     []
+    ],
+    "status": "up",
+    "ipv6_addr": [
+     "set",
+     [
+      [
+       "uuid",
+       "358850fb-0c6d-4508-a775-b74912f17fee"
+      ],
+      [
+       "uuid",
+       "7870cc56-152f-4abf-8798-1b875496497b"
+      ],
+      [
+       "uuid",
+       "edbb95de-1d44-464c-ba51-9794d4f6abbc"
+      ]
+     ]
+    ],
+    "qos": [
+     "set",
+     []
+    ],
+    "interfaces": [
+     "set",
+     []
+    ],
+    "ipv4_addr": [
+     "set",
+     []
+    ],
+    "egress_classifier": [
+     "set",
+     []
+    ],
+    "enable": true
+   }
+  },
+  "AWLAN_Node": {
+   "96bc1650-4197-4cd8-9036-f9eb854e87ec": {
+    "model": "HWSIM_POD",
+    "mqtt_settings": [
+     "map",
+     []
+    ],
+    "sku_number": [
+     "set",
+     []
+    ],
+    "vendor_manufacturer": [
+     "set",
+     []
+    ],
+    "version_matrix": [
+     "map",
+     [
+      [
+       "DATE",
+       "Wed Sep 23 16:45:24 UTC 2026"
+      ],
+      [
+       "FIRMWARE",
+       "6.6.1.0-0-g1dad64-mods-mvx-local"
+      ],
+      [
+       "FW_BUILD",
+       "0"
+      ],
+      [
+       "FW_COMMIT",
+       "g1dad64-mods"
+      ],
+      [
+       "FW_PROFILE",
+       "mvx-local"
+      ],
+      [
+       "FW_VERSION",
+       "6.6.1.0"
+      ],
+      [
+       "HOST",
+       "1000@9236b4f3562c"
+      ],
+      [
+       "OPENSYNC",
+       "6.6.1.0"
+      ],
+      [
+       "core",
+       "6.6.1.0/+0/g1dad64e9+mods"
+      ],
+      [
+       "platform/cfg80211",
+       "0.0/=8/g8d84c5e"
+      ],
+      [
+       "vendor/openwrt-template",
+       "6.6.1.0/+0/gc8057e5+mods"
+      ]
+     ]
+    ],
+    "firmware_url": "",
+    "boot_time": 1790188373,
+    "pm_update_cert": [
+     "set",
+     []
+    ],
+    "upgrade_dl_timer": 0,
+    "upgrade_timer": 0,
+    "firmware_pass": "",
+    "led_config": [
+     "map",
+     []
+    ],
+    "max_backoff": 60,
+    "vendor_factory": [
+     "set",
+     []
+    ],
+    "upgrade_status": 0,
+    "factory_reset": [
+     "set",
+     []
+    ],
+    "id": "MVXPOD02D7777EF0D9",
+    "vendor_mfg_date": [
+     "set",
+     []
+    ],
+    "vendor_part_number": [
+     "set",
+     []
+    ],
+    "firmware_version": "6.6.1.0-0-g1dad64-mods-mvx-local",
+    "platform_version": "",
+    "redirector_addr": "tcp:10.101.0.40:6640",
+    "_version": [
+     "uuid",
+     "d9b80465-1bbe-4186-8b3e-9abd16456c69"
+    ],
+    "serial_number": "MVXPOD02D7777EF0D9",
+    "mqtt_headers": [
+     "map",
+     []
+    ],
+    "min_backoff": 30,
+    "device_mode": [
+     "set",
+     []
+    ],
+    "ovs_version": "N/A",
+    "vendor_name": [
+     "set",
+     []
+    ],
+    "revision": "Rev 1.0",
+    "mqtt_topics": [
+     "map",
+     []
+    ],
+    "manager_addr": "tcp:10.101.0.40:6641"
+   }
+  },
+  "Manager": {
+   "ded7ab24-061e-46ce-821f-d09313fe35d4": {
+    "connection_mode": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "200131ba-b892-472e-9c4a-6b33387aad7b"
+    ],
+    "is_connected": true,
+    "other_config": [
+     "map",
+     []
+    ],
+    "external_ids": [
+     "map",
+     []
+    ],
+    "status": [
+     "map",
+     [
+      [
+       "sec_since_connect",
+       "5278"
+      ],
+      [
+       "state",
+       "ACTIVE"
+      ]
+     ]
+    ],
+    "target": "tcp:[10.101.0.40]:6641",
+    "max_backoff": [
+     "set",
+     []
+    ],
+    "inactivity_probe": 30000
+   }
+  },
+  "Wifi_VIF_State": {
+   "727a8374-d328-4862-9550-a6dee260d3fb": {
+    "min_rssi": [
+     "set",
+     []
+    ],
+    "wpa": [
+     "set",
+     []
+    ],
+    "state": [
+     "set",
+     []
+    ],
+    "wps_pbc": [
+     "set",
+     []
+    ],
+    "ap_bridge": true,
+    "uapsd_enable": false,
+    "ssid": "opensync-lab-bhaul",
+    "pmf": [
+     "set",
+     []
+    ],
+    "wpa_pairwise_tkip": [
+     "set",
+     []
+    ],
+    "radius_srv_secret": [
+     "set",
+     []
+    ],
+    "primary_accounting": [
+     "set",
+     []
+    ],
+    "btm": [
+     "set",
+     []
+    ],
+    "passpoint_config": [
+     "set",
+     []
+    ],
+    "dpp_csign_hex": "",
+    "dpp_netaccesskey_hex": "",
+    "ft_pmk_r0_key_lifetime_sec": [
+     "set",
+     []
+    ],
+    "wps": [
+     "set",
+     []
+    ],
+    "mode": "sta",
+    "wps_pbc_key_id": "",
+    "ft_psk": "(redacted)",
+    "wpa_psks": [
+     "map",
+     []
+    ],
+    "ft_encr_key": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp": [
+     "set",
+     []
+    ],
+    "ft_over_ds": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_gcmp256": false,
+    "multi_ap": "none",
+    "primary_radius": [
+     "set",
+     []
+    ],
+    "dpp_cc": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "min_hw_mode": [
+     "set",
+     []
+    ],
+    "bridge": "",
+    "wpa_key_mgmt": [
+     "set",
+     []
+    ],
+    "secondary_accounting": [
+     "set",
+     []
+    ],
+    "mld_if_name": [
+     "set",
+     []
+    ],
+    "rrm": 0,
+    "rsn_pairwise_tkip": [
+     "set",
+     []
+    ],
+    "secondary_radius": [
+     "set",
+     []
+    ],
+    "wpa_pairwise_ccmp": [
+     "set",
+     []
+    ],
+    "dpp_connector": "",
+    "vif_radio_idx": 0,
+    "if_name": "bhaul-sta-50",
+    "mac": "02:00:00:00:06:00",
+    "mac_list": [
+     "set",
+     []
+    ],
+    "radius_srv_port": [
+     "set",
+     []
+    ],
+    "associated_clients": [
+     "uuid",
+     "f33d05d6-a105-43c6-b664-5ff5e013c721"
+    ],
+    "ssid_broadcast": "enabled",
+    "mcast2ucast": false,
+    "mac_list_type": "none",
+    "channel": 44,
+    "beacon_protection": false,
+    "airtime_precedence": [
+     "set",
+     []
+    ],
+    "parent": "02:00:00:00:01:04",
+    "ap_vlan_sta_addr": [
+     "set",
+     []
+    ],
+    "wds": false,
+    "security": [
+     "map",
+     [
+      [
+       "encryption",
+       "WPA-PSK"
+      ],
+      [
+       "key",
+       "(redacted)"
+      ]
+     ]
+    ],
+    "max_sta": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp256": false,
+    "vif_config": [
+     "uuid",
+     "303efd40-dd25-40d7-a666-de8d4215a74f"
+    ],
+    "_version": [
+     "uuid",
+     "5802b259-9ad5-494d-b338-2843d052628d"
+    ],
+    "ft_pmk_r1_push": [
+     "set",
+     []
+    ],
+    "radius_srv_addr": [
+     "set",
+     []
+    ],
+    "ft_pmk_r1_max_key_lifetime_sec": [
+     "set",
+     []
+    ],
+    "group_rekey": [
+     "set",
+     []
+    ],
+    "nas_identifier": [
+     "set",
+     []
+    ],
+    "ft_mobility_domain": [
+     "set",
+     []
+    ],
+    "dynamic_beacon": false,
+    "ft_psk_generate_local": [
+     "set",
+     []
+    ],
+    "mld_addr": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_gcmp": false
+   },
+   "2d4902d7-6434-4032-9ade-4a64e4734488": {
+    "min_rssi": [
+     "set",
+     []
+    ],
+    "wpa": true,
+    "state": [
+     "set",
+     []
+    ],
+    "wps_pbc": false,
+    "ap_bridge": true,
+    "uapsd_enable": false,
+    "ssid": "opensync-lab-home",
+    "pmf": "disabled",
+    "wpa_pairwise_tkip": false,
+    "radius_srv_secret": [
+     "set",
+     []
+    ],
+    "primary_accounting": [
+     "set",
+     []
+    ],
+    "btm": 0,
+    "passpoint_config": [
+     "set",
+     []
+    ],
+    "dpp_csign_hex": [
+     "set",
+     []
+    ],
+    "dpp_netaccesskey_hex": [
+     "set",
+     []
+    ],
+    "ft_pmk_r0_key_lifetime_sec": 0,
+    "wps": false,
+    "mode": "ap",
+    "wps_pbc_key_id": "",
+    "ft_psk": [
+     "set",
+     []
+    ],
+    "wpa_psks": [
+     "map",
+     [
+      [
+       "key--1",
+       "(redacted)"
+      ]
+     ]
+    ],
+    "ft_encr_key": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp": true,
+    "ft_over_ds": false,
+    "rsn_pairwise_gcmp256": false,
+    "multi_ap": "none",
+    "primary_radius": [
+     "set",
+     []
+    ],
+    "dpp_cc": [
+     "set",
+     []
+    ],
+    "enabled": true,
+    "vlan_id": [
+     "set",
+     []
+    ],
+    "min_hw_mode": [
+     "set",
+     []
+    ],
+    "bridge": "br-home",
+    "wpa_key_mgmt": "wpa-psk",
+    "secondary_accounting": [
+     "set",
+     []
+    ],
+    "mld_if_name": [
+     "set",
+     []
+    ],
+    "rrm": 0,
+    "rsn_pairwise_tkip": false,
+    "secondary_radius": [
+     "set",
+     []
+    ],
+    "wpa_pairwise_ccmp": false,
+    "dpp_connector": [
+     "set",
+     []
+    ],
+    "vif_radio_idx": 1,
+    "if_name": "home-ap-24",
+    "mac": "82:00:00:00:05:00",
+    "mac_list": [
+     "set",
+     []
+    ],
+    "radius_srv_port": [
+     "set",
+     []
+    ],
+    "associated_clients": [
+     "set",
+     [
+      [
+       "uuid",
+       "0b962cc8-9a9f-47c6-866d-5c6c7f8bd226"
+      ],
+      [
+       "uuid",
+       "3992c481-92ba-4438-b142-3d81d3650400"
+      ]
+     ]
+    ],
+    "ssid_broadcast": "enabled",
+    "mcast2ucast": false,
+    "mac_list_type": "none",
+    "channel": 6,
+    "beacon_protection": false,
+    "airtime_precedence": [
+     "set",
+     []
+    ],
+    "parent": [
+     "set",
+     []
+    ],
+    "ap_vlan_sta_addr": [
+     "set",
+     []
+    ],
+    "wds": [
+     "set",
+     []
+    ],
+    "security": [
+     "map",
+     []
+    ],
+    "max_sta": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_ccmp256": false,
+    "vif_config": [
+     "uuid",
+     "74359da9-9a52-4bcc-ac13-a04a87100506"
+    ],
+    "_version": [
+     "uuid",
+     "cbdebe81-231e-4a9a-8c5c-f76bb14d9635"
+    ],
+    "ft_pmk_r1_push": false,
+    "radius_srv_addr": [
+     "set",
+     []
+    ],
+    "ft_pmk_r1_max_key_lifetime_sec": 0,
+    "group_rekey": 0,
+    "nas_identifier": "",
+    "ft_mobility_domain": 0,
+    "dynamic_beacon": false,
+    "ft_psk_generate_local": false,
+    "mld_addr": [
+     "set",
+     []
+    ],
+    "rsn_pairwise_gcmp": false
+   }
+  },
+  "Wifi_Credential_Config": {
+   "ffe9e16c-3c8b-43b7-9371-fe1aea4439b7": {
+    "_version": [
+     "uuid",
+     "95f4d782-95b1-4d21-bab4-6d75aca05acc"
+    ],
+    "onboard_type": "gre",
+    "priority": [
+     "set",
+     []
+    ],
+    "security": [
+     "map",
+     [
+      [
+       "encryption",
+       "WPA-PSK"
+      ],
+      [
+       "key",
+       "(redacted)"
+      ]
+     ]
+    ],
+    "ssid": "opensync-lab-bhaul",
+    "bssid": [
+     "set",
+     []
+    ],
+    "enabled": true
+   }
+  },
+  "Connection_Manager_Uplink": {
+   "e271f970-1cca-48d6-9153-d7713237d1c0": {
+    "if_name": "g-bhaul-sta-50",
+    "if_type": "gre",
+    "unreachable_link_counter": 0,
+    "ipv6": "blocked",
+    "unreachable_cloud_counter": 0,
+    "unreachable_internet_counter": 500,
+    "is_used": true,
+    "_version": [
+     "uuid",
+     "946ad9e3-8754-48a7-9ca0-9534eb77905e"
+    ],
+    "has_L2": true,
+    "priority": 3,
+    "ntp_state": true,
+    "eth_client": [
+     "set",
+     []
+    ],
+    "bridge": "br-home",
+    "unreachable_router_counter": 0,
+    "ipv4": "active",
+    "has_L3": true,
+    "unblock_ts": "1970-01-01T03:05:17Z",
+    "loop": [
+     "set",
+     []
+    ]
+   }
+  },
+  "AW_Bluetooth_Config": {
+   "6edc3ae8-39f5-4e10-9e56-7127d757c2bd": {
+    "connectable": [
+     "set",
+     []
+    ],
+    "_version": [
+     "uuid",
+     "3101db69-ec0a-467b-bf84-e7e3a9dc7c69"
+    ],
+    "interval_millis": 0,
+    "mode": "on",
+    "command": "on_boarding",
+    "payload": "5a:00:00:00:00:00",
+    "txpower": 0
+   }
+  },
+  "DHCPv6_Client": {
+   "2b584c9c-8cbd-4b62-9db5-1bd7af6634b3": {
+    "_version": [
+     "uuid",
+     "86de92ee-16c1-402b-824b-796c357b55b4"
+    ],
+    "send_options": [
+     "set",
+     []
+    ],
+    "rapid_commit": false,
+    "other_config": [
+     "map",
+     []
+    ],
+    "ip_interface": [
+     "uuid",
+     "06dc90db-8ee8-4937-8fcf-d81ebe85d395"
+    ],
+    "request_prefixes": false,
+    "received_options": [
+     "set",
+     []
+    ],
+    "renew": true,
+    "request_options": [
+     "set",
+     []
+    ],
+    "request_address": true,
+    "enable": true
+   }
+  }
+ },
+ "note": "recorded from local-noc for the documentation; secrets redacted"
+}

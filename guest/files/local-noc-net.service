@@ -1,0 +1,14 @@
+[Unit]
+Description=Attach local-noc to boardfarm's WAN network (wan-cpe1)
+After=docker.service boardfarm-lab.service
+Requires=docker.service
+# re-run whenever boardfarm-lab is (re)started: bf-lab recreates wan-cpe1
+PartOf=boardfarm-lab.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/local-noc-net
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target boardfarm-lab.service

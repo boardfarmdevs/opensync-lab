@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deploy and check · opensync-lab</title>
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<main><div class="wrap">
+<div class="k" style="color:var(--faint);font-size:12px;letter-spacing:.12em;text-transform:uppercase">Stage 3 · deploy-mvx.sh</div>
+<h1>Deploy and check</h1>
+<p class="lead">Push the image into the VM, launch the gateway, and prove each layer works: WAN, OpenSync to its cloud, then the
+extender topology. Every check prints PASS or FAIL with the evidence, and leaves a status file in the VM.</p>
+
+<div class="js-tabs">
+<div class="tabs"><button data-k="all">deploy-mvx.sh all</button><button data-k="mesh">deploy-mvx.sh mesh</button><button data-k="more">one at a time</button></div>
+<div data-tab="all"><pre><code>./deploy-mvx.sh all        <span class="c"># push + launch + check + opensync (Plume)</span></code></pre>
+<p><b>push</b> stages the image and the pinned meta-lxd in the VM · <b>launch</b> starts mv3 with meta-lxd's <code>mv.sh</code>: WAN on
+<code>br-wan101</code>, LAN port on <code>br-lan201</code>, three radios from the pool · <b>check</b> is the WAN gate · <b>opensync</b> enables
+SON and connects to the cloud.</p></div>
+<div data-tab="mesh"><pre><code>./deploy-mvx.sh mesh       <span class="c"># opensync --cloud local, pod-1..3, 2 clients each, topology check</span></code></pre>
+<p>Switches mv3 to local-noc, pushes the extender image once, launches <code>pod-1..N</code> and checks each onboards, launches
+<code>pod-N-wc1..M</code> and checks each reaches the internet, then checks the whole topology.
+<code>MVX_PODS</code> (3) and <code>MVX_POD_CLIENTS</code> (2) set the size.</p></div>
+<div data-tab="more"><pre><code>./deploy-mvx.sh push [--image PATH]
+./deploy-mvx.sh launch | check | status | shell
+./deploy-mvx.sh opensync --cloud plume      <span class="c"># or --cloud local</span>
+./deploy-mvx.sh pod pod-2                   <span class="c"># one extender</span>
+./deploy-mvx.sh client pod-2-wc1 pod-2      <span class="c"># one client on it</span>
+./deploy-mvx.sh noc nodes | tables mv3 | dump mv3 &lt;table&gt; | log mv3 [N] | transact mv3 '&lt;op&gt;'</code></pre></div>
+</div>
+
+<h2>What each check proves</h2>
+<div class="scroll"><table class="t"><thead><tr><th>tier</th><th>meaning</th><th>evidence</th></tr></thead><tbody>
+<tr><td><b>B</b></td><td>the build reproduces the reference</td><td>every project and layer at its pin, package list identical (<a href="build.html">stage 1</a>)</td></tr>
+<tr><td><b>L0</b></td><td>VM and WAN side up</td><td>boardfarm containers, Kea on the tagged VLAN, wan-cpe1 with internet</td></tr>
+<tr><td><b>L1</b></td><td>mv3 WAN</td><td><code>erouter0</code> in 10.70.0.0/24, default route, ping, DNS, TLS handshake with the Plume redirector</td></tr>
+<tr><td><b>L2</b></td><td>Wi-Fi HAL on hwsim</td><td>three radios in mv3, APs up</td></tr>
+<tr><td><b>L3–L4</b></td><td>OpenSync and its cloud</td><td>managers running, redirector reached, controller assigned, <code>Manager.is_connected</code>, the session seen by local-noc</td></tr>
+<tr><td><b>L6</b></td><td>GRE backhaul</td><td>per extender: <code>g-bhaul-sta-50</code> on the extender, <code>pgd*</code> on mv3 in <code>brlan0</code></td></tr>
+<tr><td><b>L7</b></td><td>the extender topology</td><td>3 extenders onboarded and claimed, 6 clients with DHCP from mv3, ICMP, DNS and HTTP to the internet, topology check</td></tr>
+</tbody></table></div>
+
+<h2>The last run</h2>
+<p>Recorded from the lab by <code>build-docs.sh capture</code> (the status files in <code>/var/lib/opensync-lab</code>). Open a check for its lines.</p>
+<div class="row" style="margin:6px 0 10px"><button class="chip on" data-f="all">all</button><button class="chip" data-f="provision">provisioning</button>
+<button class="chip" data-f="gateway">gateway</button><button class="chip" data-f="pod">extenders</button><button class="chip" data-f="client">clients</button></div>
+<div id="checks"></div>
+
+<h2>Cloud: Plume or local-noc</h2>
+<p><code>opensync --cloud plume</code> points <code>SONURL</code> at the Plume redirector (TLS, theta dev certificates); <code>--cloud local</code>
+at local-noc (plain TCP). A switch restarts OpenSync on mv3 while its WAN is already up; this image's <code>cm</code> then commits to IPv6, which
+this lab has no upstream for. The check handles that (IPv6 marked blocked on the uplink, <code>cm</code> restarted), as it handles two other
+known image issues: no NOC certificates selected, and <code>dnsmasq</code> failing with SON on. All are listed with their proper fixes in the
+<a href="reference.html#workarounds">reference</a>.</p>
+
+<footer class="pg">Next: <a href="extender.html">OpenSync extenders</a></footer>
+</div></main>
+</div>
+<script>
+const GROUP = n => /^(base|hwsim|boardfarm|local-noc)$/.test(n) ? "provision" : /^(mvx|wan|opensync|topology)$/.test(n) ? "gateway"
+  : /-wc\d+$/.test(n) ? "client" : /^pod-/.test(n) ? "pod" : "provision";
+const ORDER = ["base", "hwsim", "boardfarm", "local-noc", "mvx", "wan", "opensync"];
+document.addEventListener("DOMContentLoaded", async () => {
+  const box = document.getElementById("checks");
+  try {
+    const c = await json("data/checks.json");
+    const names = Object.keys(c.checks).sort((a, b) => {
+      const ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
+      if (ia >= 0 || ib >= 0) return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      if (a === "topology") return 1; if (b === "topology") return -1;
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
+    box.innerHTML = names.map(n => {
+      const [head, ...lines] = c.checks[n], v = head.split(" ")[0];
+      const cls = /^(PASS|ok|launched)$/.test(v) ? "pass" : v === "FAIL" ? "fail" : "info";
+      const body = lines.length ? `<ul class="lines">${lines.map(l => { const [s, ...rest] = l.split(" ");
+          const k = s === "PASS" ? "pass" : s === "FAIL" ? "fail" : "info";
+          return `<li><b class="${k}">${esc(s)}</b><span>${esc(rest.join(" "))}</span></li>`; }).join("")}</ul>` : `<div class="mono" style="font-size:12.5px;color:var(--muted)">${esc(head)}</div>`;
+      return `<details class="x" data-g="${GROUP(n)}"><summary><span class="badge ${cls}">${esc(v)}</span><b>${esc(n)}</b>
+        <span style="color:var(--muted);font-size:13px">${esc(head.split(" ").slice(1).join(" ").replace(/(\s+at)?\s+\d{4}-\d\d-\d\dT[\d:+.]+/, "").trim())}</span></summary>
+        <div class="body">${body}</div></details>`;
+    }).join("");
+    document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => {
+      document.querySelectorAll("[data-f]").forEach(x => x.classList.toggle("on", x === b));
+      box.querySelectorAll("details").forEach(d => d.style.display = b.dataset.f === "all" || d.dataset.g === b.dataset.f ? "" : "none");
+    });
+  } catch (e) { box.textContent = "no recorded checks (build-docs.sh capture)"; }
+});
+</script>
+</body>
+</html>

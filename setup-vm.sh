@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
 #
-# setup-vm.sh - create and provision the mvx-opensync lab VM (an LXD VM).
+# setup-vm.sh - create and provision the opensync-lab VM (an LXD VM).
 #
 #   setup-vm.sh create      create + boot the VM (idempotent)
-#   setup-vm.sh provision   base packages, docker, nested LXD, hwsim pool, boardfarm lab
+#   setup-vm.sh provision   base packages, docker, nested LXD, hwsim pool, boardfarm lab, local-noc
 #   setup-vm.sh all         create + provision
 #   setup-vm.sh status      VM state + lab status inside it
 #   setup-vm.sh shell       root shell in the VM
 #   setup-vm.sh start|stop  VM lifecycle
 #   setup-vm.sh delete      delete the VM (asks first)
 #
-# The VM (default mvx-opensync-<MMDD>, see config/mvx.conf) is the lab host:
+# The VM (default opensync-lab-<MMDD>, see config/mvx.conf) is the lab host:
 # Docker runs the boardfarm WAN side (dhcp-cpe1 + wan-cpe1 on br-wan101,
 # lan-cpe1 on br-lan201), nested LXD runs the mvx container, and the
-# mac80211_hwsim pool supplies its radios. Deploying the container is
-# deploy-mvx.sh's job.
+# mac80211_hwsim pool supplies its radios, and local-noc (a plain-TCP OpenSync
+# cloud stand-in, local-noc/) sits on the WAN segment at $MVX_LOCAL_NOC_IP.
+# Deploying the container is deploy-mvx.sh's job.
 #
-# Guest scripts are pushed to /opt/mvx-opensync in the VM and run as root.
+# Guest scripts are pushed to /opt/opensync-lab in the VM and run as root.
 # The VM cannot reach bitbucket and has no GitHub key, so git inputs go in
 # as bundles made on this host.
 
@@ -24,7 +25,7 @@ set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/lib/common.sh"
 source "$MVX_ROOT/lib/vm.sh"
 
-: "${MVX_CACHE:=$HOME/.cache/mvx-opensync}"
+: "${MVX_CACHE:=$HOME/.cache/opensync-lab}"
 
 cmd_create() {
     require_cmd lxc
@@ -49,7 +50,7 @@ cmd_create() {
     fi
     lxc config device override "$MVX_VM" eth0 network="$MVX_VM_NETWORK" 2>/dev/null \
         || lxc config device add "$MVX_VM" eth0 nic network="$MVX_VM_NETWORK"
-    lxc config set "$MVX_VM" user.mvx-opensync.created "$(date -Is)"
+    lxc config set "$MVX_VM" user.opensync-lab.created "$(date -Is)"
     lxc start "$MVX_VM"
     vm_wait_agent
     log "create: waiting for cloud-init"
@@ -77,6 +78,26 @@ make_boardfarm_bundle() {
     git --git-dir="$cache" bundle verify "$out" >/dev/null 2>&1 || die "bad bundle $out"
 }
 
+# local-noc's web UI on the host: rev140:<port> -> VM:<port> -> local-noc.
+# LXD proxies into a VM must NAT, which needs a fixed NIC address (reserve the
+# one the VM has) and a concrete listen address (the host's primary one).
+noc_ui_listen() {
+    echo "${MVX_NOC_UI_LISTEN:-$(ip -4 route get 1.1.1.1 | sed -n 's/.* src \([0-9.]*\).*/\1/p')}"
+}
+expose_noc_ui() {
+    local sub ip listen
+    sub=$(lxc network get "$MVX_VM_NETWORK" ipv4.address | cut -d/ -f1 | cut -d. -f1-3)
+    ip=$(lxc list "$MVX_VM" -c 4 --format csv | tr ',' '\n' | tr -d '"' | grep -o "$sub\.[0-9]*" | head -1)
+    listen=$(noc_ui_listen)
+    [ -n "$ip" ] && [ -n "$listen" ] || { warn "noc-ui: no VM address ($ip) or host address ($listen); web UI not exposed"; return 0; }
+    lxc config device set "$MVX_VM" eth0 ipv4.address="$ip"
+    lxc config device remove "$MVX_VM" noc-ui >/dev/null 2>&1 || true
+    lxc config device add "$MVX_VM" noc-ui proxy nat=true \
+        listen="tcp:$listen:$MVX_NOC_UI_PORT" connect="tcp:$ip:$MVX_NOC_UI_PORT" >/dev/null \
+        || { warn "noc-ui: could not add the proxy device"; return 0; }
+    log "provision: local-noc web UI at http://$listen:$MVX_NOC_UI_PORT/"
+}
+
 cmd_provision() {
     vm_exists || die "$MVX_VM does not exist (run: $0 create)"
     [ "$(vm_state)" = RUNNING ] || lxc start "$MVX_VM"
@@ -89,18 +110,20 @@ cmd_provision() {
     log "provision: boardfarm-lab-staging @ ${MVX_BOARDFARM_COMMIT:0:12}"
     make_boardfarm_bundle "$stage/boardfarm-lab-staging.bundle"
     vm_push_tree
-    vm_push_file "$stage/boardfarm-lab-staging.bundle" /opt/mvx-opensync/assets/boardfarm-lab-staging.bundle
+    vm_push_file "$stage/boardfarm-lab-staging.bundle" /opt/opensync-lab/assets/boardfarm-lab-staging.bundle
 
     vm_run_guest 00-base.sh
-    if lxc exec "$MVX_VM" -- test -e /var/lib/mvx-opensync/reboot-required; then
+    if lxc exec "$MVX_VM" -- test -e /var/lib/opensync-lab/reboot-required; then
         log "provision: kernel changed, rebooting $MVX_VM"
         lxc restart "$MVX_VM" --timeout 300
         vm_wait_agent
-        lxc exec "$MVX_VM" -- rm -f /var/lib/mvx-opensync/reboot-required
+        lxc exec "$MVX_VM" -- rm -f /var/lib/opensync-lab/reboot-required
         vm_run_guest 00-base.sh
     fi
     vm_run_guest 10-hwsim.sh
     vm_run_guest 20-boardfarm.sh
+    vm_run_guest 25-local-noc.sh
+    expose_noc_ui
     log "provision: done"
     cmd_status
 }
@@ -117,10 +140,13 @@ cmd_status() {
             "$(cat /sys/module/mac80211_hwsim/parameters/channels 2>/dev/null)" \
             "$(ls /sys/class/net | grep -c "^virt-wlan")"
         printf "lxd         %s\n" "$(lxd --version 2>/dev/null)"
-        for f in /var/lib/mvx-opensync/*.status; do [ -e "$f" ] && printf "%-11s %s\n" "$(basename "$f" .status)" "$(cat "$f")"; done
+        for f in /var/lib/opensync-lab/*.status; do [ -e "$f" ] && printf "%-11s %s\n" "$(basename "$f" .status)" "$(cat "$f")"; done
         echo "--- docker"; docker ps --format "  {{.Names}}\t{{.Status}}" 2>/dev/null
         echo "--- lxc";    lxc list -c ns4 --format csv 2>/dev/null | sed "s/^/  /"
     '
+    local ui
+    ui=$(lxc config device get "$MVX_VM" noc-ui listen 2>/dev/null) \
+        && echo "local-noc web UI: http://${ui#tcp:}/"
 }
 
 cmd_delete() {
