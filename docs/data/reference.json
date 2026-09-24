@@ -1,5 +1,5 @@
 {
- "generated": 1790200112,
+ "generated": 1790222924,
  "config": [
   {
    "name": "MVX_PRODUCT",
@@ -192,6 +192,12 @@
    "default": "",
    "section": "OpenSync cloud",
    "doc": ""
+  },
+  {
+   "name": "MVX_NOC_REDIRECT",
+   "default": "",
+   "section": "OpenSync cloud",
+   "doc": "hand nodes to another manager instead of local-noc (e.g. an EasyMesh adapter): \"NODE=TARGET ...\", NODE an AWLAN_Node.id or serial, TARGET a manager_addr. local-noc then leaves those pods' fronthaul alone; empty = none (the default)."
   },
   {
    "name": "MVX_MESH_GATEWAY",
