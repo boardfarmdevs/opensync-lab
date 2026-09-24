@@ -17,15 +17,20 @@
 <p class="lead">A reproducible, one-command lab for an OpenSync-enabled containerized RDK-B gateway (the LGI <b>mv3</b>),
 with three OpenSync <b>extenders</b> built from the open-source release, six <b>wireless clients</b>, and <b>local-noc</b>, a
 local stand-in for the OpenSync cloud that records the whole protocol and draws the network live.</p>
+<p class="fits">Part of the <b>OpenSync adapter</b> goal: this is the router and the pods
+<a href="https://boardfarmdevs.github.io/emosa-lab/">EMOSA</a> is proven on. The
+<a href="https://boardfarmdevs.github.io/meta-cmf-bananapi-vcpe/">RDK</a> and
+<a href="https://boardfarmdevs.github.io/prplmesh-lab/">prplMesh</a> labs develop the EasyMesh optimizer.
+The end goal is one EasyMesh system on wmediumd, with native EasyMesh agents and OpenSync pods working together.</p>
 <div class="row" style="margin:18px 0 6px">
   <a class="btn primary" href="topology.html">Open the topology viewer</a>
-  <a class="btn" href="#quick-start">Quick start</a>
+  <a class="btn" href="#run">Run it</a>
   <a class="btn" href="https://github.com/boardfarmdevs/opensync-lab">GitHub</a>
 </div>
 
 <div class="stats" id="stats"></div>
 
-<h2 id="architecture">The whole lab on one page</h2>
+<h2 id="what">What it is</h2>
 <p>Everything runs on one host: three scripts build the gateway image, create an isolated LXD VM, and deploy the network into it.
 Point at a part to see what it is and how it connects; click it to read more.</p>
 <div class="diagram js-diagram">
@@ -97,23 +102,24 @@ Point at a part to see what it is and how it connects; click it to read more.</p
 <div class="infocard">Point at any part of the lab. <span style="color:var(--faint)">Violet: 5 GHz backhaul · amber: 2.4 GHz fronthaul · green dashed: OVSDB to the cloud · grey dashed: wired.</span></div>
 </div>
 
-<h2 id="live">The network, as the cloud sees it</h2>
+<h3 id="live">The network, as the cloud sees it</h3>
 <p>local-noc keeps a live copy of every node's OVSDB database and draws the location from it. Below is the same viewer, replaying a
 recording of the lab: drag a device, hover it for its active configuration, click it for every interface, tunnel and counter.</p>
 <div class="frame"><a class="btn open" href="topology/" target="_blank">open full screen ↗</a>
 <iframe src="topology/" title="topology viewer" style="height:560px"></iframe></div>
 
-<h2 id="stages">Three stages, three scripts</h2>
-<div class="cards">
-  <a class="card" href="build.html"><div class="k">stage 1</div><h3>build-mvx.sh</h3><p>A fresh, pinned, offline build of the mv3 LXD image that reproduces the reference build package for package.</p></a>
-  <a class="card" href="lab.html"><div class="k">stage 2</div><h3>setup-vm.sh</h3><p>An isolated LXD VM with boardfarm's WAN side, nested LXD, a hwsim radio pool, local-noc and the view on the host.</p></a>
-  <a class="card" href="deploy.html"><div class="k">stage 3</div><h3>deploy-mvx.sh</h3><p>Launch mv3, check the WAN, connect OpenSync to Plume or local-noc, build and check the 3-extender topology.</p></a>
-  <a class="card" href="extender.html"><div class="k">inside</div><h3>OpenSync extenders</h3><p>build-pod.sh, onboarding over the Wi-Fi backhaul step by step, the GRE at work, the wireless clients.</p></a>
-  <a class="card" href="local-noc.html"><div class="k">inside</div><h3>local-noc</h3><p>The cloud protocol without TLS: redirector, controller, the mirror, recordings, mesh orchestration, the API.</p></a>
-  <a class="card" href="reference.html"><div class="k">look up</div><h3>Reference</h3><p>Every setting, command and guest script, and every workaround with where its real fix belongs.</p></a>
-</div>
-
-<h2 id="quick-start">Quick start</h2>
+<h2 id="state">Current state</h2>
+<p>Reproduced end to end from a fresh VM with the scripts alone (2026-09-23):</p>
+<ul>
+  <li>a pinned, offline mv3 build whose installed packages match the reference build;</li>
+  <li>mv3 on the internet and on the Plume cloud, or on local-noc, switching back and forth;</li>
+  <li>three OpenSync 6.6.1.0 extenders on the GRE backhaul, two wireless clients each, all configured through the cloud protocol;</li>
+  <li>the live topology view.</li>
+</ul>
+<p>For the adapter: local-noc hands a node to another manager (<code>noc-ctl redirect</code>), which is how EMOSA takes
+the pods, and the pod image reports the Multi-AP backhaul link state on every driver, which EasyMesh backhaul needs.
+Workarounds, and where each real fix belongs, are in the <a href="reference.html">reference</a>.</p>
+<h2 id="run"><a id="quick-start"></a>Run it</h2>
 <pre><code><span class="c"># 1. the mv3 image: fresh checkout pinned to the reference build, offline</span>
 ./build-mvx.sh pin && ./build-mvx.sh build
 <span class="c"># the extender image (OpenSync 6.6.1.0)</span>
@@ -128,6 +134,17 @@ recording of the lab: drag a device, hover it for its active configuration, clic
 ./setup-vm.sh status        <span class="c"># prints http://&lt;host&gt;:8640/</span></code></pre>
 <p>Settings live in <code>config/mvx.conf</code> and can be overridden from the environment; values the scripts must remember
 (VM name, build dir, pod image) go to the untracked <code>config/local.conf</code>. See the <a href="reference.html">reference</a>.</p>
+
+<h2 id="reference">Reference</h2>
+<p>Three stages, three scripts, and what runs inside the lab.</p>
+<div class="cards">
+  <a class="card" href="build.html"><div class="k">stage 1</div><h3>build-mvx.sh</h3><p>A fresh, pinned, offline build of the mv3 LXD image that reproduces the reference build package for package.</p></a>
+  <a class="card" href="lab.html"><div class="k">stage 2</div><h3>setup-vm.sh</h3><p>An isolated LXD VM with boardfarm's WAN side, nested LXD, a hwsim radio pool, local-noc and the view on the host.</p></a>
+  <a class="card" href="deploy.html"><div class="k">stage 3</div><h3>deploy-mvx.sh</h3><p>Launch mv3, check the WAN, connect OpenSync to Plume or local-noc, build and check the 3-extender topology.</p></a>
+  <a class="card" href="extender.html"><div class="k">inside</div><h3>OpenSync extenders</h3><p>build-pod.sh, onboarding over the Wi-Fi backhaul step by step, the GRE at work, the wireless clients.</p></a>
+  <a class="card" href="local-noc.html"><div class="k">inside</div><h3>local-noc</h3><p>The cloud protocol without TLS: redirector, controller, the mirror, recordings, mesh orchestration, the API.</p></a>
+  <a class="card" href="reference.html"><div class="k">look up</div><h3>Reference</h3><p>Every setting, command and guest script, and every workaround with where its real fix belongs.</p></a>
+</div>
 
 <footer class="pg">opensync-lab · this site is generated by <code>build-docs.sh</code> from the repository and a recording of the lab.</footer>
 </div></main>

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Build this repository's Pages site into dist/site. This is the only per-repository
+# step: pages/finish-site.py, pages/labs-bar.js and .github/workflows/pages.yml are
+# the same in the four lab repositories.
+#
+# opensync-lab: the static site in docs/ as committed (build-docs.sh regenerates its
+# data and viewer from a running lab), without the Markdown notes kept there.
+set -euo pipefail
+cd "$(dirname "$(readlink -f "$0")")/.."
+rm -rf dist/site
+mkdir -p dist/site
+tar -C docs --exclude='*.md' -cf - . | tar -C dist/site -xf -
+test -f dist/site/index.html
+echo "Built dist/site: $(find dist/site -type f | wc -l) files from docs/"
