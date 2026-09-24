@@ -63,16 +63,17 @@ cmd_sources() {
         log "sources: $dir @ ${commit:0:12}"
     done < "$POD/opensync/sources.lock"
 
-    # our patches to the upstream repos (pod/opensync/patches/<repo dir>/*.patch)
-    local pd p
-    for pd in "$POD"/opensync/patches/*/; do
-        dir=$(basename "$pd")
-        for p in "$pd"*.patch; do
+    # our patches to the upstream repos (pod/opensync/patches/<repo dir>/*.patch,
+    # <repo dir> as in sources.lock, e.g. core or platform/cfg80211)
+    local p
+    while read -r dir url commit; do
+        case "$dir" in ''|\#*) continue ;; esac
+        for p in "$POD/opensync/patches/$dir"/*.patch; do
             [ -e "$p" ] || continue
             git -C "$MVX_POD_WORK/$dir" apply "$p" || die "patch does not apply: $dir/$(basename "$p")"
             log "sources: patched $dir: $(basename "$p")"
         done
-    done
+    done < "$POD/opensync/sources.lock"
 
     # overlays: our HWSIM_POD target on the vendor template, our service provider
     cp -a "$POD/opensync/vendor-overlay/." "$MVX_POD_WORK/vendor/openwrt-template/"
