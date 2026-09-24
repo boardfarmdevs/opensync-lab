@@ -10,9 +10,10 @@
 #   build-docs.sh all               viewer + reference (+ capture when the lab is reachable)
 #   build-docs.sh serve [PORT]      preview the site on http://localhost:PORT/ (default 8000)
 #
-# The site is static (no build step to publish): GitHub Pages, "Deploy from a
-# branch", main, /docs. The viewer on it is the same file local-noc serves; it
-# replays the recording instead of polling a live local-noc.
+# The site is static: the Pages workflow (.github/workflows/pages.yml, shared by
+# the four lab sites) publishes docs/ from main through pages/build, with the
+# labs bar added. The viewer on it is the same file local-noc serves; it replays
+# the recording instead of polling a live local-noc.
 
 set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/lib/common.sh"
