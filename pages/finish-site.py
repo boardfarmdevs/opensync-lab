@@ -68,7 +68,8 @@ def finish(site):
             raise SystemExit(f"{relative}: no </head> to add the labs bar to")
         prefix = "../" * relative.count("/")
         tag = f'<script src="{prefix}{BAR}" data-project="{name}" defer></script>\n'
-        page.write_text(HEAD_END.sub(lambda m: tag + m.group(0), html, count=1), encoding="utf-8")
+        head = HEAD_END.search(html).start()
+        page.write_text(html[:head] + tag + html[head:], encoding="utf-8")
         with_bar.append(relative)
     (site / ".nojekyll").touch()
     revision = os.environ.get("GITHUB_SHA") or git("rev-parse", "HEAD")
