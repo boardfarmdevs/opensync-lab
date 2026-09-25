@@ -42,6 +42,13 @@ for phy in $(ls /sys/class/ieee80211 | sort -V); do
         *)  fb=6G   hw=11ax ht=HT80 ;;
     esac
     echo "OSW_DRV_NL80211_PHY_BAND_$phy=$fb" >> /run/opensync/osw/90_mvx_pod_bands.conf
+    # osw's nl80211 driver dumps station and survey statistics only for phys a
+    # platform names (default NONE): without these, owm publishes no client or
+    # survey reports (Wifi_Stats_Config underruns every period)
+    {
+        echo "OSW_DRV_NL80211_DUMP_STA_IMPL_PHY_$phy=OSW_DRV_NL80211_DUMP_STA_IMPL_DEFAULT"
+        echo "OSW_DRV_NL80211_DUMP_SURVEY_IMPL_PHY_$phy=OSW_DRV_NL80211_DUMP_SURVEY_IMPL_ABSOLUTE"
+    } >> /run/opensync/osw/90_mvx_pod_bands.conf
     vif=bhaul-sta-$band
     del='{"op":"delete","table":"Wifi_VIF_Config","where":[["if_name","==","'"$vif"'"]]},
       {"op":"delete","table":"Wifi_Radio_Config","where":[["if_name","==","'"$phy"'"]]},

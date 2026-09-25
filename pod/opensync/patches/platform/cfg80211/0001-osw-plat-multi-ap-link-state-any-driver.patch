@@ -1,0 +1,26 @@
+diff --git a/src/lib/osw/src/osw_plat_cfg80211.c b/src/lib/osw/src/osw_plat_cfg80211.c
+index 68fdd87..ba8d1a1 100644
+--- a/src/lib/osw/src/osw_plat_cfg80211.c
++++ b/src/lib/osw/src/osw_plat_cfg80211.c
+@@ -914,6 +914,21 @@ osw_plat_cfg80211_fix_vif_state_cb(
+     struct osw_drv_vif_sta_network *snet;
+     struct osw_drv_vif_state_sta *ssta = &state->u.sta;
+ 
++    /* opensync-lab: mirror the Multi-AP state of the connected network for every
++     * driver, not only the known (MediaTek) ones: mac80211_hwsim is "unknown", and
++     * without it Wifi_VIF_State never shows multi_ap=backhaul_sta, so cm never
++     * adopts a working 4-address Multi-AP backhaul (WDS) station as its uplink.
++     * Nothing here is driver specific; the driver fixups below stay guarded. */
++    if (state->vif_type == OSW_VIF_STA &&
++        ssta->link.status == OSW_DRV_VIF_STATE_STA_LINK_CONNECTED) {
++        for (snet = ssta->network; snet != NULL; snet = snet->next) {
++            if (memcmp(&snet->ssid, &ssta->link.ssid, sizeof(snet->ssid)) == 0) {
++                ssta->link.multi_ap = snet->multi_ap;
++                break;
++            }
++        }
++    }
++
+     if (osw_plat_cfg80211_drv_id_is_unknown(phy_name)) return;
+ 
+     switch (state->vif_type) {

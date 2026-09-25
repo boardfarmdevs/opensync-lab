@@ -17,6 +17,7 @@ h2 { font-size: 22px; margin: 44px 0 12px; padding-top: 6px; border-top: 1px sol
 h3 { font-size: 16px; margin: 26px 0 8px; color: #cdd6f6; }
 p { margin: 10px 0; } ul, ol { padding-left: 22px; } li { margin: 4px 0; }
 .lead { font-size: 18px; color: var(--muted); max-width: 760px; }
+.fits { color: var(--muted); max-width: 760px; font-size: 14.5px; line-height: 1.6; }
 
 /* ---- layout */
 .shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
