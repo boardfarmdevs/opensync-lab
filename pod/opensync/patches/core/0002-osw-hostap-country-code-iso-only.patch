@@ -1,0 +1,30 @@
+diff --git a/src/lib/osw/src/osw_hostap_conf.c b/src/lib/osw/src/osw_hostap_conf.c
+index f4b6fb88..075962d5 100644
+--- a/src/lib/osw/src/osw_hostap_conf.c
++++ b/src/lib/osw/src/osw_hostap_conf.c
+@@ -836,11 +836,24 @@ osw_hostap_conf_osw_wpa_to_width(const struct osw_drv_vif_config_ap *ap,
+     }
+ }
+ 
++/* opensync-lab: only an ISO 3166 alpha-2 code (two letters) is a country.
++ * cfg80211 reports special domains with digits: "00" (world), "98"
++ * (intersected), "99" (a driver's custom domain, e.g. mac80211_hwsim's). hostapd
++ * rejects them as country_code, so no BSS starts; with ieee80211d it would also
++ * try to set the host's regulatory domain from them. */
++static bool
++osw_hostap_conf_is_country(const char *ccode)
++{
++    return strlen(ccode) == 2
++        && ccode[0] >= 'A' && ccode[0] <= 'Z'
++        && ccode[1] >= 'A' && ccode[1] <= 'Z';
++}
++
+ static void
+ osw_hostap_conf_osw_wpa_to_country_code(const struct osw_drv_phy_config *phy,
+                                         struct osw_hostap_conf_ap_config *conf)
+ {
+-    if (strlen(phy->reg_domain.ccode) > 1) {
++    if (osw_hostap_conf_is_country(phy->reg_domain.ccode)) {
+         OSW_HOSTAP_CONF_SET_BUF(conf->country_code, phy->reg_domain.ccode);
+         OSW_HOSTAP_CONF_SET_VAL(conf->ieee80211d, 1);
+         OSW_HOSTAP_CONF_SET_VAL(conf->ieee80211h, 1);

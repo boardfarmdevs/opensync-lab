@@ -1,0 +1,104 @@
+opensync-lab: report the association request IEs (assoc_ies).
+
+OSW reads a station's capabilities from the elements of its (Re)Association
+Request: hostapd's STA output and its AP-STA-CONNECTED event are expected to
+carry them as assoc_ies=<hex> (osw_hostap.c, osw_drv_nl80211.c). Upstream
+hostapd reports neither, so owm treats every station as BTM-incapable
+(assoc_req_info.wnm_bss_trans) and its steering can only deauthenticate. Keep
+a copy of the elements (from the SSID element on, as OSW parses them) and
+report them in both places.
+
+--- a/src/ap/ctrl_iface_ap.c
++++ b/src/ap/ctrl_iface_ap.c
+@@ -373,6 +373,15 @@ static int hostapd_ctrl_iface_sta_mib(struct hostapd_data *hapd,
+ 		len += os_snprintf(buf + len, buflen - len, "\n");
+ 	}
+ 
++	if (sta->assoc_req_ies &&
++	    buflen - len > 11 + 2 * wpabuf_len(sta->assoc_req_ies)) {
++		len += os_snprintf(buf + len, buflen - len, "assoc_ies=");
++		len += wpa_snprintf_hex(buf + len, buflen - len,
++					wpabuf_head_u8(sta->assoc_req_ies),
++					wpabuf_len(sta->assoc_req_ies));
++		len += os_snprintf(buf + len, buflen - len, "\n");
++	}
++
+ 	if (sta->flags & WLAN_STA_WDS && sta->ifname_wds) {
+ 		ret = os_snprintf(buf + len, buflen - len,
+ 				  "wds_sta_ifname=%s\n", sta->ifname_wds);
+--- a/src/ap/ieee802_11.c
++++ b/src/ap/ieee802_11.c
+@@ -4906,6 +4906,8 @@ static void handle_assoc(struct hostapd_data *hapd,
+ 	resp = check_assoc_ies(hapd, sta, pos, left, reassoc);
+ 	if (resp != WLAN_STATUS_SUCCESS)
+ 		goto fail;
++	wpabuf_free(sta->assoc_req_ies);
++	sta->assoc_req_ies = wpabuf_alloc_copy(pos, left);
+ 	omit_rsnxe = !get_ie(pos, left, WLAN_EID_RSNX);
+ 
+ 	if (hostapd_get_aid(hapd, sta) < 0) {
+--- a/src/ap/sta_info.c
++++ b/src/ap/sta_info.c
+@@ -346,6 +346,7 @@ void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta)
+ #endif /* CONFIG_INTERWORKING */
+ 
+ 	wpabuf_free(sta->wps_ie);
++	wpabuf_free(sta->assoc_req_ies);
+ 	wpabuf_free(sta->p2p_ie);
+ 	wpabuf_free(sta->hs20_ie);
+ 	wpabuf_free(sta->roaming_consortium);
+@@ -1309,6 +1310,7 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 		const char *keyid;
+ 		char dpp_pkhash_buf[100];
+ 		char keyid_buf[100];
++		char *ies_buf = NULL;
+ 		char ip_addr[100];
+ 
+ 		dpp_pkhash_buf[0] = '\0';
+@@ -1341,15 +1343,32 @@ void ap_sta_set_authorized(struct hostapd_data *hapd, struct sta_info *sta,
+ 					 dpp_pkhash, SHA256_MAC_LEN);
+ 		}
+ 
+-		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED "%s%s%s%s",
+-			buf, ip_addr, keyid_buf, dpp_pkhash_buf);
++		if (sta->assoc_req_ies) {
++			const char *prefix = " assoc_ies=";
++			size_t plen = os_strlen(prefix);
++			size_t ilen = plen + 2 * wpabuf_len(sta->assoc_req_ies) + 1;
++
++			ies_buf = os_malloc(ilen);
++			if (ies_buf) {
++				os_strlcpy(ies_buf, prefix, ilen);
++				wpa_snprintf_hex(&ies_buf[plen], ilen - plen,
++						 wpabuf_head_u8(sta->assoc_req_ies),
++						 wpabuf_len(sta->assoc_req_ies));
++			}
++		}
++
++		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_CONNECTED "%s%s%s%s%s",
++			buf, ip_addr, keyid_buf, dpp_pkhash_buf,
++			ies_buf ? ies_buf : "");
+ 
+ 		if (hapd->msg_ctx_parent &&
+ 		    hapd->msg_ctx_parent != hapd->msg_ctx)
+ 			wpa_msg_no_global(hapd->msg_ctx_parent, MSG_INFO,
+-					  AP_STA_CONNECTED "%s%s%s%s",
++					  AP_STA_CONNECTED "%s%s%s%s%s",
+ 					  buf, ip_addr, keyid_buf,
+-					  dpp_pkhash_buf);
++					  dpp_pkhash_buf,
++					  ies_buf ? ies_buf : "");
++		os_free(ies_buf);
+ 	} else {
+ 		wpa_msg(hapd->msg_ctx, MSG_INFO, AP_STA_DISCONNECTED "%s", buf);
+ 
+--- a/src/ap/sta_info.h
++++ b/src/ap/sta_info.h
+@@ -198,6 +198,7 @@ struct sta_info {
+ #endif /* CONFIG_INTERWORKING || CONFIG_DPP */
+ 
+ 	struct wpabuf *wps_ie; /* WPS IE from (Re)Association Request */
++	struct wpabuf *assoc_req_ies; /* IEs of the last (Re)Association Request */
+ 	struct wpabuf *p2p_ie; /* P2P IE from (Re)Association Request */
+ 	struct wpabuf *hs20_ie; /* HS 2.0 IE from (Re)Association Request */
+ 	/* Hotspot 2.0 Roaming Consortium from (Re)Association Request */

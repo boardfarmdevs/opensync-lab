@@ -41,6 +41,8 @@ WORKDIR /usr/src/hostap
 # OpenSync's hostapd patches that matter for a pod (from opensync-sdk-openwrt's
 # overlay, 991 adapted to this commit): hostapd on OVS bridges (br-home) and
 # the NL80211-CMD-FRAME / EVT-FRAME-* events platform-cfg80211's bsal expects.
+# Ours, for owm steering: 992 a deny-list entry blocks new associations only;
+# 993 STA output and AP-STA-CONNECTED carry assoc_ies (station capabilities).
 COPY hostap-patches /tmp/hostap-patches
 RUN git checkout -q $HOSTAP_COMMIT \
     && for p in /tmp/hostap-patches/*.patch; do patch -p1 -s < "$p" || exit 1; done \
