@@ -1,0 +1,22 @@
+diff --git a/src/lib/ow/src/ow_steer_policy_btm_response.c b/src/lib/ow/src/ow_steer_policy_btm_response.c
+index bb1fe1f3..e00195af 100644
+--- a/src/lib/ow/src/ow_steer_policy_btm_response.c
++++ b/src/lib/ow/src/ow_steer_policy_btm_response.c
+@@ -114,8 +114,16 @@ ow_steer_policy_btm_response_recalc_cb(struct ow_steer_policy *policy,
+     struct ow_steer_policy_btm_response *btm_response_policy = ow_steer_policy_get_priv(policy);
+ 
+     /* proceed only if btm response is fresh */
++    /* opensync-lab: the age was OSW_TIME_SEC(delta), a seconds-to-nanoseconds
++     * conversion applied to nanoseconds and stored in an int: it overflowed, so
++     * a response was never too old, and with none received at all (timestamp 0)
++     * every candidate was masked out of scope: no steering could pick a target. */
++    if (btm_response_policy->neigh_timestamp == 0) {
++        LOGT(LOG_GET_PREFIX(btm_response_policy->base, "no btm response yet - skipping"));
++        return;
++    }
+     const uint64_t response_t_delta = osw_time_mono_clk() - btm_response_policy->neigh_timestamp;
+-    const int response_age = OSW_TIME_SEC(response_t_delta);
++    const double response_age = OSW_TIME_TO_DBL(response_t_delta);
+     if (response_age > OW_STEER_POLICY_RESPONSE_RELEVANCE_SEC) {
+         LOGT(LOG_GET_PREFIX(btm_response_policy->base, "btm response too old - skipping"));
+         return;

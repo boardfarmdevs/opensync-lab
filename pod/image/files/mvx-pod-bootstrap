@@ -44,10 +44,12 @@ for phy in $(ls /sys/class/ieee80211 | sort -V); do
     echo "OSW_DRV_NL80211_PHY_BAND_$phy=$fb" >> /run/opensync/osw/90_mvx_pod_bands.conf
     # osw's nl80211 driver dumps station and survey statistics only for phys a
     # platform names (default NONE): without these, owm publishes no client or
-    # survey reports (Wifi_Stats_Config underruns every period)
+    # survey reports (Wifi_Stats_Config underruns every period). ACLs likewise: without
+    # hostapd's ACL, owm's steering blocks never apply and its kicks wait forever.
     {
         echo "OSW_DRV_NL80211_DUMP_STA_IMPL_PHY_$phy=OSW_DRV_NL80211_DUMP_STA_IMPL_DEFAULT"
         echo "OSW_DRV_NL80211_DUMP_SURVEY_IMPL_PHY_$phy=OSW_DRV_NL80211_DUMP_SURVEY_IMPL_ABSOLUTE"
+        echo "OSW_DRV_NL80211_ACL_IMPL_PHY_$phy=OSW_DRV_NL80211_ACL_IMPL_HOSTAP"
     } >> /run/opensync/osw/90_mvx_pod_bands.conf
     vif=bhaul-sta-$band
     del='{"op":"delete","table":"Wifi_VIF_Config","where":[["if_name","==","'"$vif"'"]]},
