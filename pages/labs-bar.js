@@ -4,14 +4,16 @@
  * OpenSync adapter, on the way to one EasyMesh system on wmediumd with native
  * agents and OpenSync pods together.
  *
- * Shared: the same file in meta-cmf-bananapi-vcpe, prplmesh-lab, emosa-lab and
- * opensync-lab (pages/labs-bar.js). Change it in all four. pages/finish-site.py
+ * Shared: the same file in easymesh-labs (the umbrella, whose site the home link
+ * opens) and the four projects: meta-cmf-bananapi-vcpe, prplmesh-lab, emosa-lab,
+ * opensync-lab (pages/labs-bar.js). Change it in all five. pages/finish-site.py
  * adds it to every built page:
  *   <script src="labs-bar.js" data-project="emosa-lab" defer></script>
  * A full-screen tool opts out with <meta name="labs-bar" content="off">.
  */
 (() => {
   const OWNER = 'boardfarmdevs';
+  const HOME = 'easymesh-labs';
   const GOAL =
     'One EasyMesh system on wmediumd: native EasyMesh agents and OpenSync pods, through the adapter, together';
   const GROUPS = [
@@ -127,8 +129,10 @@ html[data-theme="dark"] #labs-bar, #labs-bar.lb-dark {
   nav.setAttribute('aria-label', 'Lab projects');
   const row = document.createElement('div');
   row.className = 'lb-row';
-  row.append(link(`https://github.com/${OWNER}`, `${OWNER} labs`, 'lb-home', GOAL));
-  let known = false;
+  const home = link(`https://${OWNER}.github.io/${HOME}/`, `${OWNER} labs`, 'lb-home', GOAL);
+  if (current === HOME) home.setAttribute('aria-current', 'page');
+  row.append(home);
+  let known = current === HOME;
   for (const group of GROUPS) {
     const box = document.createElement('div');
     box.className = 'lb-group';

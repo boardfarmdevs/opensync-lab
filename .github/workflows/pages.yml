@@ -1,4 +1,4 @@
-# The Pages workflow of the four lab sites (meta-cmf-bananapi-vcpe, prplmesh-lab,
+# The Pages workflow of the lab sites (easymesh-labs and meta-cmf-bananapi-vcpe, prplmesh-lab,
 # emosa-lab, opensync-lab): the same file in each. The repository's own step is
 # pages/build (into dist/site); pages/finish-site.py adds the labs bar and build.json.
 # Pages source: GitHub Actions. Deploys from main only.
