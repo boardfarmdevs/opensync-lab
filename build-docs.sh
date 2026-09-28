@@ -11,7 +11,7 @@
 #   build-docs.sh serve [PORT]      preview the site on http://localhost:PORT/ (default 8000)
 #
 # The site is static: the Pages workflow (.github/workflows/pages.yml, shared by
-# the four lab sites) publishes docs/ from main through pages/build, with the
+# the five lab sites) publishes docs/ from main through pages/build, with the
 # labs bar added. The viewer on it is the same file local-noc serves; it replays
 # the recording instead of polling a live local-noc.
 

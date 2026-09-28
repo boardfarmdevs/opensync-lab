@@ -1,12 +1,12 @@
 /*
- * The labs bar: one line at the top of every page of the four boardfarmdevs lab
- * sites. The projects serve two goals, EasyMesh optimizer development and the
- * OpenSync adapter, on the way to one EasyMesh system on wmediumd with native
- * agents and OpenSync pods together.
+ * The labs bar: one line at the top of every page of the five boardfarmdevs lab
+ * sites. The projects serve three goals, EasyMesh optimizer development, the
+ * OpenSync adapter and EasyMesh on physical hardware, on the way to one EasyMesh
+ * system on wmediumd with native agents and OpenSync pods together.
  *
  * Shared: the same file in easymesh-labs (the umbrella, whose site the home link
- * opens) and the four projects: meta-cmf-bananapi-vcpe, prplmesh-lab, emosa-lab,
- * opensync-lab (pages/labs-bar.js). Change it in all five. pages/finish-site.py
+ * opens) and the five projects: meta-cmf-bananapi-vcpe, prplmesh-lab, emosa-lab,
+ * opensync-lab, easymesh-lab (pages/labs-bar.js). Change it in all six. pages/finish-site.py
  * adds it to every built page:
  *   <script src="labs-bar.js" data-project="emosa-lab" defer></script>
  * A full-screen tool opts out with <meta name="labs-bar" content="off">.
@@ -46,6 +46,17 @@
           repo: 'opensync-lab',
           name: 'OpenSync',
           about: 'A representative router and OpenSync pods with virtual radios and clients',
+        },
+      ],
+    },
+    {
+      name: 'Physical EasyMesh',
+      short: 'Physical',
+      projects: [
+        {
+          repo: 'easymesh-lab',
+          name: 'Protocol lab',
+          about: 'A from-scratch EasyMesh controller and teaching panel with certified extenders and real clients',
         },
       ],
     },

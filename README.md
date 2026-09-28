@@ -1,11 +1,12 @@
 # opensync-lab
 
-<!-- labs block: the same in the four lab repositories -->
-**Site:** <https://boardfarmdevs.github.io/opensync-lab/>. Part of the boardfarmdevs labs, which serve two
+<!-- labs block: the same in the five lab repositories -->
+**Site:** <https://boardfarmdevs.github.io/opensync-lab/>. Part of the boardfarmdevs labs, which serve three
 goals: the EasyMesh optimizer ([RDK EasyMesh](https://boardfarmdevs.github.io/meta-cmf-bananapi-vcpe/),
-[prplMesh](https://boardfarmdevs.github.io/prplmesh-lab/)) and the OpenSync adapter
-([EMOSA](https://boardfarmdevs.github.io/emosa-lab/), [OpenSync](https://boardfarmdevs.github.io/opensync-lab/)), on the way to one
-EasyMesh system on wmediumd with native agents and OpenSync pods together.
+[prplMesh](https://boardfarmdevs.github.io/prplmesh-lab/)), the OpenSync adapter
+([EMOSA](https://boardfarmdevs.github.io/emosa-lab/), [OpenSync](https://boardfarmdevs.github.io/opensync-lab/))
+and EasyMesh on physical hardware ([Protocol lab](https://boardfarmdevs.github.io/easymesh-lab/)),
+on the way to one EasyMesh system on wmediumd with native agents and OpenSync pods together.
 
 Reproducible, one-command lab for an **OpenSync-enabled containerized RDK-B
 gateway** (the LGI "mvx" products, starting with **mv3**). It:
