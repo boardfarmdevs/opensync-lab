@@ -3,7 +3,9 @@
 <!-- labs block: the same in every repository of the EasyMesh labs, but for the Site line -->
 **Site:** <https://boardfarmdevs.github.io/opensync-lab/>.
 The [EasyMesh labs](https://boardfarmdevs.github.io/easymesh-labs/) serve three
-goals: EasyMesh optimizer development in a rich virtual lab, on both stacks
+goals: EasyMesh optimizer development
+([easymesh-optimizer](https://github.com/boardfarmdevs/easymesh-optimizer)) in a rich
+virtual lab, on both stacks
 ([RDK EasyMesh](https://boardfarmdevs.github.io/meta-cmf-bananapi-vcpe/),
 [prplMesh](https://boardfarmdevs.github.io/prplmesh-lab/)); unchanged OpenSync
 pods as EasyMesh agents under a local controller, without the OpenSync cloud

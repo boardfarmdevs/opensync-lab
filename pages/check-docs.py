@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """The documentation check of the EasyMesh labs: the same file in every repository
-(easymesh-labs and meta-cmf-bananapi-vcpe, prplmesh-lab, easymesh-medium, emosa-lab,
-opensync-lab, easymesh-lab); change it in all of them. The Pages workflow (checks.yml in
-easymesh-medium) runs it from the repository's root:
+(easymesh-labs and meta-cmf-bananapi-vcpe, prplmesh-lab, easymesh-medium,
+easymesh-optimizer, emosa-lab, opensync-lab, easymesh-lab); change it in all of them. The
+Pages workflow (checks.yml in easymesh-medium and easymesh-optimizer) runs it from the
+repository's root:
 
     python3 pages/check-docs.py
 
@@ -23,7 +24,9 @@ OPEN = (
 )
 CLOSE = "<!-- /labs block -->"
 BODY = """The [EasyMesh labs](https://boardfarmdevs.github.io/easymesh-labs/) serve three
-goals: EasyMesh optimizer development in a rich virtual lab, on both stacks
+goals: EasyMesh optimizer development
+([easymesh-optimizer](https://github.com/boardfarmdevs/easymesh-optimizer)) in a rich
+virtual lab, on both stacks
 ([RDK EasyMesh](https://boardfarmdevs.github.io/meta-cmf-bananapi-vcpe/),
 [prplMesh](https://boardfarmdevs.github.io/prplmesh-lab/)); unchanged OpenSync
 pods as EasyMesh agents under a local controller, without the OpenSync cloud
