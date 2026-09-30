@@ -1,12 +1,20 @@
 # opensync-lab
 
-<!-- labs block: the same in the five lab repositories -->
-**Site:** <https://boardfarmdevs.github.io/opensync-lab/>. Part of the boardfarmdevs labs, which serve three
-goals: the EasyMesh optimizer ([RDK EasyMesh](https://boardfarmdevs.github.io/meta-cmf-bananapi-vcpe/),
-[prplMesh](https://boardfarmdevs.github.io/prplmesh-lab/)), the OpenSync adapter
-([EMOSA](https://boardfarmdevs.github.io/emosa-lab/), [OpenSync](https://boardfarmdevs.github.io/opensync-lab/))
-and EasyMesh on physical hardware ([Protocol lab](https://boardfarmdevs.github.io/easymesh-lab/)),
-on the way to one EasyMesh system on wmediumd with native agents and OpenSync pods together.
+<!-- labs block: the same in every repository of the EasyMesh labs, but for the Site line -->
+**Site:** <https://boardfarmdevs.github.io/opensync-lab/>.
+The [EasyMesh labs](https://boardfarmdevs.github.io/easymesh-labs/) serve three
+goals: EasyMesh optimizer development in a rich virtual lab, on both stacks
+([RDK EasyMesh](https://boardfarmdevs.github.io/meta-cmf-bananapi-vcpe/),
+[prplMesh](https://boardfarmdevs.github.io/prplmesh-lab/)); unchanged OpenSync
+pods as EasyMesh agents under a local controller, without the OpenSync cloud
+([EMOSA](https://boardfarmdevs.github.io/emosa-lab/), with the
+[OpenSync lab](https://boardfarmdevs.github.io/opensync-lab/)'s pods); and
+EasyMesh on physical hardware
+([Protocol lab](https://boardfarmdevs.github.io/easymesh-lab/)). Two core
+components carry them: the RF medium
+([easymesh-medium](https://github.com/boardfarmdevs/easymesh-medium)) and EMOSA's
+OVSDB ⇄ EasyMesh conversion. The rest is infrastructure and learning around them.
+<!-- /labs block -->
 
 Reproducible, one-command lab for an **OpenSync-enabled containerized RDK-B
 gateway** (the LGI "mvx" products, starting with **mv3**). It:
@@ -17,7 +25,7 @@ gateway** (the LGI "mvx" products, starting with **mv3**). It:
    `~/yocto/mv3-lxd-r25-oe40-0808`). It uses the local repo mirror
    `~/yocto/repo_reference/mv3-r25-oe40-repo_reference`, so it also works
    offline without the bitbucket VPN.
-2. **Creates an LXD VM** (e.g. `opensync-lab-0923`) as an isolated lab host. Inside it:
+2. **Creates an LXD VM** (`opensync-lab-MMDD` by default) as an isolated lab host. Inside it:
    - **boardfarm-lab** Docker containers provide the WAN side: a Kea DHCP server
      plus a NAT gateway (`dhcp-cpe1`, `wan-cpe1` on `br-wan101`);
    - a **mac80211_hwsim radio pool** supplies simulated Wi-Fi radios;
@@ -51,7 +59,12 @@ gateway** (the LGI "mvx" products, starting with **mv3**). It:
 
 ## Status
 
-Working end to end, reproduced from a fresh VM with the scripts alone (2026-09-23, VM `opensync-lab-0923`):
+Working end to end, reproduced from a fresh VM with the scripts alone on
+2026-09-23. That VM is not kept: the lab now runs as the base of the EMOSA
+reference lab, where EMOSA and a prplMesh controller take the pods over
+(easymesh-labs
+[lab configurations](https://github.com/boardfarmdevs/easymesh-labs/blob/main/docs/lab-configurations.md)
+#3 and #4). The results of that reproduction:
 
 | Goal | Result |
 |---|---|
