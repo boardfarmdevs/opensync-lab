@@ -79,7 +79,7 @@ There is one script per stage; each subcommand can be re-run safely.
 ./build-mvx.sh build     # -> ~/yocto/mv3-lxd-r25-oe40-<MMDD>
 ./build-mvx.sh status
 
-# 2. lab VM: docker + boardfarm WAN side, nested LXD, mac80211_hwsim pool
+# 2. lab VM: docker + boardfarm WAN side, nested LXD, mac80211_hwsim pool; no automatic updates
 ./setup-vm.sh all        # create + provision opensync-lab-<MMDD>
 ./setup-vm.sh status | shell | stop | start | delete
 

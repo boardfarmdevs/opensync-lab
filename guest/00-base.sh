@@ -2,6 +2,29 @@
 # Base lab host: packages, Docker, nested LXD (snap, held), uv, hwsim module.
 source "$(dirname "$0")/common.sh"
 
+# A lab VM takes no automatic updates: an unattended upgrade restarts services under a
+# running lab. apt-get and snap refresh by hand keep working.
+no_automatic_updates() {
+    systemctl mask --now apt-daily.timer apt-daily-upgrade.timer
+    # a run in flight holds the dpkg lock: it finishes first
+    while systemctl show -p ActiveState --value apt-daily.service apt-daily-upgrade.service \
+        | grep -Eq '^(activating|active)$'; do
+        sleep 2
+    done
+    systemctl mask apt-daily.service apt-daily-upgrade.service
+    systemctl disable --now unattended-upgrades.service 2>/dev/null || true
+    printf '%s\n' 'APT::Periodic::Update-Package-Lists "0";' \
+        'APT::Periodic::Unattended-Upgrade "0";' \
+        > "${APT_CONF_DIR:-/etc/apt/apt.conf.d}/99-lab-no-automatic-updates"
+    if command -v snap >/dev/null 2>&1; then
+        snap wait system seed.loaded
+        snap refresh --hold
+    fi
+}
+
+log "base: no automatic updates"
+no_automatic_updates >/dev/null 2>&1
+
 log "base: apt packages"
 apt-get update -q
 apt-get install -y -q --no-install-recommends \
