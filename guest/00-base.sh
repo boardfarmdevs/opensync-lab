@@ -22,8 +22,19 @@ no_automatic_updates() {
     fi
 }
 
-log "base: no automatic updates"
+# Ubuntu installs LXD on demand, from its own channel, the first time anything runs lxc or
+# lxd in the VM (lxd-installer). The lab installs its own LXD below: no on-demand install,
+# and one already under way finishes first.
+no_on_demand_lxd() {
+    systemctl mask --now lxd-installer.socket 2>/dev/null || true
+    while snap changes 2>/dev/null | grep -Eq '^[0-9]+ +(Do|Doing|Wait) .*Install "lxd"'; do
+        sleep 2
+    done
+}
+
+log "base: no automatic updates, no on-demand LXD"
 no_automatic_updates >/dev/null 2>&1
+no_on_demand_lxd
 
 log "base: apt packages"
 apt-get update -q
