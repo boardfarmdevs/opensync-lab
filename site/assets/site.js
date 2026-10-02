@@ -19,7 +19,7 @@ function nav() {
     PAGES.map(([g, items]) => `<div class="grp">${g}</div>` +
       items.map(([h, t]) => `<a class="item${h === here ? " on" : ""}" href="${h}">${t}</a>`).join("")).join("") +
     `<div class="grp">Source</div><a class="item" href="${REPO}">GitHub repository</a>` +
-    `<a class="item" href="${REPO}/blob/main/docs/PLAN.md">Implementation plan</a>` +
+    `<a class="item" href="${REPO}/blob/main/docs/project/implementation-plan.md">Implementation plan</a>` +
     `<div class="foot">Generated from the repository by <code>build-docs.sh</code>.</div>`;
   const shell = document.querySelector(".shell");
   shell.prepend(el);

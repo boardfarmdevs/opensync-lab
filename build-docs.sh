@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# build-docs.sh - the documentation site (docs/, served by GitHub Pages).
+# build-docs.sh - the documentation site (site/, served by GitHub Pages).
 #
 #   build-docs.sh viewer            copy local-noc's topology viewer into the site, unchanged
-#   build-docs.sh reference         config, commands, scripts, workarounds -> docs/data/reference.json
+#   build-docs.sh reference         config, commands, scripts, workarounds -> site/data/reference.json
 #   build-docs.sh capture [--frames N] [--interval S]
 #                                   record the running lab: topology frames, every node's raw
 #                                   tables (secrets redacted), the check results
@@ -11,7 +11,7 @@
 #   build-docs.sh serve [PORT]      preview the site on http://localhost:PORT/ (default 8000)
 #
 # The site is static: the Pages workflow (.github/workflows/pages.yml, shared by
-# the five lab sites) publishes docs/ from main through pages/build, with the
+# the five lab sites) publishes site/ from main through pages/build, with the
 # labs bar added. The viewer on it is the same file local-noc serves; it replays
 # the recording instead of polling a live local-noc.
 
@@ -19,7 +19,7 @@ set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/lib/common.sh"
 source "$MVX_ROOT/lib/vm.sh"
 
-SITE=$MVX_ROOT/docs
+SITE=$MVX_ROOT/site
 
 noc_url() {
     local listen
@@ -29,7 +29,7 @@ noc_url() {
 
 cmd_viewer() {
     install -D -m 0644 "$MVX_ROOT/local-noc/webui/index.html" "$SITE/topology/index.html"
-    log "viewer: local-noc/webui/index.html -> docs/topology/"
+    log "viewer: local-noc/webui/index.html -> site/topology/"
 }
 
 cmd_reference() {

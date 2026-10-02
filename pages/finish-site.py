@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Finish a built Pages site: the labs bar on every page, .nojekyll and build.json.
 
-Shared: the same file in easymesh-labs and the five projects (meta-cmf-bananapi-vcpe,
-prplmesh-lab, emosa-lab, opensync-lab, easymesh-lab): pages/finish-site.py. Change it in all six.
+Shared: the same file (pages/finish-site.py) in every repository of the EasyMesh labs with
+a site; change it in all of them.
 
     python3 pages/finish-site.py [SITE]          (default dist/site)
 

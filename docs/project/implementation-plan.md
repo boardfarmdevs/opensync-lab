@@ -1,5 +1,7 @@
 # opensync-lab: implementation plan
 
+[Documents](../README.md)
+
 Date: 2026-09-22 · Host: rev140 · First target: **mv3, r25-oe40, LXD (exm-qemux86-mv3)**
 
 ## 0. Goal and scope
@@ -173,7 +175,7 @@ opensync-lab/
   setup-vm.sh                     stage 2: create + provision the lab VM (host -> VM)
   deploy-mvx.sh                   stage 3: push image, launch, checks, extender (host -> VM)
   build-pod.sh                    OpenSync 6.6.1.0 extender (pod) image (host, docker)
-  build-docs.sh                   documentation site: viewer, reference, lab recording (docs/)
+  build-docs.sh                   documentation site: viewer, reference, lab recording (site/)
   config/
     mvx.conf                      defaults (env-overridable)
     local.conf                    untracked; values persisted by the scripts (VM name, ...)
@@ -207,8 +209,8 @@ opensync-lab/
   boardfarm/
     lab/opensync-lab.json         single-CPE mv3 lab (overlaid into boardfarm lab/; bf-lab only)
     patches/                      fixes to boardfarm-lab-staging
-  docs/                           GitHub Pages site (index.html, pages, assets/, data/, topology/)
-    PLAN.md
+  site/                           GitHub Pages site (index.html, pages, assets/, data/, topology/)
+  docs/                           the documents (this plan in project/)
   logs/                           (gitignored) per-run logs
 ```
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Data for the documentation site (docs/), for build-docs.sh.
+"""Data for the documentation site (site/), for build-docs.sh.
 
   docs.py reference <repo> <out.json>
       config variables (config/mvx.conf), the entry scripts' usage, the guest
-      scripts' purpose, the workaround and status tables (README.md) -- taken
+      scripts' purpose, the workaround and status tables (docs/reference/workarounds.md,
+      docs/records/fresh-vm-reproduction.md) -- taken
       from the repo itself, so the site cannot drift from it.
 
   docs.py capture <base-url> <site-topology-dir> <frames> <interval> [checks.json]
@@ -88,7 +89,8 @@ def md_table(text, heading):
 
 
 def reference(repo, out):
-    readme = open(os.path.join(repo, "README.md")).read()
+    workarounds = open(os.path.join(repo, "docs", "reference", "workarounds.md")).read()
+    record = open(os.path.join(repo, "docs", "records", "fresh-vm-reproduction.md")).read()
     scripts = {}
     for name in ("build-mvx.sh", "setup-vm.sh", "deploy-mvx.sh", "build-pod.sh", "build-docs.sh"):
         p = os.path.join(repo, name)
@@ -105,8 +107,8 @@ def reference(repo, out):
         "scripts": scripts,
         "guests": guests,
         "workarounds": [{"problem": r[0], "workaround": r[1], "fix": r[2]}
-                        for r in md_table(readme, "### Workarounds") if len(r) >= 3],
-        "status": [{"goal": r[0], "result": r[1]} for r in md_table(readme, "## Status") if len(r) >= 2],
+                        for r in md_table(workarounds, "# Workarounds") if len(r) >= 3],
+        "status": [{"goal": r[0], "result": r[1]} for r in md_table(record, "## Status") if len(r) >= 2],
     }
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, "w") as f:

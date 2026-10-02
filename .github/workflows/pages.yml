@@ -1,7 +1,7 @@
-# The Pages workflow of the lab sites (easymesh-labs and meta-cmf-bananapi-vcpe, prplmesh-lab,
-# emosa-lab, opensync-lab, easymesh-lab): the same file in each. The repository's own step is
-# pages/build (into dist/site); pages/finish-site.py adds the labs bar and build.json;
-# pages/check-docs.py checks the labs block and the documentation's links first.
+# The Pages workflow of the EasyMesh labs' sites: the same file in every repository with a
+# site. The repository's own step is pages/build (into dist/site); pages/finish-site.py adds
+# the labs bar and build.json; pages/check-docs.py checks the labs block and the
+# documentation's links first.
 # Pages source: GitHub Actions. Deploys from main only.
 name: pages
 on:

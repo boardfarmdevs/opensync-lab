@@ -1,0 +1,22 @@
+# Workarounds
+
+[Documents](../README.md)
+
+What this lab works around, how, and where the real fix belongs. The site's reference page
+shows the same table (`build-docs.sh reference` reads it from here).
+
+| Problem | Lab workaround | Proper fix |
+|---|---|---|
+| mv3 LXD image selects no OpenSync NOC certificates (only `do_install:append:f5685` does), so `cm` stays in BACKOFF | `guest/50-opensync.sh` links `/usr/opensync/etc/certs/*` -> `theta-dev/` and restarts `cm` | `docs/proposals/0001-*.patch` for meta-lxd-mv3 (untested) |
+| With SON on, `dnsmasq` refuses to start (`bind-interfaces` + missing `wl0.1`/`wl1.1`), so LAN DHCP breaks | `fix_lan_dhcp` in `guest/common.sh` restarts it with `bind-dynamic` | same proposed patch (utopia) |
+| boardfarm `bf-wan` build: Debian bullseye security packages now 404 | `boardfarm/patches/0001` | boardfarm-lab-staging |
+| boardfarm `wan-cpe1`: docker 28+ can make the non-masqueraded eth1 the default route, so the WAN side has no internet | `boardfarm/patches/0002` | boardfarm-lab-staging |
+| The lab gives CPEs global IPv6 but rev140 has no IPv6 internet: `cm` prefers IPv6 and waits out a timeout per attempt | boardfarm rebuild hook makes `wan-cpe1` reject non-lab IPv6 (TCP reset), so `cm` fails over to IPv4 at once | a lab with IPv6 upstream (the hook then does nothing) |
+| hal-wifi-hwsim: (1) never reports the VAP security, so mv3's `wm` sees config ≠ state; this build's `wm` also re-applies non-home VIFs every 30 s regardless, and each re-apply restarted every BSS of the radio (`STOP_AP`), silently dropping associated stations; (2) its MLME never removes a station (no deauth/disassoc handling, stale entry on re-auth), so a returning STA never completes the 4-way handshake. Together the extender lost the backhaul and could not rejoin | `meta-mvx/` patches 0001 (report security and real BSS state, keep a running BSS running) and 0002 (forget a station on deauth/disassoc/re-auth), added by `build-mvx.sh` | hal-wifi-hwsim |
+| mv3's `cm` (OpenSync 4.4) picks the uplink's address family once: with a global IPv6 on erouter0 it takes IPv6 and never evaluates IPv4 until the IPv4 address changes. Whenever OpenSync (re)starts on a WAN that is already up (e.g. a cloud switch), it then retries IPv6 forever, and this lab has no IPv6 upstream. First boot also leaves `Connection_Manager_Uplink.ipv4` unset | `guest/50-opensync.sh`: while `cm` is not connected and there is no IPv6 internet, sets `ipv6=blocked` (and `ipv4=ready`) on the uplink and restarts `cm` via `Node_Services` | OpenSync cm2 / RDK target; or a lab with IPv6 upstream |
+| OpenSync 6.6.1.0 osw: `owm` aborts when its config sync has not settled in 180 s; with a `tx_chainmask` configured it never settles on mac80211_hwsim (no chains reported), so every pod dropped its backhaul, GRE and cloud session every 3 minutes | the pod bootstrap sets no `tx_chainmask` | hwsim / OpenSync osw (tolerate an unsupported chainmask) |
+| OpenSync 6.6.1.0: `cm2` builds an extender's GRE only for the STAs in `CONFIG_OVSDB_BOOTSTRAP_WIFI_STA_LIST`; the OVSDB bootstrap then needs unquoted `BACKHAUL_SSID/PASS` (the `local` provider quotes them) | our `HWSIM_POD` target sets the list; `mvx-local` provider unquoted | opensync-service-provider-local |
+| mac80211_hwsim radios are multi-band; OpenSync assumes one band per phy (duplicate channels, VIF naming) | `pod/opensync/patches/core/0001` (per-phy band filter), `build-pod.sh` band-by-position for `52_owm_prep.sh`, the pod's backhaul STA on 5G only | wmediumd/hwsim band config, or OpenSync |
+| opensync-platform-cfg80211 copies a station's Multi-AP state into Wifi_VIF_State only for MediaTek drivers (`mt76`, `mtk_wifi`); on mac80211_hwsim ("unknown") a working 4-address Multi-AP backhaul station stays `multi_ap=none`, so `cm` never adopts it as the uplink and OpenSync restarts to bootstrap | `pod/opensync/patches/platform/cfg80211/0001` (mirror the Multi-AP link state for every driver) | opensync-platform-cfg80211 |
+| Repo mirror is older than the 0808 build (11 pinned commits missing) | pin store `~/yocto/repo_reference/mvx-pins/<pins>` | refresh the mirror |
+| Shared sstate object with a stale absolute path (libwebsockets) | `build-mvx.sh` rebuilds such recipes locally | libwebsockets recipe |
