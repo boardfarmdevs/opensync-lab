@@ -24,6 +24,11 @@ Pod (any other node that reaches the controller -- over that tunnel):
   * fronthaul AP: Wifi_VIF_Config home-ap-<band> on the radio of --mesh-
     fronthaul-band, in br-home, with the home SSID/PSK, plus its
     Wifi_Inet_Config, and the radio's channel.
+  * Ethernet uplink (--mesh-eth-bridge, off by default): a pod whose uplink
+    in use is Ethernet (a wired extender) gets that uplink into the bridge
+    (Connection_Manager_Uplink.bridge, e.g. br-home), as the cloud does, so
+    its fronthaul is on the gateway's LAN. cm moves the port into the bridge
+    and its DHCP onto it; no GRE.
 """
 
 import asyncio
@@ -70,11 +75,13 @@ class Mesh:
         self.fh_band = args.mesh_fronthaul_band
         self.interval = args.mesh_interval
         self.stats_ms = args.mesh_stats_interval
+        self.eth_bridge = args.mesh_eth_bridge
         self.busy = set()                   # nodes with a reconcile in flight
 
     async def run(self):
-        log.info("mesh: gateway %s, backhaul %s '%s', pods get home-ap-%s '%s'",
-                 self.gateway, self.bhaul_if, self.bhaul[0], self.fh_band, self.home[0])
+        log.info("mesh: gateway %s, backhaul %s '%s', pods get home-ap-%s '%s'%s",
+                 self.gateway, self.bhaul_if, self.bhaul[0], self.fh_band, self.home[0],
+                 f", Ethernet uplinks into {self.eth_bridge}" if self.eth_bridge else "")
         while True:
             await asyncio.sleep(self.interval)
             for s in list(self.noc.sessions):
@@ -207,6 +214,8 @@ class Mesh:
 
     # -- pod -------------------------------------------------------------------
     async def pod_step(self, s):
+        if self.eth_bridge:
+            await self.eth_uplink_step(s)
         band, chan, ht = BANDS[self.fh_band]
         vif_name = f"home-ap-{self.fh_band}"
         radios = self.rows(s, "Wifi_Radio_Config", freq_band=band)
@@ -235,6 +244,15 @@ class Mesh:
         if ops:
             await self.transact(s, f"fronthaul {vif_name} on {radio['if_name']} ch{chan} '{self.home[0]}'", *ops)
 
+    async def eth_uplink_step(self, s):
+        """A wired extender: its Ethernet uplink in use goes into the bridge."""
+        for up in self.rows(s, "Connection_Manager_Uplink", if_type="eth", is_used=True):
+            if oset(up.get("bridge")) != [self.eth_bridge]:
+                await self.transact(s, f"Ethernet uplink {up['if_name']} into {self.eth_bridge}", {
+                    "op": "update", "table": "Connection_Manager_Uplink",
+                    "where": [["if_name", "==", up["if_name"]]],
+                    "row": {"bridge": self.eth_bridge}})
+
     @staticmethod
     def same(cur, want):
         """Compare a mirrored OVSDB value with a desired one."""
@@ -257,5 +275,8 @@ def add_args(ap):
     g.add_argument("--mesh-home-psk", default="opensync-lab-home-psk")
     g.add_argument("--mesh-fronthaul-band", default="24", choices=sorted(BANDS))
     g.add_argument("--mesh-interval", type=float, default=5.0)
+    g.add_argument("--mesh-eth-bridge", default="",
+                   help="bridge for a pod's Ethernet uplink in use (wired extender), e.g. br-home; "
+                        "empty = leave Ethernet uplinks alone (default)")
     g.add_argument("--mesh-stats-interval", type=int, default=5000,
                    help="gateway OVS counters refresh (ms) for the topology view; 0 = leave as is")
