@@ -29,7 +29,17 @@ Pod (any other node that reaches the controller -- over that tunnel):
     (Connection_Manager_Uplink.bridge, e.g. br-home), as the cloud does, so
     its fronthaul is on the gateway's LAN. cm moves the port into the bridge
     and its DHCP onto it; no GRE.
+  * backhaul parent (--mesh-pod-bhaul-band, off by default): a pod on an
+    Ethernet uplink offers the backhaul to further pods, as the gateway does:
+    its backhaul AP b-ap-<band> with the backhaul SSID/PSK, at the .1 of a
+    169.254.N.0/24 of its own with a DHCP range (a child's cm takes the .1 of
+    its subnet as its GRE peer), its own backhaul STA on that band off, and a
+    GRE per associated child into br-home -- the gateway's steps 1 and 3 on
+    the pod. Its fronthaul on the backhaul band is left out (radios with
+    room for one AP, e.g. MediaTek MT7921).
 """
+
+import zlib
 
 import asyncio
 import ipaddress
@@ -76,12 +86,15 @@ class Mesh:
         self.interval = args.mesh_interval
         self.stats_ms = args.mesh_stats_interval
         self.eth_bridge = args.mesh_eth_bridge
+        self.pod_bhaul_band = args.mesh_pod_bhaul_band
         self.busy = set()                   # nodes with a reconcile in flight
 
     async def run(self):
-        log.info("mesh: gateway %s, backhaul %s '%s', pods get home-ap-%s '%s'%s",
+        log.info("mesh: gateway %s, backhaul %s '%s', pods get home-ap-%s '%s'%s%s",
                  self.gateway, self.bhaul_if, self.bhaul[0], self.fh_band, self.home[0],
-                 f", Ethernet uplinks into {self.eth_bridge}" if self.eth_bridge else "")
+                 f", Ethernet uplinks into {self.eth_bridge}" if self.eth_bridge else "",
+                 f", wired pods are backhaul parents on {self.pod_bhaul_band}"
+                 if self.pod_bhaul_band else "")
         while True:
             await asyncio.sleep(self.interval)
             for s in list(self.noc.sessions):
@@ -140,58 +153,64 @@ class Mesh:
                                    ["map", [["stats-update-interval", str(self.stats_ms)]]]]]})
 
         # 3. a GRE per pod holding a backhaul address
-        for ip in sorted(self.pod_ips(s)):
+        await self.gre_step(s, self.bhaul_if, self.lan_bridge)
+
+    async def gre_step(self, s, bhaul_if, lan_bridge):
+        """A GRE per child holding a backhaul address on bhaul_if, as a port of
+        lan_bridge (the gateway's, or a parent pod's)."""
+        for ip in sorted(self.pod_ips(s, bhaul_if)):
             b = ip.packed
             name = f"pgd{b[2]}_{b[3]}"
-            local = self.bhaul_local_ip(s)
+            local = self.bhaul_local_ip(s, bhaul_if)
             if not local:
                 break
             if not self.rows(s, "Wifi_Inet_Config", if_name=name):
                 await self.transact(s, f"GRE {name} -> {ip}", {
                     "op": "insert", "table": "Wifi_Inet_Config", "row": {
                         "if_name": name, "if_type": "gre", "enabled": True, "network": True,
-                        "mtu": 1562, "ip_assign_scheme": "none", "gre_ifname": self.bhaul_if,
+                        "mtu": 1562, "ip_assign_scheme": "none", "gre_ifname": bhaul_if,
                         "gre_local_inet_addr": local, "gre_remote_inet_addr": str(ip)}})
-            if not self.in_bridge(s, name):
-                await self.transact(s, f"{name} into {self.lan_bridge}",
+            if not self.in_bridge(s, name, lan_bridge):
+                await self.transact(s, f"{name} into {lan_bridge}",
                     {"op": "insert", "table": "Interface", "uuid-name": "i", "row": {"name": name}},
                     {"op": "insert", "table": "Port", "uuid-name": "p",
                      "row": {"name": name, "interfaces": ["named-uuid", "i"]}},
-                    {"op": "mutate", "table": "Bridge", "where": [["name", "==", self.lan_bridge]],
+                    {"op": "mutate", "table": "Bridge", "where": [["name", "==", lan_bridge]],
                      "mutations": [["ports", "insert", ["set", [["named-uuid", "p"]]]]]})
 
-    def bhaul_local_ip(self, s):
-        for r in self.rows(s, "Wifi_Inet_State", if_name=self.bhaul_if):
+    def bhaul_local_ip(self, s, bhaul_if=None):
+        for r in self.rows(s, "Wifi_Inet_State", if_name=bhaul_if or self.bhaul_if):
             if r.get("inet_addr") not in (None, "", "0.0.0.0"):
                 return r["inet_addr"]
         return None
 
-    def bhaul_clients(self, s):
+    def bhaul_clients(self, s, bhaul_if=None):
         """MACs associated to the backhaul AP (Wifi_VIF_State.associated_clients)."""
         clients = s.tables.get("Wifi_Associated_Clients", {})
         macs = set()
-        for vs in self.rows(s, "Wifi_VIF_State", if_name=self.bhaul_if):
+        for vs in self.rows(s, "Wifi_VIF_State", if_name=bhaul_if or self.bhaul_if):
             for ref in oset(vs.get("associated_clients")):
                 c = clients.get(uuid_of(ref))
                 if c and c.get("state", "active") == "active":
                     macs.add(c.get("mac", "").lower())
         return macs
 
-    def pod_ips(self, s):
+    def pod_ips(self, s, bhaul_if=None):
         """Backhaul addresses of pods that are associated right now: leases
         (DHCP_leased_IP) whose MAC is a client of the backhaul AP -- a lease
         alone may be left over from an earlier association -- and ARP entries
         on the backhaul interface (IPv4_Neighbors, where the node has it)."""
-        assoc = self.bhaul_clients(s)
+        bhaul_if = bhaul_if or self.bhaul_if
+        assoc = self.bhaul_clients(s, bhaul_if)
         ips = set()
         for r in s.tables.get("DHCP_leased_IP", {}).values():
             if r.get("hwaddr", "").lower() in assoc:
                 ips.add(r.get("inet_addr"))
         for r in s.tables.get("IPv4_Neighbors", {}).values():
-            if r.get("if_name") == self.bhaul_if:
+            if r.get("if_name") == bhaul_if:
                 ips.add(r.get("address"))
         out = set()
-        local = self.bhaul_local_ip(s)
+        local = self.bhaul_local_ip(s, bhaul_if)
         for a in ips:
             try:
                 ip = ipaddress.ip_address(a)
@@ -201,12 +220,12 @@ class Mesh:
                 out.add(ip)
         return out
 
-    def in_bridge(self, s, name):
+    def in_bridge(self, s, name, lan_bridge=None):
         ports = self.rows(s, "Port", name=name)
         if not ports:
             return False
         puuids = {u for u, r in s.tables.get("Port", {}).items() if r.get("name") == name}
-        for br in self.rows(s, "Bridge", name=self.lan_bridge):
+        for br in self.rows(s, "Bridge", name=lan_bridge or self.lan_bridge):
             members = {uuid_of(x) for x in oset(br.get("ports"))}
             if members & puuids:
                 return True
@@ -216,6 +235,11 @@ class Mesh:
     async def pod_step(self, s):
         if self.eth_bridge:
             await self.eth_uplink_step(s)
+        parent = bool(self.pod_bhaul_band) and self.wired(s)
+        if parent:
+            await self.parent_step(s)
+            if self.fh_band == self.pod_bhaul_band:
+                return                      # that radio's AP is the backhaul
         band, chan, ht = BANDS[self.fh_band]
         vif_name = f"home-ap-{self.fh_band}"
         radios = self.rows(s, "Wifi_Radio_Config", freq_band=band)
@@ -243,6 +267,69 @@ class Mesh:
                 "NAT": False, "ip_assign_scheme": "none", "mtu": 1500}})
         if ops:
             await self.transact(s, f"fronthaul {vif_name} on {radio['if_name']} ch{chan} '{self.home[0]}'", *ops)
+
+    def wired(self, s):
+        """The pod's uplink in use is Ethernet."""
+        return bool(self.rows(s, "Connection_Manager_Uplink", if_type="eth", is_used=True))
+
+    @staticmethod
+    def parent_net(node):
+        """The parent's own backhaul subnet: 169.254.N.0/24, N from its id."""
+        return ipaddress.ip_network(f"169.254.{2 + zlib.crc32(node.encode()) % 250}.0/24")
+
+    async def parent_step(self, s):
+        """A wired pod as backhaul parent: steps 1 and 3 of the gateway, on b-ap-<band>."""
+        band = self.pod_bhaul_band
+        fb, chan, ht = BANDS[band]
+        ap, sta = f"b-ap-{band}", f"bhaul-sta-{band}"
+        radios = self.rows(s, "Wifi_Radio_Config", freq_band=fb)
+        if not radios:
+            return
+        radio = radios[0]
+        net = self.parent_net(s.node)
+        addr = str(net.network_address + 1)
+        want = dict(wpa_row(*self.bhaul), enabled=True, mode="ap", bridge="",
+                    ssid_broadcast="enabled", ap_bridge=False, mac_list_type="none",
+                    vif_radio_idx=1, multi_ap="none")
+        ops = []
+        vif = self.rows(s, "Wifi_VIF_Config", if_name=ap)
+        if not vif:
+            ops += [{"op": "insert", "table": "Wifi_VIF_Config", "uuid-name": "bap",
+                     "row": dict(want, if_name=ap)},
+                    {"op": "mutate", "table": "Wifi_Radio_Config",
+                     "where": [["if_name", "==", radio["if_name"]]],
+                     "mutations": [["vif_configs", "insert", ["set", [["named-uuid", "bap"]]]]]}]
+        else:
+            diff = {k: v for k, v in want.items() if not self.same(vif[0].get(k), v)}
+            if diff:
+                ops.append({"op": "update", "table": "Wifi_VIF_Config",
+                            "where": [["if_name", "==", ap]], "row": diff})
+        if radio.get("channel") != chan or radio.get("enabled") is not True:
+            ops.append({"op": "update", "table": "Wifi_Radio_Config",
+                        "where": [["if_name", "==", radio["if_name"]]],
+                        "row": {"channel": chan, "ht_mode": ht, "enabled": True}})
+        # the parent's own backhaul STA on that band would only find its own AP
+        for r in self.rows(s, "Wifi_VIF_Config", if_name=sta):
+            if r.get("enabled") is not False:
+                ops.append({"op": "update", "table": "Wifi_VIF_Config",
+                            "where": [["if_name", "==", sta]], "row": {"enabled": False}})
+        inet = {"if_name": ap, "if_type": "vif", "enabled": True, "network": True, "NAT": False,
+                "ip_assign_scheme": "static", "inet_addr": addr, "netmask": "255.255.255.0",
+                "mtu": 1600, "dhcpd": ["map", [["start", str(net.network_address + 10)],
+                                               ["stop", str(net.network_address + 250)],
+                                               ["lease_time", "12h"]]]}
+        cur = self.rows(s, "Wifi_Inet_Config", if_name=ap)
+        if not cur:
+            ops.append({"op": "insert", "table": "Wifi_Inet_Config", "row": inet})
+        else:
+            diff = {k: v for k, v in inet.items() if not self.same(cur[0].get(k), v)}
+            if diff:
+                ops.append({"op": "update", "table": "Wifi_Inet_Config",
+                            "where": [["if_name", "==", ap]], "row": diff})
+        if ops:
+            await self.transact(s, f"backhaul parent: {ap} on {radio['if_name']} ch{chan} "
+                                   f"'{self.bhaul[0]}' {addr}/24", *ops)
+        await self.gre_step(s, ap, "br-home")
 
     async def eth_uplink_step(self, s):
         """A wired extender: its Ethernet uplink in use goes into the bridge."""
@@ -275,6 +362,9 @@ def add_args(ap):
     g.add_argument("--mesh-home-psk", default="opensync-lab-home-psk")
     g.add_argument("--mesh-fronthaul-band", default="24", choices=sorted(BANDS))
     g.add_argument("--mesh-interval", type=float, default=5.0)
+    g.add_argument("--mesh-pod-bhaul-band", default="", choices=["", *sorted(BANDS)],
+                   help="a pod on an Ethernet uplink is a backhaul parent on this band "
+                        "(backhaul AP, DHCP, GRE per child); empty = off (default)")
     g.add_argument("--mesh-eth-bridge", default="",
                    help="bridge for a pod's Ethernet uplink in use (wired extender), e.g. br-home; "
                         "empty = leave Ethernet uplinks alone (default)")
