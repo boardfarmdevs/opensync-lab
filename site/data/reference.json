@@ -1,5 +1,5 @@
 {
- "generated": 1790903038,
+ "generated": 1791347028,
  "config": [
   {
    "name": "MVX_PRODUCT",
@@ -93,7 +93,13 @@
   },
   {
    "name": "MVX_VM_STORAGE",
-   "default": "default",
+   "default": "labs",
+   "section": "lab VM",
+   "doc": "the host's one ZFS pool for lab VMs, created when absent (easymesh-resources lab-storage W2): LXD's default pool is a small loop file (28.6 GiB on rev150, under one lab's disk)"
+  },
+  {
+   "name": "MVX_VM_STORAGE_SIZE",
+   "default": "500GiB",
    "section": "lab VM",
    "doc": ""
   },
@@ -362,6 +368,16 @@
    "problem": "Shared sstate object with a stale absolute path (libwebsockets)",
    "workaround": "`build-mvx.sh` rebuilds such recipes locally",
    "fix": "libwebsockets recipe"
+  },
+  {
+   "problem": "OpenSync's dnsmasq lease parser accepts only OpenWrt's extended lease line (fingerprint, vendor-class); the pod runs Ubuntu's dnsmasq, so a pod serving DHCP (a backhaul parent) reports no leases and the cloud builds no GRE to its children",
+   "workaround": "`pod/opensync/patches/core/0004` (also accept the standard line)",
+   "fix": "opensync core (osn dnsmasq backend)"
+  },
+  {
+   "problem": "Plume's hostap base `d9d5e55c5` (2022-12 snapshot, the pod's hostapd) hangs a real MediaTek MT7921U at AP start (MCU timeout on the group key, chip reset loop); hwsim is not affected",
+   "workaround": "none needed here; opensync-rpi builds `hostap_2_11` with patches 990-993 ported",
+   "fix": "a hostap base at the 2.11 release or later"
   }
  ],
  "status": [

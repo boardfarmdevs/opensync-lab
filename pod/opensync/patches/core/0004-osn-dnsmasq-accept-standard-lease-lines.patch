@@ -1,0 +1,61 @@
+osn dnsmasq: accept standard lease lines (no fingerprint, no vendor-class)
+
+OpenSync's lease parser only accepts the extended lease line OpenWrt's patched
+dnsmasq writes (DHCP fingerprint and vendor-class). The pod image runs Ubuntu's
+dnsmasq, which writes the standard line, so every lease was rejected ("Invalid
+DHCP lease line") and DHCP_leased_IP stayed empty -- a pod that serves DHCP (a
+backhaul parent, local-noc --mesh-pod-bhaul-band) never reported its children,
+and the cloud could not build their GREs. Fall back to the standard line; the
+fingerprint and vendor-class are then empty. Found and verified in opensync-rpi
+(physical Raspberry Pi pods, and its hwsim twin of this pod).
+
+diff --git a/src/lib/osn/src/linux/dnsmasq_server.c b/src/lib/osn/src/linux/dnsmasq_server.c
+index b2ce04af..662a4ce5 100644
+--- a/src/lib/osn/src/linux/dnsmasq_server.c
++++ b/src/lib/osn/src/linux/dnsmasq_server.c
+@@ -762,8 +762,26 @@ bool dnsmasq_lease_parse_line(struct osn_dhcp_server_lease *dl, const char *line
+         "\"(\\*|[^\"]+)\" "                     /* 9: Match vendor-class, can be "*" */
+         "[^ ]+$";                               /* Match CID, can be "*" */
+ 
++    /*
++     * The standard dnsmasq lease line -- an unpatched dnsmasq (e.g. a distribution's)
++     * writes no fingerprint and no vendor-class:
++     *
++     * 1461412276 f4:09:d8:89:54:4f 192.168.0.181 android-c992b284e24fdd69 01:f4:09:d8:89:54:4f
++     *
++     * Groups 1, 2, 4 and 6 are at the same positions as above; 7 and 9 stay unmatched,
++     * so the fingerprint and the vendor-class come out empty.
++     */
++    static const char dnsmasq_lease_std_re[] =
++        "(^[0-9]+) "                            /* 1: Match timestamp */
++        "(([a-fA-F0-9]{2}:?){6}) "              /* 2,3: Match MAC address */
++        "(([0-9]+\\.?){4}) "                    /* 4,5: Match IP address */
++        "(\\*|[a-zA-Z0-9_-]+) "                 /* 6: Match hostname, can be "*" */
++        "[^ ]+$";                               /* Match CID, can be "*" */
++
+     static bool parse_re_compiled = false;
+     static regex_t parse_re;
++    static bool std_re_compiled = false;
++    static regex_t std_re;
+ 
+     char sleasetime[C_INT32_LEN];
+     char shwaddr[C_MACADDR_LEN];
+@@ -779,8 +797,17 @@ bool dnsmasq_lease_parse_line(struct osn_dhcp_server_lease *dl, const char *line
+ 
+     parse_re_compiled = true;
+ 
++    if (!std_re_compiled && regcomp(&std_re, dnsmasq_lease_std_re, REG_EXTENDED) != 0)
++    {
++        LOG(ERR, "dhcpv4_server: Error compiling DHCP lease parsing regular expression (standard).");
++        return false;
++    }
++
++    std_re_compiled = true;
++
+     /* Parse the lease line using regular expressions */
+-    if (regexec(&parse_re, line, ARRAY_LEN(rm), rm, 0) != 0)
++    if (regexec(&parse_re, line, ARRAY_LEN(rm), rm, 0) != 0 &&
++        regexec(&std_re, line, ARRAY_LEN(rm), rm, 0) != 0)
+     {
+         LOG(ERR, "NM: Invalid DHCP lease line (ignoring): %s", line);
+         return false;
