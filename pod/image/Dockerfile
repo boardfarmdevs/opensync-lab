@@ -5,6 +5,21 @@
 ARG BUILDENV=mvx-pod-buildenv:focal
 FROM ${BUILDENV} AS buildenv
 
+# odhcp6c, OpenSync's DHCPv6 client (CONFIG_OSN_ODHCP6_PATH=/usr/sbin/odhcp6c), which
+# Ubuntu does not package. The lab's pods never start it (their uplink is a GRE); a pod
+# with an Ethernet uplink does, when its router offers DHCPv6 (an RDK gateway's LAN
+# does), and without it nm fails on every try, then crashes, and dm takes OpenSync down
+# (found with opensync-rpi's physical pods). OpenWrt's odhcp6c at the last commit that
+# builds without libubox (OpenWrt 23.05's).
+FROM ubuntu:20.04 AS odhcp6c
+ARG DEBIAN_FRONTEND=noninteractive
+ARG ODHCP6C_COMMIT=bcd283632ac13391aac3ebdd074d1fd832d76fa3
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc libc6-dev make cmake git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN git clone -q https://github.com/openwrt/odhcp6c.git /src && cd /src \
+    && git checkout -q "$ODHCP6C_COMMIT" && cmake . >/dev/null && make && strip odhcp6c
+
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -27,6 +42,9 @@ RUN ln -sf libopenvswitch-2.8.so.0.0.7 /usr/lib/libopenvswitch-2.8.so.0 \
     && ln -sf libovsdb-2.8.so.0.0.7 /usr/lib/libovsdb-2.8.so.0
 COPY --from=buildenv /usr/local/bin/hostapd /usr/local/bin/hostapd_cli /usr/local/bin/
 COPY --from=buildenv /usr/local/sbin/wpa_supplicant /usr/local/sbin/wpa_cli /usr/local/sbin/
+COPY --from=odhcp6c /src/odhcp6c /usr/sbin/odhcp6c.openwrt
+# OpenSync passes Plume's odhcp6c options (-Q, -X); the wrapper maps them
+COPY files/odhcp6c /usr/sbin/odhcp6c
 
 # OpenSync: only what belongs on an Ubuntu system (not the OpenWrt /etc files)
 COPY rootfs/usr/opensync /usr/opensync

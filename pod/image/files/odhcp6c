@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# odhcp6c as OpenSync 6.6 calls it (osn odhcp6_client.c), on OpenWrt's odhcp6c
+# (/usr/sbin/odhcp6c.openwrt), which lacks two of the options Plume's patched one has:
+#   -Q        do not track or update address lifetimes: dropped (odhcp6c tracks them)
+#   -X <hex>  vendor options (DHCPv6 option 17): passed as -x 17:<hex>
+# Everything else goes through unchanged; exec keeps the PID OpenSync started.
+
+skip=
+for a do
+    shift
+    if [ -n "$skip" ]; then
+        skip=
+        set -- "$@" -x "17:$a"
+        continue
+    fi
+    case "$a" in
+        -Q) ;;
+        -X) skip=1 ;;
+        *) set -- "$@" "$a" ;;
+    esac
+done
+exec /usr/sbin/odhcp6c.openwrt "$@"

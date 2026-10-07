@@ -1,5 +1,5 @@
 {
- "generated": 1791347028,
+ "generated": 1791393646,
  "config": [
   {
    "name": "MVX_PRODUCT",
@@ -373,6 +373,11 @@
    "problem": "OpenSync's dnsmasq lease parser accepts only OpenWrt's extended lease line (fingerprint, vendor-class); the pod runs Ubuntu's dnsmasq, so a pod serving DHCP (a backhaul parent) reports no leases and the cloud builds no GRE to its children",
    "workaround": "`pod/opensync/patches/core/0004` (also accept the standard line)",
    "fix": "opensync core (osn dnsmasq backend)"
+  },
+  {
+   "problem": "The pod image (Ubuntu) has no `odhcp6c`, OpenSync's DHCPv6 client; a pod with an Ethernet uplink whose router offers DHCPv6 (an RDK gateway's LAN) gets `nm` failing on every try, then crashing, and dm takes OpenSync down. The lab's own pods (GRE uplinks) never start it. OpenSync also passes Plume's odhcp6c options `-Q` and `-X`, which OpenWrt's lacks",
+   "workaround": "the pod image builds OpenWrt's odhcp6c (`bcd2836`, 23.05's, the last without libubox) behind `pod/image/files/odhcp6c`, which drops `-Q` and passes `-X <hex>` as `-x 17:<hex>`",
+   "fix": "an odhcp6c with Plume's options in the pod image"
   },
   {
    "problem": "Plume's hostap base `d9d5e55c5` (2022-12 snapshot, the pod's hostapd) hangs a real MediaTek MT7921U at AP start (MCU timeout on the group key, chip reset loop); hwsim is not affected",
