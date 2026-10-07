@@ -36,6 +36,10 @@ cmd_create() {
         return
     fi
     log "create: $MVX_VM ($MVX_VM_IMAGE, ${MVX_VM_CPUS} cpu, $MVX_VM_MEMORY, $MVX_VM_DISK on pool $MVX_VM_STORAGE)"
+    if ! lxc storage show "$MVX_VM_STORAGE" >/dev/null 2>&1; then
+        log "create: pool $MVX_VM_STORAGE (zfs, $MVX_VM_STORAGE_SIZE sparse)"
+        lxc storage create "$MVX_VM_STORAGE" zfs size="$MVX_VM_STORAGE_SIZE" >/dev/null
+    fi
     lxc init "$MVX_VM_IMAGE" "$MVX_VM" --vm --storage "$MVX_VM_STORAGE" \
         --config limits.cpu="$MVX_VM_CPUS" --config limits.memory="$MVX_VM_MEMORY" </dev/null
     # uefi-nosecureboot: keeps the option open to load a locally built

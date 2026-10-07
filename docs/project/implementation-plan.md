@@ -326,7 +326,8 @@ same VM.
 
 1. **Create.** `lxc init ubuntu:24.04 $VM --vm -c limits.cpu=4 -c limits.memory=8GiB`
    (overridable: `MVX_VM_CPUS`, `MVX_VM_MEMORY`), with the root disk set to 64 GiB
-   and the storage pool `MVX_VM_STORAGE` (default: host `default`, ZFS).
+   and the storage pool `MVX_VM_STORAGE` (default: the host's ZFS pool for lab VMs,
+   `labs`, created when absent with `MVX_VM_STORAGE_SIZE`, 500 GiB sparse).
    Also set `boot.autostart=false` and `boot.mode=uefi-nosecureboot` (not needed
    for the stock hwsim module, but it keeps the patched-hwsim/wmediumd option
    open). `eth0` is on host `lxdbr0` (NAT gives internet access). Proxy devices
