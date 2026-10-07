@@ -36,7 +36,15 @@ for i in $(seq 0 $((radios - 1))); do
     lxc profile device add "$name" "wlan$i" nic nictype=physical parent="${free[$i]}" name="wlan$i" >/dev/null \
         && log "pod: wlan$i <- ${free[$i]}"
 done
-lxc launch "mvx-pod-$fp" "$name" -p "$name" >/dev/null || die "launch failed"
+lxc init "mvx-pod-$fp" "$name" -p "$name" >/dev/null || die "init failed"
+# Its journal bounded before the first start (easymesh-resources lab-storage W3), pod images
+# built before build-pod.sh carried the drop-in included.
+journald_conf=$(mktemp)
+printf '[Journal]\nSystemMaxUse=128M\nSystemMaxFileSize=16M\nRuntimeMaxUse=32M\n' > "$journald_conf"
+lxc file push -q -p "$journald_conf" "$name/etc/systemd/journald.conf.d/50-lab.conf" ||
+    die "the journald drop-in could not be pushed"
+rm -f "$journald_conf"
+lxc start "$name" >/dev/null || die "start failed"
 lxc config set "$name" user.opensync-lab.image "$fp"
 
 wait_for 120 2 "$name running" ct_running "$name" || die "$name did not start"
