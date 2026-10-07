@@ -48,6 +48,19 @@ the gateway's backhaul AP, creates the gateway's end of each extender's GRE
 and adds it to `brlan0`, and gives every extender that connects its
 fronthaul AP. SSIDs and keys are `MVX_MESH_*` in `config/mvx.conf`.
 
+Two more steps are off by default (the lab's own pods are all wireless); opensync-rpi's
+physical Raspberry Pi pods use them:
+
+- `--mesh-eth-bridge br-home`: a pod whose uplink in use is Ethernet (a wired extender)
+  gets that uplink into the bridge (`Connection_Manager_Uplink.bridge`), as the cloud
+  does, so its fronthaul is on the gateway's LAN; no GRE.
+- `--mesh-pod-bhaul-band 50`: such a wired pod is a backhaul parent for wireless pods,
+  as the gateway is: its backhaul AP `b-ap-<band>` with the backhaul SSID/PSK at the
+  `.1` of a `169.254.N.0/24` of its own with a DHCP range (a child's cm takes the `.1` as
+  its GRE peer), its own backhaul STA on that band off, and a GRE per associated child
+  into `br-home` (the gateway's GRE step, shared). Two pods then form a mesh without a
+  gateway. It needs the pod patch `core/0004` (the parent reports its DHCP leases).
+
 Every message in both directions is recorded, one JSON line each, in
 `/var/lib/local-noc/sessions/<node>/*.jsonl`, together with the node's schema
 and a table snapshot. `noc-ctl`, reached as `./deploy-mvx.sh noc …`, lists
