@@ -13,9 +13,13 @@
 # set it forever, and owm aborts when confsync has not settled in 180 s --
 # dropping the backhaul, the GRE and the cloud session every 3 minutes.
 #
-# Only the radios in sta_bands get a backhaul STA (default: 5G only). hwsim
-# radios are multi-band, so a 2.4G STA would join the gateway's 5G backhaul
-# AP as well and cm would bring up a second, redundant GRE uplink.
+# Every radio gets its backhaul STA, as stock OpenSync's STA list gives one per
+# band; only those in sta_bands (default: 5G only) are enabled for the
+# bootstrap. The others are created disabled: hwsim radios are multi-band, so
+# an enabled 2.4G STA would join the gateway's 5G backhaul AP as well and cm
+# would bring up a second, redundant GRE uplink. A manager that moves the
+# uplink to another band (EMOSA, spec 8.3) enables that band's STA and
+# disables the other; an OpenSync restart returns the pod to these rows.
 set -u
 OVSDB=unix:/var/run/db.sock
 bands="24 50 60"
@@ -55,25 +59,17 @@ for phy in $(ls /sys/class/ieee80211 | sort -V); do
     del='{"op":"delete","table":"Wifi_VIF_Config","where":[["if_name","==","'"$vif"'"]]},
       {"op":"delete","table":"Wifi_Radio_Config","where":[["if_name","==","'"$phy"'"]]},
       {"op":"delete","table":"Wifi_Inet_Config","where":[["if_name","==","'"$vif"'"]]}'
+    # the bootstrap bands' STAs enabled, the others' created disabled (see above)
     case " $sta_bands " in
-    *" $band "*) ;;
-    *)
-        # radio only (the image's build-time bootstrap rows for this STA go)
-        ovsdb-client transact "$OVSDB" '["Open_vSwitch", '"$del"',
-          {"op":"insert","table":"Wifi_Radio_Config","row":{
-             "enabled":true,"if_name":"'"$phy"'","freq_band":"'"$fb"'","hw_mode":"'"$hw"'",
-             "ht_mode":"'"$ht"'","channel_mode":"cloud","channel_sync":0,
-             "hw_type":"mac80211_hwsim","hw_config":["map",[]],
-             "vif_configs":["set",[]]}}]' >/dev/null \
-            && echo "mvx-pod-bootstrap: $phy = $fb (no backhaul STA)"
-        continue ;;
+    *" $band "*) enabled=true use=bootstrap ;;
+    *) enabled=false use=disabled ;;
     esac
     ovsdb-client transact "$OVSDB" '["Open_vSwitch", '"$del"',
       {"op":"insert","table":"Wifi_Inet_Config","row":{
          "if_name":"'"$vif"'","if_type":"vif","enabled":true,"network":false,"NAT":false,
          "ip_assign_scheme":"dhcp","dhcp_req":["set",[1]],"mtu":1600}},
       {"op":"insert","table":"Wifi_VIF_Config","uuid-name":"sta","row":{
-         "enabled":true,"if_name":"'"$vif"'","mode":"sta","bridge":"","wds":false,
+         "enabled":'"$enabled"',"if_name":"'"$vif"'","mode":"sta","bridge":"","wds":false,
          "vif_radio_idx":0,"multi_ap":"none","ssid":"'"$ssid"'",
          "security":["map",[["encryption","WPA-PSK"],["key","'"$key"'"]]],
          "credential_configs":["set",['"$cred_uuids"']]}},
@@ -82,5 +78,5 @@ for phy in $(ls /sys/class/ieee80211 | sort -V); do
          "ht_mode":"'"$ht"'","channel_mode":"cloud","channel_sync":0,
          "hw_type":"mac80211_hwsim","hw_config":["map",[]],
          "vif_configs":["set",[["named-uuid","sta"]]]}}]' >/dev/null \
-        && echo "mvx-pod-bootstrap: $phy = $fb, $vif -> '$ssid'"
+        && echo "mvx-pod-bootstrap: $phy = $fb, $vif -> '$ssid' ($use)"
 done
