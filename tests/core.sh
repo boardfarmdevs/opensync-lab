@@ -38,7 +38,7 @@ for t in "$POD/opensync/tests"/*_test.c; do
     name=$(basename "$t" .c)
     echo "== $name"
     if ! cc -std=gnu99 -Wall -Wextra -Werror -I "$tmp/core/src/cm2/src" -I "$tmp/core/src/lib/osw/src" \
-        -o "$tmp/$name" "$t"; then
+        -I "$tmp/core/src/lib/ow/src" -o "$tmp/$name" "$t"; then
         echo "core.sh: $name does not build" >&2
         rc=1
         continue

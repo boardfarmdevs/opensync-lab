@@ -1,0 +1,107 @@
+ow: an AP that is not running starts on its backhaul station's channel
+
+opensync-rpi / opensync-lab: the STA channel override left an AP that is not running (not
+yet started, or being restarted) alone, so it started on its configured channel. Patch
+0008 moves an AP whose CSA hostapd refuses by restarting its BSS; the restart came back on
+the configured channel, the override then asked for the station's channel again, and the
+AP restarted about once a minute (both Raspberry Pi pods after the physical MV3 moved from
+channel 6 to 2, 2026-10-09 09:52Z). With a station linked on the radio, an AP that is not
+running now takes the station's channel, so it starts there and needs no move at all.
+The decision is in ow_sta_channel_override_action.h, free of the module's state, so that
+pod/opensync/tests/ow_sta_channel_override_action_test.c tests it on its own; live: the
+pods' APs on the MV3's channel after a move, without restarts.
+
+Upstream: an OpenSync core behaviour as released in 6.6.1.0:
+ow_sta_channel_override_ap_get_action() in src/lib/ow/src/ow_sta_channel_override.c
+returns DONT_CHANGE for an AP that is not running, so an AP (re)started while its radio's
+station is on another channel starts away from it. Not reported (the owner decides).
+
+diff --git a/src/lib/ow/src/ow_sta_channel_override.c b/src/lib/ow/src/ow_sta_channel_override.c
+index bcc3124e..82a0f4a4 100644
+--- a/src/lib/ow/src/ow_sta_channel_override.c
++++ b/src/lib/ow/src/ow_sta_channel_override.c
+@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #include <osw_timer.h>
+ #include <osw_module.h>
+ #include <osw_ut.h>
++#include "ow_sta_channel_override_action.h"
+ 
+ /* Purpose:
+  *
+@@ -98,12 +99,6 @@ struct ow_sta_channel_override {
+     bool attach;
+ };
+ 
+-enum ow_sta_channel_override_action {
+-    OW_STA_CHANNEL_OVERRIDE_DONT_CHANGE,
+-    OW_STA_CHANNEL_OVERRIDE_USE_AP_STATE_CHAN,
+-    OW_STA_CHANNEL_OVERRIDE_USE_STA_STATE_CHAN,
+-};
+-
+ struct ow_sta_channel_override_ap {
+     struct ds_tree_node node;
+     struct ow_sta_channel_override *m;
+@@ -405,21 +400,12 @@ static enum ow_sta_channel_override_action
+ ow_sta_channel_override_ap_get_action(struct ow_sta_channel_override_ap *ap,
+                                       struct osw_conf_vif *vif)
+ {
+-    if (ap->info == NULL) {
+-        return OW_STA_CHANNEL_OVERRIDE_DONT_CHANGE;
+-    }
+-
+-    const bool no_valid_sta = (ow_sta_channel_override_ap_get_sta(ap) == NULL);
+-    if (no_valid_sta) {
+-        return OW_STA_CHANNEL_OVERRIDE_DONT_CHANGE;
+-    }
+-
++    /* ow_sta_channel_override_action.h: an AP not running starts
++     * on the station's channel */
++    const bool sta_linked = (ow_sta_channel_override_ap_get_sta(ap) != NULL);
++    const bool ap_running = (ap->info != NULL);
+     const bool ap_chan_recently_changed = (osw_timer_is_armed(&ap->settling));
+-    if (ap_chan_recently_changed) {
+-        return OW_STA_CHANNEL_OVERRIDE_USE_AP_STATE_CHAN;
+-    }
+-
+-    return OW_STA_CHANNEL_OVERRIDE_USE_STA_STATE_CHAN;
++    return ow_sta_channel_override_action_for(sta_linked, ap_running, ap_chan_recently_changed);
+ }
+ 
+ static const struct osw_channel *
+diff --git a/src/lib/ow/src/ow_sta_channel_override_action.h b/src/lib/ow/src/ow_sta_channel_override_action.h
+new file mode 100644
+index 00000000..08312d49
+--- /dev/null
++++ b/src/lib/ow/src/ow_sta_channel_override_action.h
+@@ -0,0 +1,31 @@
++/*
++ * ow: which channel the STA channel override gives an AP (opensync-lab / opensync-rpi).
++ *
++ * With a station linked on the radio, an AP takes the station's channel; while its own
++ * channel recently changed it keeps that (settling). An AP that is not running took no
++ * override and so started on its configured channel; a restart meant to move it to the
++ * station's channel (core patch 0008, an AP whose CSA is refused) brought it back there,
++ * once a minute. It now starts on the station's channel. Kept free of the module's state
++ * so that pod/opensync/tests/ow_sta_channel_override_action_test.c tests it on its own.
++ */
++#ifndef OW_STA_CHANNEL_OVERRIDE_ACTION_H_INCLUDED
++#define OW_STA_CHANNEL_OVERRIDE_ACTION_H_INCLUDED
++
++#include <stdbool.h>
++
++enum ow_sta_channel_override_action {
++    OW_STA_CHANNEL_OVERRIDE_DONT_CHANGE,
++    OW_STA_CHANNEL_OVERRIDE_USE_AP_STATE_CHAN,
++    OW_STA_CHANNEL_OVERRIDE_USE_STA_STATE_CHAN,
++};
++
++static inline enum ow_sta_channel_override_action
++ow_sta_channel_override_action_for(bool sta_linked, bool ap_running, bool ap_settling)
++{
++    if (!sta_linked) return OW_STA_CHANNEL_OVERRIDE_DONT_CHANGE;
++    if (!ap_running) return OW_STA_CHANNEL_OVERRIDE_USE_STA_STATE_CHAN;
++    if (ap_settling) return OW_STA_CHANNEL_OVERRIDE_USE_AP_STATE_CHAN;
++    return OW_STA_CHANNEL_OVERRIDE_USE_STA_STATE_CHAN;
++}
++
++#endif /* OW_STA_CHANNEL_OVERRIDE_ACTION_H_INCLUDED */
