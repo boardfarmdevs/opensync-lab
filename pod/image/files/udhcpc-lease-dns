@@ -1,0 +1,38 @@
+#!/bin/sh
+# OpenSync's udhcpc hook (/usr/opensync/scripts/udhcpc.d/, run by udhcpc.sh with the event and
+# udhcpc's variables): the lease's DNS servers as this interface's resolver file, which
+# OpenSync's inet aggregates with the others (/tmp/dns/*.resolv) into /tmp/resolv.conf, the
+# file /etc/resolv.conf points at (mvx-pod-prep). OpenSync applies only the DNS servers a
+# controller configures (Wifi_Inet_Config.dns); an OpenWrt platform resolves through the
+# lease's servers on its own, this Ubuntu image did not: a pod had no resolver, its cm's
+# internet check failed, and with a global IPv6 address (odhcp6c) its cm waited out resolver
+# timeouts before it reached its controller over IPv4 (minutes instead of seconds). A server a
+# controller configures still comes first: its file sorts before this one.
+dir=/tmp/dns
+file="$dir/${interface:?}.lease.resolv"
+
+# OpenSync's own aggregation of every resolver file, also when only this hook changed one
+rebuild() {
+    tmp=/tmp/resolv.conf.lease.$$
+    cat "$dir"/*.resolv 2>/dev/null > "$tmp"
+    if [ -s "$tmp" ]; then
+        echo "options timeout:3" >> "$tmp"
+        mv -f "$tmp" /tmp/resolv.conf
+    else
+        rm -f "$tmp"
+    fi
+}
+
+case "$1" in
+    bound|renew)
+        # a backhaul's link-local lease carries no DNS (udhcpc.sh drops it)
+        [ -n "$dns" ] || { rm -f "$file"; rebuild; exit 0; }
+        mkdir -p "$dir"
+        for server in $dns; do echo "nameserver $server"; done > "$file.tmp" && mv -f "$file.tmp" "$file"
+        rebuild
+        ;;
+    deconfig|leasefail|nak)
+        [ -e "$file" ] && { rm -f "$file"; rebuild; }
+        ;;
+esac
+exit 0

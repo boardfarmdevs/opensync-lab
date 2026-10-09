@@ -1,5 +1,5 @@
 {
- "generated": 1791393646,
+ "generated": 1791520517,
  "config": [
   {
    "name": "MVX_PRODUCT",
@@ -351,7 +351,7 @@
   },
   {
    "problem": "mac80211_hwsim radios are multi-band; OpenSync assumes one band per phy (duplicate channels, VIF naming)",
-   "workaround": "`pod/opensync/patches/core/0001` (per-phy band filter), `build-pod.sh` band-by-position for `52_owm_prep.sh`, the pod's backhaul STA on 5G only",
+   "workaround": "`pod/opensync/patches/core/0001` (per-phy band filter), `build-pod.sh` band-by-position for `52_owm_prep.sh`, a backhaul STA per band as stock OpenSync has, only the bootstrap band's (5G) enabled: an enabled 2.4G STA would join a 5G BSS (`mvx-pod-bootstrap`)",
    "fix": "wmediumd/hwsim band config, or OpenSync"
   },
   {
@@ -375,9 +375,14 @@
    "fix": "opensync core (osn dnsmasq backend)"
   },
   {
-   "problem": "The pod image (Ubuntu) has no `odhcp6c`, OpenSync's DHCPv6 client; a pod with an Ethernet uplink whose router offers DHCPv6 (an RDK gateway's LAN) gets `nm` failing on every try, then crashing, and dm takes OpenSync down. The lab's own pods (GRE uplinks) never start it. OpenSync also passes Plume's odhcp6c options `-Q` and `-X`, which OpenWrt's lacks",
+   "problem": "The pod image (Ubuntu) has no `odhcp6c`, OpenSync's DHCPv6 client; a pod with an Ethernet uplink whose router offers DHCPv6 (an RDK gateway's LAN) gets `nm` failing on every try, then crashing, and dm takes OpenSync down. The lab's own pods (GRE uplinks) start it too: `cm` enables the DHCPv6 client on `br-home`, which then gets a global address and DHCPv6 DNS from the mv3. OpenSync also passes Plume's odhcp6c options `-Q` and `-X`, which OpenWrt's lacks",
    "workaround": "the pod image builds OpenWrt's odhcp6c (`bcd2836`, 23.05's, the last without libubox) behind `pod/image/files/odhcp6c`, which drops `-Q` and passes `-X <hex>` as `-x 17:<hex>`",
    "fix": "an odhcp6c with Plume's options in the pod image"
+  },
+  {
+   "problem": "OpenSync applies only the DNS servers a controller configures (`Wifi_Inet_Config.dns`); an OpenWrt platform resolves through its DHCP lease's servers on its own, the Ubuntu pod image did not (`/etc/resolv.conf` the container build's empty file, the lease's servers nowhere). A pod had no resolver, `cm`'s internet check always failed, and with a global IPv6 address (`odhcp6c`) `cm` resolved its controller over IPv6 first and waited out resolver timeouts before IPv4: 80 to 350 s to reach local-noc against about 20 s (9 October, opensync-lab-1009)",
+   "workaround": "`pod/image/files/udhcpc-lease-dns` (OpenSync's udhcpc hook, `udhcpc.d/50-lease-dns`) writes the lease's servers to `/tmp/dns/<if>.lease.resolv`, which OpenSync's inet aggregates into `/tmp/resolv.conf` after any a controller configures; `mvx-pod-prep` points `/etc/resolv.conf` at it, as on OpenWrt",
+   "fix": "an OpenSync Ubuntu target applying the lease's DNS, or the controller (local-noc, EMOSA) configuring `Wifi_Inet_Config.dns`"
   },
   {
    "problem": "Plume's hostap base `d9d5e55c5` (2022-12 snapshot, the pod's hostapd) hangs a real MediaTek MT7921U at AP start (MCU timeout on the group key, chip reset loop); hwsim is not affected",

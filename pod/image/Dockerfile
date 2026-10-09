@@ -54,6 +54,8 @@ COPY files/openvswitch.init /etc/init.d/openvswitch
 COPY files/wpad.init /etc/init.d/wpad
 COPY files/opensync.init /usr/opensync/scripts/opensync.init
 COPY files/mvx-pod-prep files/mvx-pod-bootstrap /usr/local/sbin/
+# the DHCP lease's DNS servers into OpenSync's resolver (files/udhcpc-lease-dns)
+COPY files/udhcpc-lease-dns /usr/opensync/scripts/udhcpc.d/50-lease-dns
 COPY files/mvx-pod-prep.service /lib/systemd/system/
 COPY files/journald-50-lab.conf /etc/systemd/journald.conf.d/50-lab.conf
 RUN echo /usr/opensync/lib > /etc/ld.so.conf.d/opensync.conf && ldconfig \

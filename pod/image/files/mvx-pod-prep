@@ -25,4 +25,8 @@ if ! ip link show eth0 >/dev/null 2>&1; then
     ip link set eth0 address "$mac"
     ip link set eth0 up
 fi
+# The resolver OpenSync keeps (its inet aggregates /tmp/dns/*.resolv into /tmp/resolv.conf,
+# the lease's servers included: udhcpc-lease-dns), as on OpenWrt; the image's own file
+# is the container build's, empty
+ln -sf /tmp/resolv.conf /etc/resolv.conf
 echo "mvx-pod-prep: $i radio(s): $(ls /sys/class/ieee80211 | tr '\n' ' '), eth0 $(cat /sys/class/net/eth0/address)"
