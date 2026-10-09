@@ -60,6 +60,13 @@ FRESH_LEASE_S = 300     # a new lease stands for its pod's association this long
 BANDS = {"24": ("2.4G", 6, "HT20"), "50": ("5G", 44, "HT20"), "60": ("6G", 5, "HT20")}
 
 
+def rates_row(band):
+    """A pod AP's rate floor: on 2.4 GHz OFDM only (min_hw_mode 11g: basic 6, 12 and 24 Mbit/s
+    and an OFDM beacon rate), as the RDK nodes beside the pods advertise; hostapd's default
+    makes 1 Mbit/s basic and sends every beacon at it. 5 and 6 GHz are OFDM already."""
+    return {"min_hw_mode": "11g"} if band == "24" else {}
+
+
 def oset(v):
     """OVSDB set value -> python list."""
     if isinstance(v, list) and len(v) == 2 and v[0] == "set":
@@ -295,7 +302,7 @@ class Mesh:
         radio = radios[0]
         want = dict(wpa_row(*self.home), enabled=True, mode="ap", bridge="br-home",
                     ssid_broadcast="enabled", ap_bridge=True, mac_list_type="none",
-                    vif_radio_idx=1)
+                    vif_radio_idx=1, **rates_row(self.fh_band))
         vif = self.rows(s, "Wifi_VIF_Config", if_name=vif_name)
         ops = []
         if not vif:
@@ -304,6 +311,13 @@ class Mesh:
                     {"op": "mutate", "table": "Wifi_Radio_Config",
                      "where": [["if_name", "==", radio["if_name"]]],
                      "mutations": [["vif_configs", "insert", ["set", [["named-uuid", "fh"]]]]]}]
+        else:
+            # a fronthaul made before its rate floor (or changed under it) gets it
+            floor = {k: v for k, v in rates_row(self.fh_band).items()
+                     if not self.same(vif[0].get(k), v)}
+            if floor:
+                ops.append({"op": "update", "table": "Wifi_VIF_Config",
+                            "where": [["if_name", "==", vif_name]], "row": floor})
         if radio.get("channel") != chan or radio.get("enabled") is not True:
             ops.append({"op": "update", "table": "Wifi_Radio_Config",
                         "where": [["if_name", "==", radio["if_name"]]],
@@ -337,7 +351,7 @@ class Mesh:
         addr = str(net.network_address + 1)
         want = dict(wpa_row(*self.bhaul), enabled=True, mode="ap", bridge="",
                     ssid_broadcast="enabled", ap_bridge=False, mac_list_type="none",
-                    vif_radio_idx=1, multi_ap="none")
+                    vif_radio_idx=1, multi_ap="none", **rates_row(band))
         ops = []
         vif = self.rows(s, "Wifi_VIF_Config", if_name=ap)
         if not vif:

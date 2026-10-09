@@ -47,7 +47,7 @@ def pod_tables(converged=False, uplink=None):
                                       "enabled": True}},
          "Wifi_VIF_Config": {}, "Wifi_Inet_Config": {}}
     if converged:
-        t["Wifi_VIF_Config"]["h"] = {"if_name": "home-ap-24"}
+        t["Wifi_VIF_Config"]["h"] = {"if_name": "home-ap-24", "min_hw_mode": "11g"}
         t["Wifi_Inet_Config"]["hi"] = {"if_name": "home-ap-24"}
     if uplink:
         t["Connection_Manager_Uplink"] = {"u": uplink}
@@ -143,6 +143,23 @@ class PodStepTest(unittest.TestCase):
                          ("home-ap-24", "opensync-lab-home", "br-home", "ap"))
         self.assertEqual(ops[1]["where"], [["if_name", "==", "phy0"]])
         self.assertEqual(ops[2]["row"], {"channel": 6, "ht_mode": "HT20", "enabled": True})
+        # 2.4 GHz OFDM only: basic 6/12/24 Mbit/s and the beacons at 6, not hostapd's 1 Mbit/s
+        self.assertEqual(vif["min_hw_mode"], "11g")
+
+    def test_a_fronthaul_without_its_rate_floor_gets_it(self):
+        m = mesh.Mesh(None, mesh_args())
+        t = pod_tables(converged=True)
+        del t["Wifi_VIF_Config"]["h"]["min_hw_mode"]
+        s = FakeSession("pod1", t)
+        run(m.pod_step(s))
+        self.assertEqual(transact_ops(s), [{
+            "op": "update", "table": "Wifi_VIF_Config",
+            "where": [["if_name", "==", "home-ap-24"]], "row": {"min_hw_mode": "11g"}}])
+
+    def test_rate_floor_on_2_4_ghz_only(self):
+        self.assertEqual(mesh.rates_row("24"), {"min_hw_mode": "11g"})
+        self.assertEqual(mesh.rates_row("50"), {})
+        self.assertEqual(mesh.rates_row("60"), {})
 
     def test_converged_gets_nothing(self):
         m = mesh.Mesh(None, mesh_args())
