@@ -1,23 +1,28 @@
 ow: an AP that is not running starts on its backhaul station's channel
 
-opensync-rpi / opensync-lab: the STA channel override left an AP that is not running (not
-yet started, or being restarted) alone, so it started on its configured channel. Patch
-0008 moves an AP whose CSA hostapd refuses by restarting its BSS; the restart came back on
-the configured channel, the override then asked for the station's channel again, and the
-AP restarted about once a minute (both Raspberry Pi pods after the physical MV3 moved from
-channel 6 to 2, 2026-10-09 09:52Z). With a station linked on the radio, an AP that is not
-running now takes the station's channel, so it starts there and needs no move at all.
-The decision is in ow_sta_channel_override_action.h, free of the module's state, so that
-pod/opensync/tests/ow_sta_channel_override_action_test.c tests it on its own; live: the
-pods' APs on the MV3's channel after a move, without restarts.
+opensync-rpi / opensync-lab: the STA channel override freed its object for an AP as soon
+as the AP was not running (not started yet, disabled, or being restarted), so it did not
+apply then and the AP started on its configured channel. Patch 0008 moves an AP whose CSA
+hostapd refuses by restarting its BSS; the restart came back on the configured channel
+(osw wrote it into hostapd's config at the re-add: traced on a Raspberry Pi pod, 2026-10-09
+10:59-11:01Z), the override asked for the station's channel again, and the AP restarted
+about once a minute, off its station's channel and unusable for clients.
 
-Upstream: an OpenSync core behaviour as released in 6.6.1.0:
-ow_sta_channel_override_ap_get_action() in src/lib/ow/src/ow_sta_channel_override.c
-returns DONT_CHANGE for an AP that is not running, so an AP (re)started while its radio's
-station is on another channel starts away from it. Not reported (the owner decides).
+Now the object lives as long as the AP's interface exists, and with a station linked on
+the radio an AP that is not running takes the station's channel: it starts there, and a
+restart lands there. The decision is in ow_sta_channel_override_action.h, free of the
+module's state, so that pod/opensync/tests/ow_sta_channel_override_action_test.c tests it
+on its own. (The first version of this patch had the decision only: with the object freed
+it never applied.) Live: an AP restarted onto its station's channel.
+
+Upstream: an OpenSync core behaviour as released in 6.6.1.0: ow_sta_channel_override_ap_update()
+in src/lib/ow/src/ow_sta_channel_override.c frees the AP object when the AP is not running,
+and ow_sta_channel_override_ap_get_action() leaves such an AP alone, so an AP (re)started
+while its radio's station is on another channel starts away from it. Not reported (the
+owner decides).
 
 diff --git a/src/lib/ow/src/ow_sta_channel_override.c b/src/lib/ow/src/ow_sta_channel_override.c
-index bcc3124e..82a0f4a4 100644
+index bcc3124e..f9c59a59 100644
 --- a/src/lib/ow/src/ow_sta_channel_override.c
 +++ b/src/lib/ow/src/ow_sta_channel_override.c
 @@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -68,6 +73,27 @@ index bcc3124e..82a0f4a4 100644
  }
  
  static const struct osw_channel *
+@@ -626,7 +612,19 @@ ow_sta_channel_override_ap_update(struct osw_state_observer *obs,
+                                          ?: ow_sta_channel_override_ap_alloc(m, phy_name, vif_name);
+     ow_sta_channel_override_ap_set_info(ap, exists ? info : NULL);
+ 
+-    if (ap->info == NULL) {
++    /* Keep the object while the AP's interface exists, also
++     * while the AP is not running (not started yet, disabled,
++     * or being restarted): its station is tracked through it,
++     * and an AP that is not running starts on the station's
++     * channel (ow_sta_channel_override_action.h). Freed when
++     * the AP was not running, the override did not apply and
++     * a restart came back on the configured channel.
++     */
++    const bool is_ap = exists
++                    && (info->drv_state != NULL)
++                    && (info->drv_state->exists)
++                    && (info->drv_state->vif_type == OSW_VIF_AP);
++    if (!is_ap) {
+         ow_sta_channel_override_ap_free(ap);
+     }
+ }
 diff --git a/src/lib/ow/src/ow_sta_channel_override_action.h b/src/lib/ow/src/ow_sta_channel_override_action.h
 new file mode 100644
 index 00000000..08312d49
