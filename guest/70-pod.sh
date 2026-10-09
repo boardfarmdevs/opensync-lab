@@ -31,7 +31,7 @@ lxc profile create "$name" >/dev/null
 lxc profile set "$name" security.privileged=true security.nesting=true \
     limits.memory=512MiB limits.cpu=2 boot.autostart=false
 lxc profile device add "$name" root disk path=/ pool=default >/dev/null
-free=($(hwsim_free))
+mapfile -t free < <(hwsim_free)
 [ "${#free[@]}" -ge "$radios" ] || die "only ${#free[@]} free hwsim radios, need $radios"
 for i in $(seq 0 $((radios - 1))); do
     lxc profile device add "$name" "wlan$i" nic nictype=physical parent="${free[$i]}" name="wlan$i" >/dev/null \

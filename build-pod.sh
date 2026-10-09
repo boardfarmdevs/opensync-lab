@@ -160,7 +160,9 @@ cmd_status() {
     docker image inspect "$MVX_POD_BUILDENV" >/dev/null 2>&1 && echo "buildenv:  $MVX_POD_BUILDENV" || echo "buildenv:  -"
     [ -d "$MVX_POD_WORK/core/.git" ] && echo "sources:   $(git -C "$MVX_POD_WORK/core" describe --tags 2>/dev/null)" || echo "sources:   -"
     [ -d "$MVX_POD_WORK/core/work/$TARGET/rootfs/usr/opensync" ] && echo "rootfs:    built" || echo "rootfs:    -"
-    ls -1 "$MVX_POD_OUT"/*.rootfs.tar.gz 2>/dev/null | sed 's/^/image:     /' || true
+    for f in "$MVX_POD_OUT"/*.rootfs.tar.gz; do
+        if [ -e "$f" ]; then echo "image:     $f"; fi
+    done
 }
 
 usage() { sed -n '3,11p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }

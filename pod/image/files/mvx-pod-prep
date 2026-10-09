@@ -7,8 +7,11 @@
 # creates its own VIFs.
 set -u
 i=0
+# shellcheck disable=SC2012  # phy names are plain; sort -V for phy2 < phy10
 for p in $(ls /sys/class/ieee80211 | sort -V); do
-    for nd in $(ls /sys/class/ieee80211/$p/device/net 2>/dev/null); do
+    for nd in "/sys/class/ieee80211/$p/device/net/"*; do
+        [ -e "$nd" ] || continue
+        nd=${nd##*/}
         ip link set "$nd" down 2>/dev/null
         iw dev "$nd" del 2>/dev/null
     done
@@ -20,6 +23,7 @@ done
 # derived from the container name, so a pod keeps its identity across relaunches.
 if ! ip link show eth0 >/dev/null 2>&1; then
     h=$(hostname | md5sum | cut -c1-10)
+    # shellcheck disable=SC2046,SC2183  # split the hash into 5 octets
     mac=$(printf '02:%s:%s:%s:%s:%s' $(echo "$h" | sed 's/../& /g'))
     ip link add eth0 type dummy
     ip link set eth0 address "$mac"
@@ -29,4 +33,5 @@ fi
 # the lease's servers included: udhcpc-lease-dns), as on OpenWrt; the image's own file
 # is the container build's, empty
 ln -sf /tmp/resolv.conf /etc/resolv.conf
+# shellcheck disable=SC2012  # a log line of plain phy names
 echo "mvx-pod-prep: $i radio(s): $(ls /sys/class/ieee80211 | tr '\n' ' '), eth0 $(cat /sys/class/net/eth0/address)"

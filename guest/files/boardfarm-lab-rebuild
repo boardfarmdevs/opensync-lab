@@ -49,6 +49,7 @@ if ! wait_ready 15; then
         echo "bf-lab teardown,setup (attempt $attempt)"
         # Leftovers of an interrupted run (same-name containers, restart
         # policies) make compose fail with "name already in use".
+        # shellcheck disable=SC2086  # $containers: the list of names
         docker rm -f $containers >/dev/null 2>&1 || true
         docker container prune -f >/dev/null 2>&1 || true
         # 'status' is informational only: it also runs SSH probes that fail
@@ -64,6 +65,7 @@ if ! wait_ready 15; then
     done
 fi
 wait_ready 60 || { echo "boardfarm WAN side is not serving (see: docker ps; docker logs dhcp-cpe1)" >&2; exit 1; }
+# shellcheck disable=SC2086  # $containers: the list of names
 docker update --restart unless-stopped $containers >/dev/null
 # The lab hands CPEs global IPv6 (DHCPv6 + RA on the tagged VLAN), but when
 # this host has no IPv6 path to the internet, wan-cpe1 silently drops what it

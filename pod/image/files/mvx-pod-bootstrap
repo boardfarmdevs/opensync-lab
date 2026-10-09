@@ -38,7 +38,9 @@ mkdir -p /run/opensync/osw
 : > /run/opensync/osw/90_mvx_pod_bands.conf
 
 i=0
+# shellcheck disable=SC2012  # phy names are plain; sort -V for phy2 < phy10
 for phy in $(ls /sys/class/ieee80211 | sort -V); do
+    # shellcheck disable=SC2086  # split the band list
     set -- $bands; shift $i; band=${1:-24}; i=$((i + 1))
     case $band in
         24) fb=2.4G hw=11n ht=HT20 ;;

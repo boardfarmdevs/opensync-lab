@@ -402,7 +402,7 @@ cmd_status() {
     echo "build dir: $BUILD_DIR"
     local m
     for m in checkout layers configure meta-mvx built; do
-        printf '  %-10s %s\n' "$m" "$([ -f "$(marker "$m")" ] && echo done || echo -)"
+        printf '  %-10s %s\n' "$m" "$([ -f "$(marker "$m")" ] && echo "done" || echo -)"
     done
     [ -e "$(artifact)" ] && echo "artifact:  $(readlink -f "$(artifact)")"
     [ -f "$BUILD_DIR/mvx-build-info.txt" ] && sed 's/^/  /' "$BUILD_DIR/mvx-build-info.txt"

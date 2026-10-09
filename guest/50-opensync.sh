@@ -47,7 +47,7 @@ if [ -n "$missing" ]; then
     for f in $missing; do
         cx "ln -sfn $noc/$f $certdir/$f"
     done
-    result INFO "client certificates" "image selects no NOC; linked $(echo $missing | wc -w) file(s) -> $noc/ (runtime workaround)"
+    result INFO "client certificates" "image selects no NOC; linked $(wc -w <<<"$missing") file(s) -> $noc/ (runtime workaround)"
     certs_linked=1
 else
     result INFO "client certificates" "present: $certdir/client.pem -> $(cx "readlink $certdir/client.pem")"
@@ -62,6 +62,7 @@ else
     for kv in "SONURL string $redirector" "NativeAtmBsControl bool true" \
               "SONOperationalStatus bool true" "SONLogpullEnable bool true" \
               "SONAdminStatus bool true"; do
+        # shellcheck disable=SC2086  # split "<name> <type> <value>"
         set -- $kv
         cx "dmcli eRT setv Device.X_LGI-COM_SON.$1 $2 $3" | grep -q succeed \
             || warn "dmcli setv $1 did not report success"

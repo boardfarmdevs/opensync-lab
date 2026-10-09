@@ -1,17 +1,2 @@
 # shellcheck findings already in the repository, per file and code: a new one fails
 # tests/lint.sh. Fix them and shrink this file with tests/lint.sh --update.
-1 build-mvx.sh SC1010
-1 build-pod.sh SC2012
-1 guest/10-hwsim.sh SC2010
-2 guest/50-opensync.sh SC2086
-1 guest/70-pod.sh SC2207
-2 guest/files/boardfarm-lab-rebuild SC2086
-1 guest/files/mvx-hwsim-pool SC2010
-1 pod/image/files/mvx-pod-bootstrap SC2012
-1 pod/image/files/mvx-pod-bootstrap SC2086
-2 pod/image/files/mvx-pod-prep SC2012
-1 pod/image/files/mvx-pod-prep SC2045
-1 pod/image/files/mvx-pod-prep SC2046
-1 pod/image/files/mvx-pod-prep SC2086
-1 pod/image/files/mvx-pod-prep SC2183
-1 pod/image/files/opensync.init SC1090

@@ -28,4 +28,4 @@ for phy in /sys/class/ieee80211/phy*; do
     done
     ip link set "$keep" up
 done
-echo "hwsim pool: $(ls /sys/class/net | grep -c '^virt-wlan') host-resident radios"
+echo "hwsim pool: $(find /sys/class/net -mindepth 1 -maxdepth 1 -name 'virt-wlan*' | wc -l) host-resident radios"

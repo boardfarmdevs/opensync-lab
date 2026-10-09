@@ -30,7 +30,7 @@ if [ -d /sys/module/mac80211_hwsim ]; then
 fi
 systemctl restart mvx-hwsim-pool.service
 
-free=$(ls /sys/class/net | grep -c '^virt-wlan' || true)
+free=$(find /sys/class/net -mindepth 1 -maxdepth 1 -name 'virt-wlan*' | wc -l)
 [ "$free" -ge "$radios" ] || warn "only $free of $radios radios are host-resident"
 set_status hwsim "ok radios=$radios channels=$channels free=$free"
 log "hwsim: $(cat "$STATE/hwsim.status")"
