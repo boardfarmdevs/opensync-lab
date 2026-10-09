@@ -114,10 +114,15 @@ if [ -n "$lan" ] && [ -n "$dgw" ]; then
 else
     result FAIL "pod LAN (br-home)" "br-home '${lan:-none}' default via '${dgw:-none}'"
 fi
-if noc_claimed; then
-    result PASS "cloud (local-noc)" "$id: Manager $(px "ovsh -r s Manager target") connected=$(px "ovsh -r s Manager is_connected")"
+# A session that holds: cm reconnects a few times while br-home's addresses settle (its LAN
+# lease, then DHCPv6), a few seconds without a session each, right after its first one
+# (opensync-lab-1009, 9 October). Held means connected for 30 s and local-noc's.
+session_age() { px "ovsh -r s Manager status" | grep -o 'sec_since_connect","[0-9]*' | grep -o '[0-9]*$'; }
+session_held() { noc_claimed && [ "$(px "ovsh -r s Manager is_connected")" = true ] && [ "$(session_age)" -ge 30 ]; }
+if wait_for 120 5 "$id's controller session held for 30 s" session_held; then
+    result PASS "cloud (local-noc)" "$id: Manager $(px "ovsh -r s Manager target") connected=$(px "ovsh -r s Manager is_connected"), for $(session_age) s"
 else
-    result FAIL "cloud (local-noc)" "$id has no controller session in local-noc"
+    result FAIL "cloud (local-noc)" "$id has no controller session in local-noc that holds 30 s"
 fi
 fh() { px "iw dev home-ap-24 info" | grep -q "ssid ${MVX_MESH_HOME_SSID:-opensync-lab-home}"; }
 if wait_for 60 3 "fronthaul home-ap-24" fh; then
