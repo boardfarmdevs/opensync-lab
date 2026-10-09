@@ -48,6 +48,7 @@ wait_for() {
 }
 
 # Per-product build facts. Sets PROD_MACHINE, PROD_META, PROD_SUBDIR.
+# shellcheck disable=SC2034  # used by the scripts that source this file
 product_info() {
     case "$1" in
         mv3)     PROD_MACHINE=exm-qemux86-mv3;     PROD_META=meta-lxd-mv3;     PROD_SUBDIR= ;;

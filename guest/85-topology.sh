@@ -31,12 +31,22 @@ leases=$(gx "cat /var/lib/misc/dnsmasq.leases")
 
 n_sta=$(printf '%s\n' "$stas" | grep -c .)
 n_gre=$(printf '%s\n' "$ports" | grep -c .)
-[ "$n_sta" -eq "$pods" ] && result PASS "$gw backhaul" "$n_sta stations on $bh_if" \
-                         || result FAIL "$gw backhaul" "$n_sta stations on $bh_if, want $pods"
-[ "$n_gre" -eq "$pods" ] && result PASS "$gw GRE ports" "$(echo $ports) in brlan0" \
-                         || result FAIL "$gw GRE ports" "'$(echo $ports)' in brlan0, want $pods"
-printf '%s\n' "$nodes" | grep -qx "$gw" && result PASS "$gw cloud" "controller session in local-noc" \
-                                       || result FAIL "$gw cloud" "no controller session in local-noc"
+port_list=$(printf '%s\n' "$ports" | paste -sd' ' -)
+if [ "$n_sta" -eq "$pods" ]; then
+    result PASS "$gw backhaul" "$n_sta stations on $bh_if"
+else
+    result FAIL "$gw backhaul" "$n_sta stations on $bh_if, want $pods"
+fi
+if [ "$n_gre" -eq "$pods" ]; then
+    result PASS "$gw GRE ports" "$port_list in brlan0"
+else
+    result FAIL "$gw GRE ports" "'$port_list' in brlan0, want $pods"
+fi
+if printf '%s\n' "$nodes" | grep -qx "$gw"; then
+    result PASS "$gw cloud" "controller session in local-noc"
+else
+    result FAIL "$gw cloud" "no controller session in local-noc"
+fi
 
 for p in $(seq 1 "$pods"); do
     pod=pod-$p

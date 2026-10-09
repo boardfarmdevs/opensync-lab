@@ -22,7 +22,7 @@ start() {
     ln -sf "$PID" "$RUN/ovsdb-server.pid"
     ln -sf /var/run/db.sock "$RUN/db.sock"
     # radios + backhaul STAs for the phys this pod actually has (see script)
-    for i in 1 2 3 4 5 6 7 8 9 10; do ovsdb-client list-dbs unix:/var/run/db.sock >/dev/null 2>&1 && break; sleep 1; done
+    for _ in 1 2 3 4 5 6 7 8 9 10; do ovsdb-client list-dbs unix:/var/run/db.sock >/dev/null 2>&1 && break; sleep 1; done
     /usr/local/sbin/mvx-pod-bootstrap 2>&1 | logger -t mvx-pod-bootstrap
 }
 stop() {

@@ -28,8 +28,7 @@ ready() {
 }
 
 wait_ready() {
-    local i
-    for i in $(seq 1 "$1"); do ready && return 0; sleep 2; done
+    for _ in $(seq 1 "$1"); do ready && return 0; sleep 2; done
     return 1
 }
 

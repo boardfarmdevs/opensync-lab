@@ -125,7 +125,7 @@ cmd_pod() { vm_push_tree; pod_push; vm_run_guest 70-pod.sh "${1:-pod-1}"; }
 # the lab topology: one gateway, MVX_PODS extenders, MVX_POD_CLIENTS
 # wireless clients on each extender's fronthaul
 cmd_mesh() {
-    local p c pod
+    local p c
     MVX_OPENSYNC_REDIRECTOR=$(cloud_redirector local)
     vm_push_tree
     cmd_opensync
