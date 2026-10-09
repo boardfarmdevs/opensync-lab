@@ -37,6 +37,7 @@ if ! lxc image info "$image" >/dev/null 2>&1; then
     log "client: building image $image (alpine + wpa_supplicant)"
     lxc delete -f "$image-build" >/dev/null 2>&1
     lxc launch "$base" "$image-build" >/dev/null || die "cannot launch $base"
+    # shellcheck disable=SC2317  # called by wait_for
     online() { lxc exec "$image-build" -- sh -c 'ping -c1 -W2 dl-cdn.alpinelinux.org' >/dev/null 2>&1; }
     wait_for 60 2 "$image-build online" online || die "$image-build has no network"
     lxc exec "$image-build" -- apk add -q wpa_supplicant iw >/dev/null || die "apk add failed"
@@ -94,6 +95,7 @@ pidof udhcpc >/dev/null ||
     udhcpc -b -S -i wlan0 -p /run/udhcpc.wlan0.pid -t 10 -T 2 -A 5
 START
 cx "chmod +x /etc/local.d/opensync-lab-wlan.start; rc-update add local default >/dev/null 2>&1; /etc/local.d/opensync-lab-wlan.start >/dev/null 2>&1"
+# shellcheck disable=SC2317  # called by wait_for
 assoc() { cx "wpa_cli -i wlan0 status" | grep -q '^wpa_state=COMPLETED'; }
 if wait_for 90 3 "association with '$ssid'" assoc; then
     bssid=$(cx "wpa_cli -i wlan0 status" | sed -n 's/^bssid=//p')
@@ -114,6 +116,7 @@ else
     result FAIL "pod station" "$mac not associated on $pod home-ap-24"
 fi
 
+# shellcheck disable=SC2317  # called by wait_for
 leased() { cx "ip -4 -o addr show wlan0" | grep -q inet; }
 wait_for 60 2 "DHCP lease on wlan0" leased
 ip=$(cx "ip -4 -o addr show wlan0" | awk '{print $4}')

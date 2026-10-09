@@ -12,12 +12,9 @@
 1 guest/40-wan-check.sh SC2015
 1 guest/50-opensync.sh SC2015
 2 guest/50-opensync.sh SC2086
-12 guest/50-opensync.sh SC2317
 1 guest/70-pod.sh SC2016
 1 guest/70-pod.sh SC2207
-12 guest/70-pod.sh SC2317
 1 guest/80-client.sh SC2015
-3 guest/80-client.sh SC2317
 3 guest/85-topology.sh SC2015
 2 guest/85-topology.sh SC2086
 2 guest/85-topology.sh SC2116

@@ -49,12 +49,14 @@ lxc start "$name" >/dev/null || die "start failed"
 lxc config set "$name" user.opensync-lab.image "$fp"
 
 wait_for 120 2 "$name running" ct_running "$name" || die "$name did not start"
+# shellcheck disable=SC2317  # called by wait_for
 up() { [ "$(lxc exec "$name" -- systemctl is-active opensync.service 2>/dev/null)" = active ]; }
 wait_for 180 3 "opensync.service active" up || {
     lxc exec "$name" -- journalctl -u mvx-pod-prep -u opensync --no-pager -n 40
     die "opensync.service did not become active in $name"
 }
 log "pod: $(lxc exec "$name" -- journalctl -u mvx-pod-prep -o cat --no-pager | tail -1)"
+# shellcheck disable=SC2317  # called by wait_for
 managers() { for m in ovsdb-server dm cm owm nm; do lxc exec "$name" -- pidof "$m" >/dev/null || return 1; done; }
 wait_for 180 5 "pod managers" managers || warn "not all managers are running in $name"
 lxc exec "$name" -- sh -c 'for m in ovsdb-server dm cm wm owm nm wano; do printf "%s:%s " $m "$(pidof $m >/dev/null && echo up || echo -)"; done; echo'
@@ -77,6 +79,7 @@ result() {
 }
 px() { lxc exec "$name" -- sh -c "export PATH=\$PATH:/usr/opensync/tools; $1" 2>/dev/null; }
 gx() { lxc exec "$gw" -- sh -c "export PATH=\$PATH:/usr/opensync/tools; $1" 2>/dev/null; }
+# shellcheck disable=SC2317  # called by wait_for
 noc_claimed() { docker exec local-noc noc-ctl nodes 2>/dev/null | awk -v n="$id" '$1 == n && $2 == "controller"' | grep -q .; }
 
 echo "=== extender: $name ($id) via $gw $bh_if ==="
@@ -119,12 +122,14 @@ fi
 # lease, then DHCPv6), a few seconds without a session each, right after its first one
 # (opensync-lab-1009, 9 October). Held means connected for 30 s and local-noc's.
 session_age() { px "ovsh -r s Manager status" | grep -o 'sec_since_connect","[0-9]*' | grep -o '[0-9]*$'; }
+# shellcheck disable=SC2317  # called by wait_for
 session_held() { noc_claimed && [ "$(px "ovsh -r s Manager is_connected")" = true ] && [ "$(session_age)" -ge 30 ]; }
 if wait_for 120 5 "$id's controller session held for 30 s" session_held; then
     result PASS "cloud (local-noc)" "$id: Manager $(px "ovsh -r s Manager target") connected=$(px "ovsh -r s Manager is_connected"), for $(session_age) s"
 else
     result FAIL "cloud (local-noc)" "$id has no controller session in local-noc that holds 30 s"
 fi
+# shellcheck disable=SC2317  # called by wait_for
 fh() { px "iw dev home-ap-24 info" | grep -q "ssid ${MVX_MESH_HOME_SSID:-opensync-lab-home}"; }
 if wait_for 60 3 "fronthaul home-ap-24" fh; then
     result PASS "fronthaul (local-noc)" "home-ap-24 '${MVX_MESH_HOME_SSID:-opensync-lab-home}' $(px "iw dev home-ap-24 info" | awk '/channel/{print "ch"$2}') in br-home"

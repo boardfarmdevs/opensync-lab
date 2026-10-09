@@ -70,6 +70,7 @@ fi
 
 # L3 managers
 managers="ovsdb-server dm cm nm wm"
+# shellcheck disable=SC2317  # called by wait_for
 running() { local m; for m in $managers; do cx "pidof $m >/dev/null" || return 1; done; }
 if wait_for 240 5 "OpenSync managers" running; then
     result PASS "managers" "$(for m in $managers; do printf '%s ' "$m"; done)running"
@@ -143,6 +144,7 @@ if [ -n "${certs_linked:-}" ] && [ "$cur_admin" = true ]; then
 fi
 
 # L4a SONURL -> AWLAN_Node.redirector_addr (local MeshAgent bridge)
+# shellcheck disable=SC2317  # called by wait_for
 redir_ok() { fix_uplink; ovsh "-r s AWLAN_Node redirector_addr" | grep -q "$redir_host"; }
 if wait_for 90 5 "redirector_addr" redir_ok; then
     result PASS "AWLAN_Node.redirector_addr" "$(ovsh '-r s AWLAN_Node redirector_addr')"
@@ -152,12 +154,14 @@ fi
 
 # L4b redirector -> controller assignment, then the controller connection
 mgr_addr() { ovsh "-r s AWLAN_Node manager_addr" | grep -E '^(ssl|tcp):'; }
+# shellcheck disable=SC2317  # called by wait_for
 mgr_addr_wait() { fix_uplink; mgr_addr >/dev/null; }
 if wait_for 360 5 "manager_addr" mgr_addr_wait; then
     result PASS "controller assigned" "AWLAN_Node.manager_addr=$(mgr_addr)"
 else
     result FAIL "controller assigned" "AWLAN_Node.manager_addr empty (redirector not reached, or node unknown to the cloud)"
 fi
+# shellcheck disable=SC2317  # called by wait_for
 connected() { [ "$(ovsh '-r s Manager is_connected')" = true ]; }
 if wait_for 240 5 "Manager.is_connected" connected; then
     result PASS "Manager.is_connected" "true -> $(ovsh '-r s Manager target')"
@@ -169,6 +173,7 @@ fi
 if [ "$redir_host" = "${MVX_LOCAL_NOC_IP:-}" ]; then
     node_id=$(ovsh '-r s AWLAN_Node id')
     noc_session() { docker exec local-noc noc-ctl nodes 2>/dev/null | awk -v n="$node_id" '$1 == n && $2 == "controller"' | tail -1; }
+    # shellcheck disable=SC2317  # called by wait_for
     noc_has_session() { [ -n "$(noc_session)" ]; }
     wait_for 120 5 "local-noc controller session" noc_has_session
     sess=$(noc_session)
