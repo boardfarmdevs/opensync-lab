@@ -41,7 +41,7 @@ if ! lxc image info "$image" >/dev/null 2>&1; then
     online() { lxc exec "$image-build" -- sh -c 'ping -c1 -W2 dl-cdn.alpinelinux.org' >/dev/null 2>&1; }
     wait_for 60 2 "$image-build online" online || die "$image-build has no network"
     lxc exec "$image-build" -- apk add -q wpa_supplicant iw >/dev/null || die "apk add failed"
-    lxc stop "$image-build" && lxc publish "$image-build" --alias "$image" >/dev/null || die "publish failed"
+    { lxc stop "$image-build" && lxc publish "$image-build" --alias "$image" >/dev/null; } || die "publish failed"
     lxc delete "$image-build" >/dev/null
 fi
 

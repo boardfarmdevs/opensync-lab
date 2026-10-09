@@ -52,9 +52,12 @@ fix_lan_dhcp() {  # <container>
     lxc exec "$c" -- sh -c 'sed -i "s/^bind-interfaces$/bind-dynamic/" /var/dnsmasq.conf &&
         dnsmasq -u nobody -q --clear-on-reload --bind-dynamic --add-mac -P 4096 -C /var/dnsmasq.conf' 2>&1 | tail -1
     sleep 1
-    lxc exec "$c" -- pidof dnsmasq >/dev/null 2>&1 \
-        && echo "dnsmasq was down (unknown wl0.1/wl1.1 with bind-interfaces); restarted with bind-dynamic" \
-        || { echo "dnsmasq still not running"; return 1; }
+    if lxc exec "$c" -- pidof dnsmasq >/dev/null 2>&1; then
+        echo "dnsmasq was down (unknown wl0.1/wl1.1 with bind-interfaces); restarted with bind-dynamic"
+    else
+        echo "dnsmasq still not running"
+        return 1
+    fi
 }
 
 # Return hwsim radios left behind by deleted containers to the pool. A radio is

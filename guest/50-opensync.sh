@@ -138,9 +138,11 @@ if [ -n "${certs_linked:-}" ] && [ "$cur_admin" = true ]; then
     ovsh "u Node_Services -w service==cm enable:=false" >/dev/null
     sleep 3
     ovsh "u Node_Services -w service==cm enable:=true" >/dev/null
-    wait_for 60 3 "cm restarted" cx "pidof cm >/dev/null" \
-        && log "restarted cm (Node_Services) to pick up the certificates" \
-        || warn "cm did not come back after the Node_Services toggle"
+    if wait_for 60 3 "cm restarted" cx "pidof cm >/dev/null"; then
+        log "restarted cm (Node_Services) to pick up the certificates"
+    else
+        warn "cm did not come back after the Node_Services toggle"
+    fi
 fi
 
 # L4a SONURL -> AWLAN_Node.redirector_addr (local MeshAgent bridge)

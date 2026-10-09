@@ -58,6 +58,14 @@ assert_match "$out" "^rc=0$" "returns 0 once it runs"
 assert_called "lxc exec mv3 -- sh -c .*bind-dynamic"
 rm -f "$STUB_DIR/pidof"
 
+test_case "fix_lan_dhcp: stays down"
+behave lxc <<'EOF'
+case "$*" in *"pidof dnsmasq"*) exit 1 ;; esac
+EOF
+out=$( (source "$ROOT/guest/common.sh"; fix_lan_dhcp mv3 || echo "rc=$?") 2>&1)
+assert_match "$out" "^dnsmasq still not running$" "says so"
+assert_match "$out" "^rc=1$" "returns 1"
+
 echo "== guest/25-local-noc.sh"
 
 test_case "local-noc started"

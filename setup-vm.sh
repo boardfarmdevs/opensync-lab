@@ -93,7 +93,7 @@ expose_noc_ui() {
     sub=$(lxc network get "$MVX_VM_NETWORK" ipv4.address | cut -d/ -f1 | cut -d. -f1-3)
     ip=$(lxc list "$MVX_VM" -c 4 --format csv | tr ',' '\n' | tr -d '"' | grep -o "$sub\.[0-9]*" | head -1)
     listen=$(noc_ui_listen)
-    [ -n "$ip" ] && [ -n "$listen" ] || { warn "noc-ui: no VM address ($ip) or host address ($listen); web UI not exposed"; return 0; }
+    { [ -n "$ip" ] && [ -n "$listen" ]; } || { warn "noc-ui: no VM address ($ip) or host address ($listen); web UI not exposed"; return 0; }
     lxc config device set "$MVX_VM" eth0 ipv4.address="$ip"
     lxc config device remove "$MVX_VM" noc-ui >/dev/null 2>&1 || true
     lxc config device add "$MVX_VM" noc-ui proxy nat=true \

@@ -14,7 +14,7 @@ ML=$MVX_GUEST_ROOT/meta-lxd
 # shellcheck disable=SC2154  # image: from deploy.env
 [ -e "$image" ] || die "no image at $image (run deploy-mvx.sh push)"
 systemctl is-active -q boardfarm-lab.service || die "boardfarm-lab.service is not active"
-ip link show br-wan101 >/dev/null && ip link show br-lan201 >/dev/null \
+{ ip link show br-wan101 >/dev/null && ip link show br-lan201 >/dev/null; } \
     || die "boardfarm bridges br-wan101/br-lan201 missing"
 
 if [ ! -d "$ML/.git" ]; then

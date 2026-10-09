@@ -308,7 +308,7 @@ step_bitbake() {
         log "bitbake: exit $rc after $(( (SECONDS - t0) / 60 )) min"
         [ "$rc" -eq 0 ] && break
         recipes=$(foreign_path_recipes "$out")
-        [ -n "$recipes" ] && [ "$round" -lt 3 ] || { rm -f "$out"; die "bitbake ofw failed"; }
+        { [ -n "$recipes" ] && [ "$round" -lt 3 ]; } || { rm -f "$out"; die "bitbake ofw failed"; }
         for r in $recipes; do
             warn "bitbake: $r came from sstate built in another build dir (stale absolute path); rebuilding it locally"
             in_build_env "bitbake -f -c configure $r" || { rm -f "$out"; die "forced rebuild of $r failed"; }

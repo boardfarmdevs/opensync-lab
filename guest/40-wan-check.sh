@@ -56,8 +56,11 @@ fi
 # 5. TLS to the OpenSync redirector (the path cm uses): handshake + Plume cert
 tls=$(cx "timeout 10 openssl s_client -connect wildfire.plume.tech:443 -servername wildfire.plume.tech </dev/null 2>/dev/null" \
       | sed -n 's/^subject=.*CN *= *//p' | head -1)
-[ -n "$tls" ] && result PASS "TLS redirector:443" "handshake ok, server cert CN=$tls" \
-              || result FAIL "TLS redirector:443" "no TLS handshake with wildfire.plume.tech:443"
+if [ -n "$tls" ]; then
+    result PASS "TLS redirector:443" "handshake ok, server cert CN=$tls"
+else
+    result FAIL "TLS redirector:443" "no TLS handshake with wildfire.plume.tech:443"
+fi
 
 # --- informational ---
 mg=$(cx "ip -4 -o addr show" | awk '$4 ~ /^10\.50\.0\./ {print $2" "$4}' | head -1)

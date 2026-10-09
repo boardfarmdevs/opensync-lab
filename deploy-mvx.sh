@@ -115,7 +115,7 @@ cmd_launch() { vm_run_guest 30-mvx.sh "$(container_name)"; }
 
 pod_push() {
     local img=${MVX_POD_IMAGE:-}
-    [ -n "$img" ] && [ -e "$img.rootfs.tar.gz" ] || die "no pod image (run: build-pod.sh all)"
+    { [ -n "$img" ] && [ -e "$img.rootfs.tar.gz" ]; } || die "no pod image (run: build-pod.sh all)"
     log "pod: pushing $(basename "$img") ($(du -h "$img.rootfs.tar.gz" | cut -f1))"
     vm_push_file "$img.metadata.tar.gz" /opt/opensync-lab/pod/mvx-pod.metadata.tar.gz
     vm_push_file "$img.rootfs.tar.gz" /opt/opensync-lab/pod/mvx-pod.rootfs.tar.gz

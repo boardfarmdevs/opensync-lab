@@ -35,14 +35,14 @@ wait_ready() {
 for c in $containers; do docker start "$c" >/dev/null 2>&1 || true; done
 if ! wait_ready 15; then
     # kea leaves stale pid files in the container layer after a hard stop
-    docker exec dhcp-cpe1 sh -c 'rm -f /var/run/kea/*.pid /run/kea/*.pid' 2>/dev/null \
-        && docker restart dhcp-cpe1 >/dev/null 2>&1 || true
+    { docker exec dhcp-cpe1 sh -c 'rm -f /var/run/kea/*.pid /run/kea/*.pid' 2>/dev/null \
+        && docker restart dhcp-cpe1 >/dev/null 2>&1; } || true
 fi
 if ! wait_ready 15; then
     # mvx containers attach to br-wan101/br-lan201; release them so bf-lab can
     # recreate the docker networks
     for c in $(lxc list -c n --format csv 2>/dev/null); do
-        [ "$(lxc info "$c" | sed -n 's/^Status: //p')" = RUNNING ] && lxc stop -f "$c" || true
+        { [ "$(lxc info "$c" | sed -n 's/^Status: //p')" = RUNNING ] && lxc stop -f "$c"; } || true
     done
     cd "$lab"
     for attempt in 1 2 3; do
