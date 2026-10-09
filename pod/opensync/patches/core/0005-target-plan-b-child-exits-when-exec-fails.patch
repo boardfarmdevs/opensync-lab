@@ -1,0 +1,38 @@
+target: Plan B's child exits when it cannot run the restart script
+
+opensync-rpi / opensync-lab: target_managers_restart() closes every descriptor
+from 3 up (the manager's libev epoll descriptor too), forks, and the child execs
+<scripts dir>/restart.sh. When that exec fails, the function logged "Failed to
+execute plan B!" and returned: the child ran on in the inherited event loop,
+epoll_wait() failed with EINVAL on the reused descriptor and libev aborted --
+a core at every Plan B. In the pods the exec always fails: their scripts dir
+is /usr/opensync/scripts (where opensync.init lives), and core's SYSTEMD rootfs
+installs restart.sh in /usr/opensync/bin. Seen as an sm core at every general
+restart (SM's OVSDB library calls Plan B when ovsdb-server goes away). The child
+now exits; the restart itself is systemd's (opensync.service Restart=on-failure
+in the pod image).
+
+Upstream: the return after a failed exec is an OpenSync core bug as released in
+6.6.1.0: target_managers_restart() in src/lib/target/src/target_stub.c (the stub
+every target without IMPL_target_managers_restart uses). Why the exec fails in
+these pods is ours: their CONFIG_TARGET_PATH_SCRIPTS (/usr/opensync/scripts, for
+opensync.init) is not where core's SYSTEMD rootfs installs restart.sh (bin/), and
+core's opensync.service has Restart=no. Not reported (the owner decides).
+
+diff --git a/src/lib/target/src/target_stub.c b/src/lib/target/src/target_stub.c
+index f802a4b2..76a71e3e 100644
+--- a/src/lib/target/src/target_stub.c
++++ b/src/lib/target/src/target_stub.c
+@@ -391,6 +391,12 @@ void target_managers_restart(void)
+     execl(cmd, cmd, NULL);
+ 
+     LOG(EMERG, "Failed to execute plan B!");
++    /*
++     * Never return to the caller: this child runs on in the parent's event loop,
++     * whose descriptors were closed above, and libev aborts in it
++     * (epoll_wait: Invalid argument) -- a core at every Plan B.
++     */
++    _exit(1);
+ }
+ #endif
+ 

@@ -37,7 +37,9 @@ for i in $(seq 0 $((radios - 1))); do
     lxc profile device add "$name" "wlan$i" nic nictype=physical parent="${free[$i]}" name="wlan$i" >/dev/null \
         && log "pod: wlan$i <- ${free[$i]}"
 done
-lxc init "mvx-pod-$fp" "$name" -p "$name" >/dev/null || die "init failed"
+# </dev/null: `lxc init` reads instance YAML from a stdin that is not a terminal, and waits
+# for its end before even asking LXD (run over ssh, an open channel: forever)
+lxc init "mvx-pod-$fp" "$name" -p "$name" </dev/null >/dev/null || die "init failed"
 # Its journal bounded before the first start (easymesh-resources lab-storage W3), pod images
 # built before build-pod.sh carried the drop-in included.
 journald_conf=$(mktemp)

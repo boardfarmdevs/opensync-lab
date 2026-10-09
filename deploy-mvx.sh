@@ -10,6 +10,8 @@
 #   deploy-mvx.sh pod [NAME]                push the OpenSync pod image (build-pod.sh), launch
 #                                           pod NAME (default pod-1), check it onboards over the
 #                                           wifi backhaul (local-noc)
+#   deploy-mvx.sh pod-planb [NAME]          OpenSync's Plan B in pod NAME: kill its ovsdb-server,
+#                                           OpenSync must come back by itself (restarts it)
 #   deploy-mvx.sh client [NAME] [POD]       Alpine wpa_supplicant client on POD's fronthaul,
 #                                           DHCP + internet through pod -> GRE -> gateway
 #   deploy-mvx.sh mesh                      opensync --cloud local, then MVX_PODS pods (pod-1..N)
@@ -121,6 +123,7 @@ pod_push() {
     vm_push_file "$img.rootfs.tar.gz" /opt/opensync-lab/pod/mvx-pod.rootfs.tar.gz
 }
 cmd_pod() { vm_push_tree; pod_push; vm_run_guest 70-pod.sh "${1:-pod-1}"; }
+cmd_pod_planb() { vm_push_tree; vm_run_guest 75-pod-planb.sh "${1:-pod-1}"; }
 
 # the lab topology: one gateway, MVX_PODS extenders, MVX_POD_CLIENTS
 # wireless clients on each extender's fronthaul
@@ -157,7 +160,7 @@ cmd_status() {
     "
 }
 
-usage() { sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '3,24p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 cmd=${1:-}; [ $# -gt 0 ] && shift
 # --cloud plume|local (opensync / all): which cloud the gateway connects to
@@ -175,6 +178,7 @@ case "$cmd" in
     check)    vm_push_tree; cmd_check ;;
     opensync) vm_push_tree; cmd_opensync ;;
     pod)      cmd_pod "$@" ;;
+    pod-planb) cmd_pod_planb "$@" ;;
     client)   vm_push_tree; cmd_client "$@" ;;
     mesh)     start_log "mesh-$MVX_VM"; cmd_mesh ;;
     all)      start_log "deploy-$MVX_VM"; cmd_push "$@"; cmd_launch; cmd_check; cmd_opensync ;;

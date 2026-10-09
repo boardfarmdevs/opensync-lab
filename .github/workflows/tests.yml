@@ -1,6 +1,7 @@
 # Tests: offline, without a lab (tests/, README "Tests"): the shell scripts' syntax and
-# shellcheck against the recorded baseline, local-noc's unit and end-to-end tests, and the
-# guest steps against stubs in a throwaway container.
+# shellcheck against the recorded baseline, local-noc's unit and end-to-end tests, the
+# guest steps against stubs in a throwaway container, and the pod's core patches (they
+# apply to the pinned core, and their tests pass).
 name: tests
 on:
   push:
@@ -32,3 +33,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: tests/guest/in-container.sh
+
+  core-patches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: tests/core.sh

@@ -163,6 +163,56 @@ out=$(MVX_PODS=2 MVX_POD_CLIENTS=1 bash "$ROOT/guest/85-topology.sh" 2>&1); rc=$
 assert_eq "$rc" 1 "exit status"
 assert_match "$out" "FAIL pod-1 +POD1: pod-1-wc1\(check=FAIL lease=10.0.0.11 on-pod=1\)" "the client named"
 
+echo "== guest/75-pod-planb.sh"
+
+# a pod: running; ovsdb-server killed by pkill; systemd's restart count and the service's
+# state after the kill as $RESTARTED/$SVC_STATE say ($STATE is common.sh's); the journal with
+# $ABORTS libev aborts
+planb_pod() {
+    rm -f "$STUB_DIR/killed"
+    behave lxc <<'EOF'
+case "$*" in
+    "list ^pod-1"*) echo RUNNING ;;
+    *"pkill -x ovsdb-server") touch "$STUB_DIR/killed" ;;
+    *"NRestarts --value") if [ -e "$STUB_DIR/killed" ]; then echo "$RESTARTED"; else echo 0; fi ;;
+    *"is-active opensync.service") if [ -e "$STUB_DIR/killed" ]; then echo "$SVC_STATE"; else echo active; fi ;;
+    *"AWLAN_Node id") [ "$SVC_STATE" = active ] && echo POD1 ;;
+    *"date +%s") echo 1000 ;;
+    *journalctl*)
+        echo "OVSDB: Connection to OVSDB is lost, restarting OpenSync"
+        echo "TARGET: Plan B is executing restart script: /usr/opensync/scripts/restart.sh"
+        for _ in $(seq 1 "$ABORTS"); do echo "(libev) epoll_wait: Invalid argument"; done ;;
+    *"-p ActiveState -p Result -p NRestarts") printf 'ActiveState=failed\nResult=exit-code\nNRestarts=0\n' ;;
+esac
+EOF
+}
+
+test_case "planb: OpenSync restarted by systemd, no abort"
+planb_pod
+out=$(RESTARTED=1 SVC_STATE=active ABORTS=0 bash "$ROOT/guest/75-pod-planb.sh" pod-1 2>&1); rc=$?
+assert_eq "$rc" 0 "exit status"
+assert_called "lxc exec pod-1 -- pkill -x ovsdb-server"
+assert_match "$out" "OpenSync back after .* s \(restarts: 1\)" "back by itself"
+assert_match "$out" "no Plan B child aborted" "no abort"
+assert_match "$out" "planb: PASS" "PASS"
+
+test_case "planb: before the fix (Restart=no, libev aborts)"
+planb_pod
+out=$(MVX_PLANB_WAIT=2 RESTARTED=0 SVC_STATE=failed ABORTS=12 bash "$ROOT/guest/75-pod-planb.sh" pod-1 2>&1); rc=$?
+assert_eq "$rc" 1 "exit status"
+assert_match "$out" "OpenSync not back: ActiveState=failed Result=exit-code NRestarts=0" "the service stayed down"
+assert_match "$out" "12 Plan B child\(ren\) aborted in libev" "the aborts counted"
+assert_match "$out" "planb: FAIL" "FAIL"
+
+test_case "planb: no such pod"
+behave lxc <<'EOF'
+echo STOPPED
+EOF
+out=$(bash "$ROOT/guest/75-pod-planb.sh" pod-9 2>&1); rc=$?
+assert_eq "$rc" 1 "exit status"
+assert_match "$out" "pod pod-9 is not running" "says so"
+assert_no_match "$(cat "$STUB_LOG")" "pkill" "nothing killed"
+
 echo
 echo "== $TESTS cases, $FAILS failed checks"
 [ "$FAILS" -eq 0 ]

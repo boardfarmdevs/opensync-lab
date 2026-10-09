@@ -1,0 +1,170 @@
+osw hostap: restart the BSS for a channel change hostapd cannot switch to
+
+opensync-rpi / opensync-lab: a channel change that confsync marks CSA-eligible was
+applied only as hostapd's CHAN_SWITCH, and only on phys configured for it
+(OSW_DRV_NL80211_CSA_IMPL_PHY_<phy>=..._HOSTAP; the cfg80211 platform's 50_owm.conf
+names phy0-phy2). On the Raspberry Pi pods (MT7921U, an AP sharing its radio with the
+backhaul station), hostapd answers CHAN_SWITCH with FAIL; the reply was not checked,
+so the AP stayed on its old channel while its station followed the root AP to another
+(ACS moved the physical MV3 from 6 to 2 to 10): its clients could not associate,
+confsync re-requested the change every minute, never settled, and its watchdog
+aborted owm every 3 minutes. On a phy without the setting (phy3 onwards: a replugged
+adapter, or mac80211_hwsim radios) the change was never applied at all.
+
+The BSS is now removed and added again on the new channel (a few seconds without the
+AP) when hostapd refused the last CSA, or when the phy has no CSA implementation;
+CSA stays the way when it works. The decision is in osw_hostap_csa.h, free of
+osw_hostap's state, so that pod/opensync/tests/osw_hostap_csa_test.c tests it on its
+own. The glue (the refusal recorded from CHAN_SWITCH's reply, cleared when the BSS is
+added) is proven live by an AP following its station's channel move: pending on
+2026-10-09, when the MV3's image V45 cut the Raspberry Pi pods' LAN side at 09:00Z
+(not the patch), and to come from the Pis and from opensync-lab's chain room.
+
+Upstream: an OpenSync core bug as released in 6.6.1.0: osw_hostap_bss_hapd_csa() in
+src/lib/osw/src/osw_hostap.c queues CHAN_SWITCH without checking its reply, and the
+config path's "invalidated"/"do_csa" leave a CSA-eligible channel change unapplied
+when CSA is not available. Not reported (the owner decides).
+
+diff --git a/src/lib/osw/src/osw_hostap.c b/src/lib/osw/src/osw_hostap.c
+index 0b6aa3bd..2b8eb4ef 100644
+--- a/src/lib/osw/src/osw_hostap.c
++++ b/src/lib/osw/src/osw_hostap.c
+@@ -50,6 +50,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ #include <osw_ut.h>
+ #include <osw_hostap.h>
+ #include <osw_hostap_conf.h>
++#include "osw_hostap_csa.h"
+ #include <osw_wpas_conf.h> // FIXME
+ #include <osw_etc.h>
+ 
+@@ -106,6 +107,7 @@ struct osw_hostap_bss_hapd {
+     struct hostap_rq_task task_get_neigh;
+     struct hostap_rq_task task_get_rxkhs;
+     bool   csa_by_hostap;
++    bool   csa_failed; /* hostapd refused the last CSA: restart the BSS instead */
+     struct hostap_rq_task task_csa;
+ 
+     bool   group_by_phy;
+@@ -682,6 +684,27 @@ osw_hostap_bss_hapd_neigh_add(struct osw_hostap_bss_hapd *hapd,
+     osw_hostap_add_task_array(q, hapd->task_neigh_del, hapd->n_task_neigh_del);
+ }
+ 
++/* A channel switch hostapd refuses (e.g. an MT7921U AP that
++ * shares its radio with a station) was retried at every
++ * confsync attempt: the AP never left its channel, confsync
++ * never settled and its watchdog aborted owm. Remember the
++ * refusal so that the next attempt restarts the BSS on the new
++ * channel instead (osw_hostap_csa.h).
++ */
++static void
++osw_hostap_bss_hapd_csa_done_cb(struct rq_task *task,
++                                void *priv)
++{
++    struct osw_hostap_bss_hapd *hapd = priv;
++    struct hostap_rq_task *t = container_of(task, struct hostap_rq_task, task);
++
++    osw_hostap_bss_cmd_warn_on_err(task, priv);
++    if (osw_hostap_csa_refused(t->reply)) {
++        LOGN(LOG_PREFIX_HAPD(hapd, "csa: refused by hostapd, restarting the bss on the new channel next"));
++        hapd->csa_failed = true;
++    }
++}
++
+ static void
+ osw_hostap_bss_hapd_csa(struct osw_hostap_bss_hapd *hapd,
+                         struct osw_drv_vif_config_ap *ap,
+@@ -706,6 +729,8 @@ osw_hostap_bss_hapd_csa(struct osw_hostap_bss_hapd *hapd,
+ 
+     hostap_rq_task_fini(&hapd->task_csa);
+     hostap_rq_task_init(&hapd->task_csa, hapd->ctrl.txq, cmd);
++    hapd->task_csa.task.completed_fn = osw_hostap_bss_hapd_csa_done_cb;
++    hapd->task_csa.task.priv = hapd;
+     rq_add_task(q, &hapd->task_csa.task);
+ }
+ 
+@@ -1820,6 +1845,10 @@ osw_hostap_set_conf_ap(struct osw_hostap *hostap,
+      * partially.
+      */
+ 
++    const struct osw_hostap_csa_plan csa_plan = osw_hostap_csa_plan(dvif->u.ap.channel_changed,
++                                                                    dvif->u.ap.csa_required,
++                                                                    hapd->csa_by_hostap,
++                                                                    hapd->csa_failed);
+     const bool is_running = hostap_conn_is_opened(hapd->ctrl.conn);
+     const bool want_ap = (dvif->vif_type == OSW_VIF_AP);
+     const bool want_running = dvif->enabled && want_ap;
+@@ -1827,8 +1856,7 @@ osw_hostap_set_conf_ap(struct osw_hostap *hostap,
+                               && dvif->u.ap.wpa.akm_sae;
+     const bool invalidated = dvif->enabled_changed
+                           || sae_psk_changed
+-                          || (dvif->u.ap.channel_changed == true &&
+-                              dvif->u.ap.csa_required == false)
++                          || csa_plan.restart
+                           || dvif->u.ap.bridge_if_name_changed
+                           || dvif->u.ap.nas_identifier_changed
+                           || dvif->u.ap.beacon_interval_tu_changed
+@@ -1864,8 +1892,7 @@ osw_hostap_set_conf_ap(struct osw_hostap *hostap,
+     const bool do_wps_cancel = is_running
+                             && dvif->u.ap.wps_pbc == false
+                             && dvif->u.ap.wps_pbc_changed == true;
+-    const bool do_csa = is_running && want_running &&
+-                     dvif->u.ap.channel_changed && dvif->u.ap.csa_required && hapd->csa_by_hostap;
++    const bool do_csa = is_running && want_running && csa_plan.csa;
+ 
+     const bool do_acl = want_running && (dvif->u.ap.acl_changed || dvif->u.ap.acl_policy_changed) &&
+                      hapd->acl_by_hostap;
+@@ -1881,6 +1908,7 @@ osw_hostap_set_conf_ap(struct osw_hostap *hostap,
+ 
+     if (do_add) {
+         LOGD(LOG_PREFIX_HAPD(hapd, "do add"));
++        hapd->csa_failed = false;
+         osw_hostap_bss_hapd_update_add_task(hapd, hostap, phy_name, vif_name);
+         rq_add_task(q, &hapd->task_add.task);
+         rq_add_task(q, &hapd->task_log_level.task);
+diff --git a/src/lib/osw/src/osw_hostap_csa.h b/src/lib/osw/src/osw_hostap_csa.h
+new file mode 100644
+index 00000000..3c742e0e
+--- /dev/null
++++ b/src/lib/osw/src/osw_hostap_csa.h
+@@ -0,0 +1,41 @@
++/*
++ * osw hostap: how an AP's channel change is applied (opensync-lab / opensync-rpi).
++ *
++ * A channel change confsync marks CSA-eligible was applied only as hostapd's
++ * CHAN_SWITCH, and only on phys configured for it; a refused CHAN_SWITCH went
++ * unnoticed. Now: CSA when the phy has it and hostapd did not refuse the last one,
++ * else the BSS is restarted on the new channel. Kept free of osw_hostap's state, so
++ * that it can be tested on its own (pod/opensync/tests/osw_hostap_csa_test.c).
++ */
++#ifndef OSW_HOSTAP_CSA_H_INCLUDED
++#define OSW_HOSTAP_CSA_H_INCLUDED
++
++#include <stdbool.h>
++#include <string.h>
++
++struct osw_hostap_csa_plan
++{
++    bool csa;     /* switch the running BSS with CHAN_SWITCH */
++    bool restart; /* remove the BSS and add it on the new channel */
++};
++
++static inline struct osw_hostap_csa_plan
++osw_hostap_csa_plan(bool channel_changed, bool csa_required, bool csa_by_hostap, bool csa_failed)
++{
++    struct osw_hostap_csa_plan plan = { false, false };
++
++    if (!channel_changed) return plan;
++    if (csa_required && csa_by_hostap && !csa_failed)
++        plan.csa = true;
++    else
++        plan.restart = true;
++    return plan;
++}
++
++/* Whether hostapd's reply to CHAN_SWITCH refuses it. */
++static inline bool osw_hostap_csa_refused(const char *reply)
++{
++    return reply != NULL && strncmp(reply, "FAIL", 4) == 0;
++}
++
++#endif /* OSW_HOSTAP_CSA_H_INCLUDED */

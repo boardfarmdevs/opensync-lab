@@ -1,0 +1,74 @@
+ow: sta channel override caps the AP's width at its configured width
+
+opensync-rpi / opensync-lab: with an active backhaul STA, the override gives every AP
+of the radio the STA's operational channel, its width included. On a 2.4 GHz pod AP
+configured HT20 (the pod's Wifi_Radio_Config) behind a root AP on 40 MHz, the AP was
+asked for 40 MHz (hostapd ht_capab=[HT40+], op_class 83); hostapd keeps it at 20 MHz
+(20/40 coexistence on a busy band), so confsync kept requesting 2437 (40/2447), never
+settled, and its watchdog aborted owm every ~186 s ("confsync didn't settle for
+180 s"). Each owm restart made cm drop and rebuild the backhaul's GRE. Seen on both
+Raspberry Pi pods on the physical MV3's 2.4 GHz onboarding BSS (channel 6, 40 MHz).
+
+The AP now follows the STA's control channel no wider than it is configured (when it
+is configured: the module's unit tests leave it unset and are unchanged), and the
+divergence check compares control channels, as the AP may be narrower.
+
+Upstream: an OpenSync core bug as released in 6.6.1.0:
+ow_sta_channel_override_ap_mutate_vif() in src/lib/ow/src/ow_sta_channel_override.c
+copies the STA link's channel onto the AP whole, width included, whatever the AP's
+configured width (and ow_sta_channel_override_ap_update() treats a width difference
+as divergence). Any extender whose AP is configured narrower than its root AP runs
+hits it when its driver or hostapd cannot run the wider width. Not reported (the
+owner decides).
+
+diff --git a/src/lib/ow/src/ow_sta_channel_override.c b/src/lib/ow/src/ow_sta_channel_override.c
+index 5b168350..bcc3124e 100644
+--- a/src/lib/ow/src/ow_sta_channel_override.c
++++ b/src/lib/ow/src/ow_sta_channel_override.c
+@@ -221,8 +221,12 @@ ow_sta_channel_override_ap_set_info__(struct ow_sta_channel_override_ap *ap,
+         const struct osw_channel *sta_chan = ow_sta_channel_override_ap_get_sta_chan(ap);
+         if (sta_chan == NULL) return;
+ 
++        /* The AP follows the STA's control channel; it may be
++         * narrower (no wider than it is configured, see
++         * ow_sta_channel_override_ap_mutate_vif()).
++         */
+         const bool divergent_channels = (next == NULL)
+-                                     || (memcmp(sta_chan, next, sizeof(*sta_chan)) != 0);
++                                     || (sta_chan->control_freq_mhz != next->control_freq_mhz);
+         if (divergent_channels) {
+             ow_sta_channel_override_ap_start_settling(ap);
+         }
+@@ -504,16 +508,29 @@ ow_sta_channel_override_ap_mutate_vif(struct ow_sta_channel_override_ap *ap,
+     if (vif->vif_type != OSW_VIF_AP) return;
+ 
+     const enum ow_sta_channel_override_action action = ow_sta_channel_override_ap_get_action(ap, vif);
+-    const struct osw_channel *new_chan = ow_sta_channel_override_action_get_channel(ap, vif, action);
++    struct osw_channel new_chan = *ow_sta_channel_override_action_get_channel(ap, vif, action);
++
++    /* Follow the root AP's channel, but no wider than this AP
++     * is configured: a 2.4 GHz AP configured HT20 behind a 40
++     * MHz root AP was otherwise asked for 40 MHz, which its
++     * hostapd cannot keep (20/40 coexistence), so confsync
++     * never settled and its watchdog aborted owm every 3
++     * minutes, taking the backhaul's GRE down each time.
++     */
++    const bool ap_chan_configured = (vif->u.ap.channel.control_freq_mhz != 0);
++    if (action == OW_STA_CHANNEL_OVERRIDE_USE_STA_STATE_CHAN && ap_chan_configured) {
++        const enum osw_channel_width w = osw_channel_width_min(new_chan.width, vif->u.ap.channel.width);
++        osw_channel_downgrade_to(&new_chan, w);
++    }
+ 
+     ow_sta_channel_override_ap_mutate_ap_log(ap,
+                                              ap->last_action,
+                                              action,
+                                              &ap->last_channel,
+                                              &vif->u.ap.channel,
+-                                             new_chan);
++                                             &new_chan);
+ 
+-    vif->u.ap.channel = *new_chan;
++    vif->u.ap.channel = new_chan;
+     ap->last_action = action;
+     ap->last_channel = vif->u.ap.channel;
+ }

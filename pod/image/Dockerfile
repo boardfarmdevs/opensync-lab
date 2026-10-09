@@ -49,6 +49,8 @@ COPY files/odhcp6c /usr/sbin/odhcp6c
 # OpenSync: only what belongs on an Ubuntu system (not the OpenWrt /etc files)
 COPY rootfs/usr/opensync /usr/opensync
 COPY rootfs/lib/systemd/system/opensync.service /lib/systemd/system/
+# Plan B's restart under systemd (core patch 0005: its child no longer aborts)
+COPY files/opensync-restart.conf /etc/systemd/system/opensync.service.d/restart.conf
 COPY rootfs/etc/sysctl.d/ /etc/sysctl.d/
 COPY files/openvswitch.init /etc/init.d/openvswitch
 COPY files/wpad.init /etc/init.d/wpad
@@ -59,6 +61,7 @@ COPY files/udhcpc-lease-dns /usr/opensync/scripts/udhcpc.d/50-lease-dns
 COPY files/mvx-pod-prep.service /lib/systemd/system/
 COPY files/journald-50-lab.conf /etc/systemd/journald.conf.d/50-lab.conf
 RUN echo /usr/opensync/lib > /etc/ld.so.conf.d/opensync.conf && ldconfig \
+    && mkdir -p /var/log/opensync/crash \
     && ln -sf /usr/opensync/scripts/opensync_functions.sh /lib/opensync_functions.sh \
     && ln -sf /bin/busybox /sbin/udhcpc \
     && for a in route ifconfig; do command -v $a >/dev/null || ln -s /bin/busybox /sbin/$a; done \
