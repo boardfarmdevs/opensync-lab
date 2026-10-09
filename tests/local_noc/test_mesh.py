@@ -3,8 +3,10 @@ pod, and that a mirror already in the desired state gets nothing (the loop is id
 
 import asyncio
 import ipaddress
+import time
 import unittest
 import zlib
+from types import SimpleNamespace
 
 from support import FakeSession, mesh, mesh_args, omap, oset, ref, transact_ops
 
@@ -201,6 +203,106 @@ class PodStepTest(unittest.TestCase):
         s = FakeSession("pod1", pod_tables(converged=True, uplink=up))
         run(m.pod_step(s))
         self.assertEqual(s.requests, [])
+
+
+def bhaul_gateway(leases=()):
+    """A gateway whose backhaul AP wl1.1 is at 169.254.1.1/25 (as the mv3's), converged,
+    with no association reported yet and the given leases (mac, address) already there."""
+    want = dict(mesh.wpa_row("opensync-lab-bhaul", "opensync-lab-bhaul-psk"), enabled=True)
+    return {
+        "Wifi_VIF_Config": {"v1": dict(want, if_name="wl1.1")},
+        "Wifi_Inet_State": {"i1": {"if_name": "wl1.1", "inet_addr": "169.254.1.1",
+                                   "netmask": "255.255.255.128"}},
+        "Wifi_VIF_State": {"vs1": {"if_name": "wl1.1", "associated_clients": oset()}},
+        "Wifi_Associated_Clients": {},
+        "DHCP_leased_IP": {f"l{i}": {"hwaddr": mac, "inet_addr": ip}
+                           for i, (mac, ip) in enumerate(leases)},
+        "Bridge": {"b1": {"name": "brlan0", "ports": oset()}},
+    }
+
+
+def gres(session):
+    return sorted(o["row"]["if_name"] for o in transact_ops(session)
+                  if o.get("table") == "Wifi_Inet_Config" and o.get("op") == "insert")
+
+
+class FreshLeaseTest(unittest.TestCase):
+    """The mv3 reports a new lease within seconds but the association only on a periodic
+    sync, minutes later: a lease that appears while local-noc watches gets its tunnel at
+    once; one that was there before still waits for the association (stale leases)."""
+
+    def test_new_lease_gets_its_gre_at_once(self):
+        m = mesh.Mesh(None, mesh_args())
+        s = FakeSession("gw", bhaul_gateway(leases=[("02:00:00:00:09:00", "169.254.1.77")]))
+        run(m.gateway_step(s))                       # local-noc's first look
+        self.assertEqual(gres(s), [])
+        s.tables["DHCP_leased_IP"]["new"] = {"hwaddr": "02:00:00:00:04:00", "inet_addr": "169.254.1.88"}
+        run(m.gateway_step(s))
+        self.assertEqual(gres(s), ["pgd1_88"])       # no association reported yet
+        self.assertIn("Bridge", [o["table"] for o in transact_ops(s)])
+        for _ in range(3):
+            run(m.gateway_step(s))
+        self.assertNotIn("pgd1_77", gres(s))         # the lease that was there: still waits
+
+    def test_lease_there_before_waits_for_the_association(self):
+        m = mesh.Mesh(None, mesh_args())
+        s = FakeSession("gw", bhaul_gateway(leases=[("02:00:00:00:04:00", "169.254.1.88")]))
+        for _ in range(3):
+            run(m.gateway_step(s))
+        self.assertEqual(gres(s), [])
+        s.tables["Wifi_Associated_Clients"]["c1"] = {"mac": "02:00:00:00:04:00"}
+        s.tables["Wifi_VIF_State"]["vs1"]["associated_clients"] = oset(ref("c1"))
+        run(m.gateway_step(s))
+        self.assertEqual(gres(s), ["pgd1_88"])
+
+    def test_fresh_for_a_while_only(self):
+        m = mesh.Mesh(None, mesh_args())
+        now = [1000.0]
+        m.clock = lambda: now[0]
+        s = FakeSession("gw", bhaul_gateway())
+        self.assertEqual(m.pod_ips(s), set())        # first look
+        s.tables["DHCP_leased_IP"]["new"] = {"hwaddr": "02:00:00:00:04:00", "inet_addr": "169.254.1.88"}
+        self.assertEqual(sorted(map(str, m.pod_ips(s))), ["169.254.1.88"])
+        now[0] += mesh.FRESH_LEASE_S + 1
+        self.assertEqual(m.pod_ips(s), set())        # never associated: not a pod after all
+
+    def test_fresh_lease_outside_the_backhaul(self):
+        m = mesh.Mesh(None, mesh_args())
+        s = FakeSession("gw", bhaul_gateway())
+        m.pod_ips(s)
+        s.tables["DHCP_leased_IP"].update({
+            "lan": {"hwaddr": "02:00:00:00:00:42", "inet_addr": "192.168.0.42"},
+            "other": {"hwaddr": "02:00:00:00:00:43", "inet_addr": "169.254.1.200"},  # outside /25
+            "self": {"hwaddr": "02:00:00:00:00:44", "inet_addr": "169.254.1.1"}})
+        self.assertEqual(m.pod_ips(s), set())
+
+    def test_sessions_tracked_apart(self):
+        m = mesh.Mesh(None, mesh_args())
+        lease = ("02:00:00:00:04:00", "169.254.1.88")
+        a = FakeSession("gw", bhaul_gateway())
+        m.pod_ips(a)
+        a.tables["DHCP_leased_IP"]["new"] = dict(zip(("hwaddr", "inet_addr"), lease))
+        self.assertEqual(len(m.pod_ips(a)), 1)
+        b = FakeSession("gw", bhaul_gateway(leases=[lease]))   # the gateway reconnected
+        self.assertEqual(m.pod_ips(b), set())         # there at b's first look
+
+    def test_the_loop_reacts_within_seconds(self):
+        async def scenario():
+            m = mesh.Mesh(None, mesh_args("--mesh-interval", "0.05"))
+            s = FakeSession("gw", bhaul_gateway())
+            m.noc = SimpleNamespace(sessions={s}, redirected=lambda *k: None, serial=lambda s: None)
+            task = asyncio.create_task(m.run())
+            await asyncio.sleep(0.2)                  # its first look
+            s.tables["DHCP_leased_IP"]["new"] = {"hwaddr": "02:00:00:00:04:00",
+                                                 "inet_addr": "169.254.1.88"}
+            t0 = time.monotonic()
+            while not gres(s) and time.monotonic() - t0 < 5:
+                await asyncio.sleep(0.01)
+            task.cancel()
+            return gres(s), time.monotonic() - t0
+        found, took = run(scenario())
+        self.assertEqual(found, ["pgd1_88"])
+        self.assertLess(took, 1.0)
 
 
 class TransactTest(unittest.TestCase):

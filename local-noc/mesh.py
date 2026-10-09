@@ -15,6 +15,12 @@ Gateway (--mesh-gateway, the node whose uplink is the WAN):
     pgd<b3>_<b4> (if_type gre, gre_ifname <bhaul-if>) -- and that tunnel as
     a port of the LAN bridge (Interface/Port/Bridge), so the pod is on the
     gateway's LAN. The pod's cm builds the other end (g-bhaul-sta-*) itself.
+    A lease that appears while local-noc watches the node (a MAC/address
+    pair it had not seen) is a new pod's and gets its tunnel at once, in the
+    backhaul's subnet: the mv3 reports a lease within seconds but its
+    associations only on a periodic sync, up to minutes later. A lease
+    already there when local-noc first looked may be left over from an
+    earlier association, and waits for that report.
 
   * live counters: ovs-vswitchd refreshes Interface.statistics only every
     other_config:stats-update-interval (mv3 ships 1 hour); set it to
@@ -44,10 +50,13 @@ import zlib
 import asyncio
 import ipaddress
 import logging
+import time
+import weakref
 
 log = logging.getLogger("local-noc.mesh")
 
 LL = ipaddress.ip_network("169.254.0.0/16")
+FRESH_LEASE_S = 300     # a new lease stands for its pod's association this long
 BANDS = {"24": ("2.4G", 6, "HT20"), "50": ("5G", 44, "HT20"), "60": ("6G", 5, "HT20")}
 
 
@@ -88,6 +97,9 @@ class Mesh:
         self.eth_bridge = args.mesh_eth_bridge
         self.pod_bhaul_band = args.mesh_pod_bhaul_band
         self.busy = set()                   # nodes with a reconcile in flight
+        # per session: lease (mac, address) -> when first seen (None: there before)
+        self.leases_seen = weakref.WeakKeyDictionary()
+        self.clock = time.monotonic
 
     async def run(self):
         log.info("mesh: gateway %s, backhaul %s '%s', pods get home-ap-%s '%s'%s%s",
@@ -209,6 +221,14 @@ class Mesh:
         for r in s.tables.get("IPv4_Neighbors", {}).values():
             if r.get("if_name") == bhaul_if:
                 ips.add(r.get("address"))
+        # a new lease in the backhaul's subnet: a pod whose association is not reported yet
+        net = self.bhaul_net(s, bhaul_if)
+        for _, a in self.fresh_leases(s):
+            try:
+                if net is not None and ipaddress.ip_address(a) in net:
+                    ips.add(a)
+            except (TypeError, ValueError):
+                continue
         out = set()
         local = self.bhaul_local_ip(s, bhaul_if)
         for a in ips:
@@ -219,6 +239,33 @@ class Mesh:
             if ip in LL and str(ip) != local:
                 out.add(ip)
         return out
+
+    def bhaul_net(self, s, bhaul_if=None):
+        """The backhaul interface's subnet (its Wifi_Inet_State address and netmask)."""
+        for r in self.rows(s, "Wifi_Inet_State", if_name=bhaul_if or self.bhaul_if):
+            addr, mask = r.get("inet_addr"), r.get("netmask")
+            if addr in (None, "", "0.0.0.0") or not isinstance(mask, str) or mask == "0.0.0.0":
+                continue
+            try:
+                return ipaddress.ip_network(f"{addr}/{mask}", strict=False)
+            except ValueError:
+                continue
+        return None
+
+    def fresh_leases(self, s):
+        """The node's leases (mac, address) that appeared while local-noc watched it, in the
+        last FRESH_LEASE_S seconds. The leases there when local-noc first looked are not
+        fresh: one may be left over from an earlier association."""
+        now = self.clock()
+        pairs = {(r.get("hwaddr", "").lower(), r.get("inet_addr"))
+                 for r in s.tables.get("DHCP_leased_IP", {}).values() if r.get("hwaddr")}
+        seen = self.leases_seen.get(s)
+        if seen is None:
+            self.leases_seen[s] = dict.fromkeys(pairs)
+            return set()
+        for p in pairs - seen.keys():
+            seen[p] = now
+        return {p for p in pairs if seen[p] is not None and now - seen[p] < FRESH_LEASE_S}
 
     def in_bridge(self, s, name, lan_bridge=None):
         ports = self.rows(s, "Port", name=name)
