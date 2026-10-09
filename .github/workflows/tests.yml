@@ -1,0 +1,34 @@
+# Tests: offline, without a lab (tests/, README "Tests"): the shell scripts' syntax and
+# shellcheck against the recorded baseline, local-noc's unit and end-to-end tests, and the
+# guest steps against stubs in a throwaway container.
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: tests/lint.sh
+
+  local-noc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"          # local-noc's image (local-noc/Dockerfile)
+      - run: python -m unittest discover -s tests/local_noc -t tests/local_noc -v
+
+  guest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: tests/guest/in-container.sh

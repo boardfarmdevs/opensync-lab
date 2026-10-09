@@ -68,6 +68,7 @@ these pods over as EasyMesh agents. The scripts:
 | [guest/](guest) | the scripts and units pushed to `/opt/opensync-lab` in the VM |
 | [boardfarm/](boardfarm) | the lab configuration overlaid into boardfarm-lab-staging, and its patches |
 | [site/](site) | the documentation site: local-noc's topology viewer replaying a recording of the lab, the reference tables, the stages |
+| [tests/](tests) | offline tests, run by CI: the shell scripts' syntax and shellcheck, local-noc's unit and end-to-end tests, the guest steps against stubs in a container |
 
 ## Getting started
 
@@ -101,6 +102,20 @@ There is one script per stage; each subcommand can be re-run safely.
 # the documentation site (site/, GitHub Pages): viewer + reference + a recording of the lab
 ./build-docs.sh all                       # then commit site/
 ./build-docs.sh serve                     # preview on http://localhost:8000/
+```
+
+## Tests
+
+Offline, without a lab; CI runs them on every push (`.github/workflows/tests.yml`):
+
+```sh
+tests/lint.sh                    # bash -n / sh -n of every shell script; shellcheck (pinned
+                                 # image) against tests/shellcheck-baseline: new findings fail
+python3 -m unittest discover -s tests/local_noc -t tests/local_noc
+                                 # local-noc: its protocol, mirror, redirects, mesh steps,
+                                 # topology, and end to end with a fake node on loopback
+tests/guest/in-container.sh      # guest steps as root in a throwaway container, no network,
+                                 # their commands (docker, lxc, systemctl, curl) stubbed
 ```
 
 ## Documentation
