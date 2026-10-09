@@ -7,8 +7,9 @@ export MVX_ROOT
 # config: environment > config/local.conf (untracked, written by the scripts)
 # > config/mvx.conf defaults. Both files only assign unset variables (:=), so
 # local.conf must be read first for its values to win over the defaults.
+# shellcheck source=/dev/null  # local.conf: untracked, machine-local
 [ -f "$MVX_ROOT/config/local.conf" ] && source "$MVX_ROOT/config/local.conf"
-# shellcheck source=../config/mvx.conf
+# shellcheck source-path=SCRIPTDIR source=../config/mvx.conf
 source "$MVX_ROOT/config/mvx.conf"
 
 log()  { printf '\033[1;34m[%s]\033[0m %s\n' "$(date +%H:%M:%S)" "$*"; }

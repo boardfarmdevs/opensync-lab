@@ -2,6 +2,7 @@
 # local-noc: plain-TCP OpenSync cloud stand-in (local-noc/noc.py), a docker
 # container on boardfarm's WAN segment (network wan-cpe1, like boardfarm's own
 # services), so any CPE behind wan-cpe1 reaches it through the WAN NAT.
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 
 ip=${MVX_LOCAL_NOC_IP:-10.101.0.40}

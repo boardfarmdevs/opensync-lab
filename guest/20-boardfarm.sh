@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # boardfarm-lab-staging: pinned checkout, uv venv, the opensync-lab lab
 # config overlay, then bf-lab setup (dhcp-cpe1 + wan-cpe1 + lan-cpe1).
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 
 BF=/opt/boardfarm

@@ -4,6 +4,7 @@
 #   L4 MeshAgent bridged SONURL -> AWLAN_Node.redirector_addr,
 #      cm reached the redirector and was handed a controller, Manager.is_connected
 # Same dmcli sequence as boardfarm tests/opensync/test_opensync_cloud.py.
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 set +e
 set +o pipefail   # probes pipe into grep -q; an early exit must not fail them

@@ -2,12 +2,16 @@
 # Launch the mvx container with meta-lxd gen/mv.sh: WAN on br-wan101, LAN
 # port 1 on br-lan201, radios from the hwsim pool. Relaunching replaces the
 # container but keeps its nvram volume (mv.sh semantics).
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 
 name=${1:?container name}
+# deploy.env, written by deploy-mvx.sh push: image, image_sha256, meta_lxd
+# shellcheck source=/dev/null
 source "$MVX_GUEST_ROOT/deploy.env"
 ML=$MVX_GUEST_ROOT/meta-lxd
 
+# shellcheck disable=SC2154  # image: from deploy.env
 [ -e "$image" ] || die "no image at $image (run deploy-mvx.sh push)"
 systemctl is-active -q boardfarm-lab.service || die "boardfarm-lab.service is not active"
 ip link show br-wan101 >/dev/null && ip link show br-lan201 >/dev/null \
@@ -18,6 +22,7 @@ if [ ! -d "$ML/.git" ]; then
 else
     git -C "$ML" fetch -q "$MVX_GUEST_ROOT/assets/meta-lxd.bundle" 'refs/heads/*:refs/remotes/bundle/*'
 fi
+# shellcheck disable=SC2154  # meta_lxd: from deploy.env
 git -C "$ML" checkout -q --detach "$meta_lxd"
 log "mvx: meta-lxd $(git -C "$ML" log -1 --format='%h %s')"
 
@@ -32,6 +37,7 @@ HWSIM_RADIOS=${MVX_HWSIM_RADIOS:-3} HWSIM_POOL_SIZE=${MVX_HWSIM_POOL:-24} ./mv.s
 
 wait_for 120 2 "$name running" ct_running "$name" \
     || die "$name did not start"
+# shellcheck disable=SC2154  # image_sha256: from deploy.env
 lxc config set "$name" user.opensync-lab.image-sha256 "$image_sha256"
 set_status mvx "launched $name build=$(lxc config get "$name" user.build) at $(date -Is)"
 log "mvx: $(cat "$STATE/mvx.status")"

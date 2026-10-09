@@ -3,6 +3,8 @@
 # address. bf-lab teardown/setup recreates that network (and disconnects
 # everything from it), so this runs after every boardfarm-lab rebuild.
 set -euo pipefail
+# written by guest/25-local-noc.sh
+# shellcheck source=/dev/null
 source /etc/default/local-noc
 docker start local-noc >/dev/null
 if [ "$(docker inspect -f '{{with index .NetworkSettings.Networks "wan-cpe1"}}{{.IPAddress}}{{end}}' local-noc)" != "$LOCAL_NOC_IP" ]; then

@@ -5,6 +5,7 @@
 # is the Wi-Fi backhaul to the gateway, which OpenSync's cm onboards over.
 # Then check the onboarding end to end (backhaul, both GRE ends, LAN, cloud
 # claim, fronthaul).
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 set +e
 set +o pipefail

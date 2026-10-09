@@ -2,6 +2,7 @@
 # WAN connectivity check for the mvx container. Hard checks (the result):
 # WAN IPv4 lease from boardfarm, default route via wan-cpe1, internet ping,
 # DNS. Informational: mgmt VLAN lease, IPv6, hwsim radios, LAN client.
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 set +e
 set +o pipefail   # probes pipe into grep -q; an early exit must not fail them

@@ -2,6 +2,7 @@
 # mac80211_hwsim radio pool, persistent across VM reboots. Same conventions
 # as meta-lxd gen/gen-util.sh: load once, never reload, host-resident radios
 # are named virt-wlanN and are "free".
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 
 radios=${MVX_HWSIM_POOL:-24}

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Base lab host: packages, Docker, nested LXD (snap, held), uv, hwsim module.
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 
 # A lab VM takes no automatic updates: an unattended upgrade restarts services under a

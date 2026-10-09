@@ -4,6 +4,7 @@
 # Every pod: associated to mv3's backhaul AP, its GRE a port of mv3's brlan0,
 # claimed by local-noc, its own check PASS. Every client: its own check PASS,
 # leased by mv3, associated to its own pod.
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 set +e
 set +o pipefail

@@ -4,6 +4,8 @@
 # teardown,setup,status. Either way the gate is service-level: Kea running on
 # the tagged sub-interfaces and wan-cpe1 reaching the internet.
 set -euo pipefail
+# written by guest/20-boardfarm.sh
+# shellcheck source=/dev/null
 source /etc/default/boardfarm-lab
 export BF_LAB_CONFIG
 bf=$BOARDFARM_WORKSPACE/.venv/bin/bf-lab

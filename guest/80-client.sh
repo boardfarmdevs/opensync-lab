@@ -8,6 +8,7 @@
 #
 #   80-client.sh <name> <pod>
 #   client -wifi-> pod home-ap -> br-home -> GRE over wifi backhaul -> mv3 brlan0 -> WAN
+# shellcheck source-path=SCRIPTDIR source=common.sh
 source "$(dirname "$0")/common.sh"
 set +e
 set +o pipefail
