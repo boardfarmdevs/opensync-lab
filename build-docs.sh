@@ -48,6 +48,7 @@ cmd_capture() {
     url=$(noc_url) || die "no local-noc web UI on $MVX_VM (setup-vm.sh provision)"
     curl -fs -o /dev/null "$url/api/topology" || die "local-noc not answering at $url"
     log "capture: $url, $frames frames every ${interval}s"
+    # shellcheck disable=SC2016  # expanded in the VM
     lxc exec "$MVX_VM" -- sh -c 'for f in /var/lib/opensync-lab/*.status; do
             n=$(basename "$f" .status); while IFS= read -r l; do printf "%s\t%s\n" "$n" "$l"; done < "$f"; done' |
         python3 "$MVX_ROOT/lib/docs.py" capture "$url" "$SITE/topology" "$frames" "$interval" "$SITE/data/checks.json"

@@ -137,6 +137,7 @@ cmd_status() {
     lxc list "$MVX_VM" -c nsN4tm --format table
     [ "$(vm_state)" = RUNNING ] || return 0
     vm_wait_agent
+    # shellcheck disable=SC2016  # expanded in the VM
     lxc exec "$MVX_VM" -- bash -c '
         printf "kernel      %s\n" "$(uname -r)"
         printf "hwsim       radios=%s channels=%s free=%s\n" \

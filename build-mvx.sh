@@ -205,6 +205,7 @@ step_checkout() {
 
     log "checkout: verifying every project HEAD against the pin"
     local bad
+    # shellcheck disable=SC2016  # expanded by repo forall, per project
     bad=$(repo forall -c 'h=$(git rev-parse HEAD); [ "$h" = "$REPO_RREV" ] || echo "$REPO_PATH $h != $REPO_RREV"')
     [ -z "$bad" ] || { printf '%s\n' "$bad" >&2; die "projects not at their pinned revision"; }
     log "checkout: $(repo list | wc -l) projects at their pinned revisions"
@@ -229,6 +230,7 @@ step_layers() {
 # setup-environment must be sourced by a shell without set -eu; everything
 # bitbake-related runs in this child.
 in_build_env() {
+    # shellcheck disable=SC2016  # expanded in the build environment's shell
     env -u GIT_CONFIG_COUNT MACHINE="$PROD_MACHINE" bash -c '
         cd "$1" || exit 1
         meta=$2 cmd=$3

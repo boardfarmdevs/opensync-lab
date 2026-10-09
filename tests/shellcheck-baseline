@@ -1,9 +1,7 @@
 # shellcheck findings already in the repository, per file and code: a new one fails
 # tests/lint.sh. Fix them and shrink this file with tests/lint.sh --update.
-1 build-docs.sh SC2016
 1 build-mvx.sh SC1010
 1 build-mvx.sh SC2015
-2 build-mvx.sh SC2016
 1 build-pod.sh SC2012
 1 deploy-mvx.sh SC2015
 1 deploy-mvx.sh SC2034
@@ -12,7 +10,6 @@
 1 guest/40-wan-check.sh SC2015
 1 guest/50-opensync.sh SC2015
 2 guest/50-opensync.sh SC2086
-1 guest/70-pod.sh SC2016
 1 guest/70-pod.sh SC2207
 1 guest/80-client.sh SC2015
 3 guest/85-topology.sh SC2015
@@ -23,9 +20,7 @@
 1 guest/files/boardfarm-lab-rebuild SC2034
 2 guest/files/boardfarm-lab-rebuild SC2086
 1 guest/files/mvx-hwsim-pool SC2010
-1 lib/common.sh SC2016
 3 lib/common.sh SC2034
-1 lib/vm.sh SC2016
 1 pod/image/files/mvx-pod-bootstrap SC2012
 1 pod/image/files/mvx-pod-bootstrap SC2086
 2 pod/image/files/mvx-pod-prep SC2012
@@ -36,4 +31,3 @@
 1 pod/image/files/opensync.init SC1090
 1 pod/image/files/openvswitch.init SC2034
 1 setup-vm.sh SC2015
-1 setup-vm.sh SC2016

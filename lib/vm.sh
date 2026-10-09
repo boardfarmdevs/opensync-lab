@@ -53,6 +53,7 @@ vm_run_guest() {
     local script=$1
     shift
     log "guest: $script $*"
+    # shellcheck disable=SC2016  # expanded in the VM: $0 the guest script, $@ its arguments
     lxc exec "$MVX_VM" --env MVX_GUEST_ROOT="$GUEST_ROOT" -- \
         bash -c 'exec </dev/null; exec bash "$0" "$@"' "$GUEST_ROOT/guest/$script" "$@" \
         || die "guest script $script failed"

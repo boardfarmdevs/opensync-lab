@@ -63,5 +63,6 @@ persist_local() {
     local key=$1 val=$2 f=$MVX_ROOT/config/local.conf
     touch "$f"
     sed -i "/^: \"\${$key:=/d" "$f"
+    # shellcheck disable=SC2016  # a literal ${KEY:=value} line for local.conf
     printf ': "${%s:=%s}"\n' "$key" "$val" >> "$f"
 }

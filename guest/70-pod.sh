@@ -59,6 +59,7 @@ log "pod: $(lxc exec "$name" -- journalctl -u mvx-pod-prep -o cat --no-pager | t
 # shellcheck disable=SC2317  # called by wait_for
 managers() { for m in ovsdb-server dm cm owm nm; do lxc exec "$name" -- pidof "$m" >/dev/null || return 1; done; }
 wait_for 180 5 "pod managers" managers || warn "not all managers are running in $name"
+# shellcheck disable=SC2016  # expanded in the pod
 lxc exec "$name" -- sh -c 'for m in ovsdb-server dm cm wm owm nm wano; do printf "%s:%s " $m "$(pidof $m >/dev/null && echo up || echo -)"; done; echo'
 id=$(lxc exec "$name" -- /usr/opensync/tools/ovsh -r s AWLAN_Node id 2>/dev/null)
 log "pod: launched $name id=$id"
