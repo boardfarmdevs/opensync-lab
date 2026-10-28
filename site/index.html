@@ -14,7 +14,7 @@
 
 <div class="k" style="color:var(--faint);font-size:12px;letter-spacing:.12em;text-transform:uppercase">OpenSync · RDK-B · mac80211_hwsim · LXD</div>
 <h1>opensync-lab</h1>
-<p class="lead">A reproducible, one-command lab for an OpenSync-enabled containerized RDK-B gateway (the LGI <b>mv3</b>),
+<p class="lead">A reproducible, one-command lab for an OpenSync-enabled containerized RDK-B gateway (the operator's <b>mv3</b>),
 with three OpenSync <b>extenders</b> built from the open-source release, six <b>wireless clients</b>, and <b>local-noc</b>, a
 local stand-in for the OpenSync cloud that records the whole protocol and draws the network live.</p>
 <p class="fits">Part of the <b>OpenSync adapter</b> goal: this is the router and the pods
@@ -79,7 +79,7 @@ Point at a part to see what it is and how it connects; click it to read more.</p
     <rect class="box" x="800" y="70" width="152" height="52" rx="10"/><text class="lbl" x="814" y="93">local-noc</text><text class="mono" x="814" y="111">10.101.0.40 · cloud</text></g>
 
   <!-- mv3 -->
-  <g data-group="wan lan cloud mesh" data-href="deploy.html" data-info="<b>mv3</b>: the LGI RDK-B gateway as an LXD container, launched with meta-lxd's <code>mv.sh</code>: WAN on boardfarm, LAN port, three hwsim radios driven by the hal-wifi-hwsim Wi-Fi HAL, OpenSync 4.4 connected to its cloud. Its 5 GHz backhaul AP is where the extenders join.">
+  <g data-group="wan lan cloud mesh" data-href="deploy.html" data-info="<b>mv3</b>: the operator's RDK-B gateway as an LXD container, launched with meta-lxd's <code>mv.sh</code>: WAN on boardfarm, LAN port, three hwsim radios driven by the hal-wifi-hwsim Wi-Fi HAL, OpenSync 4.4 connected to its cloud. Its 5 GHz backhaul AP is where the extenders join.">
     <rect class="box" x="478" y="196" width="174" height="62" rx="12"/><text class="lbl" x="494" y="222">mv3 · router</text><text class="mono" x="494" y="241">RDK-B · OpenSync 4.4</text></g>
   <!-- pods -->
   <g data-group="mesh pod client" data-href="extender.html" data-info="<b>pod-1</b>: an OpenSync extender with two hwsim radios and no wired NIC. It joins mv3's backhaul, builds a GRE uplink, gets a LAN address through it, reaches local-noc and is given its fronthaul.">

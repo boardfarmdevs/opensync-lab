@@ -7,10 +7,10 @@ Two gaps that keep OpenSync from working on the LXD mv3 (found by
 opensync-lab, 2026-09-22):
 
 - opensync: the NOC certificate selection lives in
-  meta-rdk-opensync-sagemcom's do_install:append:f5685, which never applies to
+  the board's OpenSync layer, a do_install:append for its machine, which never applies to
   MACHINE exm-qemux86-mv3. The image ships theta-dev/ and opensync-dev/ but no
   ca.pem/client.pem/client_dec.key where the OVSDB SSL table points, so cm
-  never gets past BACKOFF. Link theta-dev (the f5685 default without
+  never gets past BACKOFF. Link theta-dev (the real board's default without
   BUILD_OSRT, and what mv27/mv37 ship). With it, mv3 reaches
   Manager ACTIVE on the theta dev controller.
 
@@ -48,7 +48,7 @@ index 8ae20ea..43ca444 100644
  "
 +
 +# OpenSync client certificates. The real board selects one NOC's certificates
-+# in meta-rdk-opensync-sagemcom's do_install:append:f5685 (theta-dev unless
++# in its OpenSync layer's do_install:append for its machine (theta-dev unless
 +# BUILD_OSRT=y); that override never applies to this MACHINE, so without this
 +# the SSL table's /usr/opensync/etc/certs/{ca,client}.pem + client_dec.key do
 +# not exist, ovsdb-server cannot complete TLS and cm stays in BACKOFF.

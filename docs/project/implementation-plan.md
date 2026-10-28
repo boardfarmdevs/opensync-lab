@@ -64,7 +64,7 @@ separately committed additions such as a boardfarm lab config.
   and runs `bitbake ofw`. It **cannot pin** anything, and it **prompts
   interactively** if the directory exists. We reuse its logic and
   `git-offline.sh`, but not the script itself.
-- `git-offline.sh`: **bitbucket.upc.biz is currently unreachable from rev140.**
+- `git-offline.sh`: **the operator's git server is currently unreachable from rev140.**
   `offline_git_setup` installs `url.*.insteadOf` redirects that point:
   manifest projects at the repo_reference mirror; `~rvogelaar/meta-lxd*`,
   `rbus-filter`, and `rbus-proxy` at the `~/git/<repo>` working clones; and other
@@ -249,7 +249,7 @@ Python script (stdlib `xml.etree`):
 ### 3.2 `layers.lock`
 
 One line per layer that is cloned outside repo:
-`meta-lxd rnl25-oe40 15058aa… ssh://git@bitbucket.upc.biz:7999/~rvogelaar/meta-lxd.git`,
+`meta-lxd rnl25-oe40 15058aa… <the operator's git server>/meta-lxd.git`,
 and likewise for `meta-lxd-mv3` and `meta-python2`. Values come from
 `git -C <ref>/<layer> rev-parse HEAD` and the branch.
 
@@ -289,7 +289,7 @@ it needs the host mirror, `~/git` layers, and `~/oe` caches.
    The redirect stays active for all of bitbake, because AUTOREV parsing and the
    fetches need it.
 3. **Checkout.**
-   `repo init --no-repo-verify --reference="$REPO_REF" -u ssh://git@bitbucket.upc.biz:7999/rdkb/manifests.git -m mv3-r25-oe40.xml`
+   `repo init --no-repo-verify --reference="$REPO_REF" -u "$MANIFEST_URL" -m mv3-r25-oe40.xml`
    (redirected to the mirror), then copy `pins/…/manifest.xml` to
    `.repo/manifests/mvx-pinned.xml` and run
    `repo sync -j8 --current-branch --no-tags -m .repo/manifests/mvx-pinned.xml`.

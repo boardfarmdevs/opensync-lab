@@ -21,7 +21,7 @@ around them.
 <!-- /labs block -->
 
 A reproducible, one-command lab for an **OpenSync-enabled containerized RDK-B gateway**
-(the LGI mvx products, starting with **mv3**), with OpenSync extenders and a local
+(the operator's gateways, starting with **mv3**), with OpenSync extenders and a local
 stand-in for the OpenSync cloud. It is the reference lab EMOSA is proven on: EMOSA takes
 these pods over as EasyMesh agents. The scripts:
 
