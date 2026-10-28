@@ -1,0 +1,103 @@
+cm2: an address literal resolves in its own family only, never through DNS
+
+opensync-lab / opensync-rpi: cm2_resolve() asks c-ares for both families when the uplink
+has both, and TRY_RESOLVE waits until neither query is in progress. c-ares (1.18.1, the
+pod's) answers an address literal at once only in its own family: asked for 10.0.0.1 as
+AF_INET6, it sends the name to DNS as a AAAA query, and only after every DNS timeout
+falls back to the IPv4 address. So once the uplink had an IPv6 address, an IPv4
+redirector or manager literal took as long as DNS took to fail: in an RDK lab
+qualification (2026-10-18 17:42 PDT [00:42 UTC]) br-home got a global IPv6 address 9 s
+before the resolve, the IPv4 result was there at once ("Resolved state: ipv4: 3 ipv6: 1"),
+and the AF_INET6 query of 10.101.0.40, then of 10.0.0.1, ran out TRY_RESOLVE's 180 s
+three times ("got address of host 10.0.0.1, req_type: AF_INET6, h addr type = AF_INET"
+at each timeout); the agent showed the pod unbound for 9 minutes, until FAST_RECONNECT's
+cached address connected. Where DNS answers, the AAAA query fails fast, which is why it
+showed up only now and then (a race with the uplink's IPv6). The lab's DNS servers are
+unreachable, and the same 180 s timeouts failed RDK lab qualifications on 18, 22 and 28
+October, each time after a pod's backhaul move or restart.
+
+An address literal is now asked for in its own family only; a name is asked for as
+before. A literal of a family the uplink lacks is asked for in neither, and fails as an
+unresolvable name does. The choice is in cm2_resolve_family.h, free of cm2's other state,
+so that pod/opensync/tests/cm2_resolve_family_test.c tests it on its own.
+
+Upstream: an OpenSync core behaviour as released in 6.6.1.0: cm2_resolve() in
+src/cm2/src/cm2_resolve_ares.c asks every family the uplink has for any hostname. Not
+reported (the owner decides).
+
+diff --git a/src/cm2/src/cm2_resolve_ares.c b/src/cm2/src/cm2_resolve_ares.c
+index a7c84cbb..5358febc 100644
+--- a/src/cm2/src/cm2_resolve_ares.c
++++ b/src/cm2/src/cm2_resolve_ares.c
+@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+ #include "log.h"
+ #include "cm2.h"
++#include "cm2_resolve_family.h"
+ #include "memutil.h"
+ 
+ static int
+@@ -164,6 +165,8 @@ bool cm2_resolve(cm2_dest_e dest)
+ 
+     ipv6 = g_state.link.ipv6.is_ip && addr->ipv6_addr_list.state != CM2_ARES_R_IN_PROGRESS;
+     ipv4 = g_state.link.ipv4.is_ip && addr->ipv4_addr_list.state != CM2_ARES_R_IN_PROGRESS;
++    /* an address literal only in its own family: the other would go to DNS */
++    cm2_resolve_families(addr->hostname, &ipv4, &ipv6);
+ 
+     if ((g_state.link.ipv4.resolve_retry && ipv6 && addr->ipv6_addr_list.state == CM2_ARES_R_RESOLVED) ||
+         (g_state.link.ipv6.resolve_retry && ipv4 && addr->ipv4_addr_list.state == CM2_ARES_R_RESOLVED))
+diff --git a/src/cm2/src/cm2_resolve_family.h b/src/cm2/src/cm2_resolve_family.h
+new file mode 100644
+index 00000000..982a63d3
+--- /dev/null
++++ b/src/cm2/src/cm2_resolve_family.h
+@@ -0,0 +1,49 @@
++/*
++ * cm2: the address families cm2_resolve() asks c-ares for (opensync-lab / opensync-rpi).
++ *
++ * cm2_resolve() asks for both families when the uplink has both, and TRY_RESOLVE waits
++ * until neither query is in progress. c-ares answers an address literal at once only in
++ * its own family: asked for 10.0.0.1 as AF_INET6, it sends the name to DNS, so where DNS
++ * does not answer, the IPv4 result (there at once) waited out TRY_RESOLVE's 180 s. So
++ * an address literal is asked for in its own family only, and never goes to DNS; a
++ * name is asked for as before. Kept free of cm2's other state so that it can be tested
++ * on its own.
++ */
++#ifndef CM2_RESOLVE_FAMILY_H_INCLUDED
++#define CM2_RESOLVE_FAMILY_H_INCLUDED
++
++#include <arpa/inet.h>
++#include <stdbool.h>
++#include <sys/socket.h>
++
++/* AF_INET or AF_INET6 for an address literal, else AF_UNSPEC (a name to resolve). */
++static inline int cm2_resolve_literal_family(const char *hostname)
++{
++    struct in6_addr in6;
++    struct in_addr in4;
++
++    if (inet_pton(AF_INET, hostname, &in4) == 1) return AF_INET;
++    if (inet_pton(AF_INET6, hostname, &in6) == 1) return AF_INET6;
++    return AF_UNSPEC;
++}
++
++/*
++ * The families to ask for: *ipv4 and *ipv6 come in as the ones the uplink can use, and
++ * an address literal keeps only its own (none, when the uplink lacks it).
++ */
++static inline void cm2_resolve_families(const char *hostname, bool *ipv4, bool *ipv6)
++{
++    switch (cm2_resolve_literal_family(hostname))
++    {
++        case AF_INET:
++            *ipv6 = false;
++            break;
++        case AF_INET6:
++            *ipv4 = false;
++            break;
++        default:
++            break;
++    }
++}
++
++#endif /* CM2_RESOLVE_FAMILY_H_INCLUDED */
