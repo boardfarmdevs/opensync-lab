@@ -8188,9 +8188,9 @@
      "map",
      []
     ],
-    "sku_number": "F5685LGE",
-    "model": "F5685LGE",
-    "vendor_manufacturer": "Sagemcom",
+    "sku_number": "gateway",
+    "model": "gateway",
+    "vendor_manufacturer": "",
     "version_matrix": [
      "map",
      [
@@ -8241,7 +8241,7 @@
      "set",
      []
     ],
-    "vendor_part_number": "F5685LGE",
+    "vendor_part_number": "gateway",
     "firmware_version": "4.4.0.0",
     "boot_time": 1790188373,
     "firmware_url": "",
@@ -8271,7 +8271,7 @@
     "min_backoff": 30,
     "device_mode": "cloud",
     "upgrade_status": 0,
-    "vendor_name": "Sagemcom",
+    "vendor_name": "",
     "revision": "1.1\n",
     "mqtt_topics": [
      "map",

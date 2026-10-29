@@ -26,6 +26,12 @@
    "doc": ""
   },
   {
+   "name": "OPENSYNC_LAB_PRIVATE",
+   "default": "$HOME/yocto/opensync-lab-private",
+   "section": "product / release",
+   "doc": "The pin sets (pins/<pin set>/) and the build's manifest URL (private.conf) are private since 28 October 2026: a checkout of the private repository holds them (pins/README.md)."
+  },
+  {
    "name": "MVX_REPO_REF",
    "default": "$HOME/yocto/repo_reference/${MVX_PRODUCT}-${MVX_RELEASE}-repo_reference",
    "section": "product / release",
@@ -305,7 +311,7 @@
  ],
  "workarounds": [
   {
-   "problem": "mv3 LXD image selects no OpenSync NOC certificates (only `do_install:append:f5685` does), so `cm` stays in BACKOFF",
+   "problem": "mv3 LXD image selects no OpenSync NOC certificates (only the real board's `do_install:append` does), so `cm` stays in BACKOFF",
    "workaround": "`guest/50-opensync.sh` links `/usr/opensync/etc/certs/*` -> `theta-dev/` and restarts `cm`",
    "fix": "`docs/proposals/0001-*.patch` for meta-lxd-mv3 (untested)"
   },

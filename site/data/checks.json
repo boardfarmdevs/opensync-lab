@@ -26,7 +26,7 @@
    "PASS controller assigned: AWLAN_Node.manager_addr=tcp:10.101.0.40:6641",
    "PASS Manager.is_connected: true -> tcp:[10.101.0.40]:6641",
    "PASS local-noc session: controller from 10.101.0.20:59824 tables=27 capture /var/lib/local-noc/sessions/mv3/20260923T194633Z-controller-10.101.0.20_59824.jsonl",
-   "INFO node identity: id=mv3 serial=mv3 model=F5685LGE",
+   "INFO node identity: id=mv3 serial=mv3 model=gateway",
    "INFO cloud config (VIFs): onboard-ap-24 onboard-ap-50 wl0 wl0.1 wl1 wl1.1 ",
    "INFO mqtt topics: [\"map\",[]]",
    "INFO ovsdb dump: /var/lib/opensync-lab/ovsdb-mv3-20260923-194639.txt"

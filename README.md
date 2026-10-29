@@ -21,7 +21,7 @@ around them.
 <!-- /labs block -->
 
 A reproducible, one-command lab for an **OpenSync-enabled containerized RDK-B gateway**
-(the LGI mvx products, starting with **mv3**), with OpenSync extenders and a local
+(the operator's gateways, starting with **mv3**), with OpenSync extenders and a local
 stand-in for the OpenSync cloud. It is the reference lab EMOSA is proven on: EMOSA takes
 these pods over as EasyMesh agents. The scripts:
 
@@ -64,7 +64,7 @@ these pods over as EasyMesh agents. The scripts:
 | [local-noc/](local-noc) | the local OpenSync cloud: redirector and controller over OVSDB JSON-RPC, the mesh orchestration, the topology view, `noc-ctl` |
 | [meta-mvx/](meta-mvx) | bbappends and patches on top of the pinned layers (`hal-wifi-hwsim`) |
 | [pod/](pod) | the OpenSync extender: `sources.lock`, target and provider overlays, patches, build environment, image |
-| [pins/](pins) | the pinned manifest, layer commits, SRCREVs and the reference package list |
+| [pins/](pins) | a placeholder: the pin sets (the pinned manifest, layer commits, SRCREVs and the reference package list) and the manifest URL are private, read from `OPENSYNC_LAB_PRIVATE` |
 | [guest/](guest) | the scripts and units pushed to `/opt/opensync-lab` in the VM |
 | [boardfarm/](boardfarm) | the lab configuration overlaid into boardfarm-lab-staging, and its patches |
 | [site/](site) | the documentation site: local-noc's topology viewer replaying a recording of the lab, the reference tables, the stages |
@@ -76,7 +76,7 @@ There is one script per stage; each subcommand can be re-run safely.
 
 ```sh
 # 1. mv3 container image: fresh checkout, pinned to the reference build, offline
-./build-mvx.sh pin       # once: pins/mv3-r25-oe40-0808/ + pin store under ~/yocto/repo_reference/mvx-pins/
+./build-mvx.sh pin       # once: $OPENSYNC_LAB_PRIVATE/pins/mv3-r25-oe40-0808/ + pin store under ~/yocto/repo_reference/mvx-pins/
 ./build-mvx.sh build     # -> ~/yocto/mv3-lxd-r25-oe40-<MMDD>
 ./build-mvx.sh status
 

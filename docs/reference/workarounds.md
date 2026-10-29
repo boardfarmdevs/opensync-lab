@@ -7,7 +7,7 @@ shows the same table (`build-docs.sh reference` reads it from here).
 
 | Problem | Lab workaround | Proper fix |
 |---|---|---|
-| mv3 LXD image selects no OpenSync NOC certificates (only `do_install:append:f5685` does), so `cm` stays in BACKOFF | `guest/50-opensync.sh` links `/usr/opensync/etc/certs/*` -> `theta-dev/` and restarts `cm` | `docs/proposals/0001-*.patch` for meta-lxd-mv3 (untested) |
+| mv3 LXD image selects no OpenSync NOC certificates (only the real board's `do_install:append` does), so `cm` stays in BACKOFF | `guest/50-opensync.sh` links `/usr/opensync/etc/certs/*` -> `theta-dev/` and restarts `cm` | `docs/proposals/0001-*.patch` for meta-lxd-mv3 (untested) |
 | With SON on, `dnsmasq` refuses to start (`bind-interfaces` + missing `wl0.1`/`wl1.1`), so LAN DHCP breaks | `fix_lan_dhcp` in `guest/common.sh` restarts it with `bind-dynamic` | same proposed patch (utopia) |
 | boardfarm `bf-wan` build: Debian bullseye security packages now 404 | `boardfarm/patches/0001` | boardfarm-lab-staging |
 | boardfarm `wan-cpe1`: docker 28+ can make the non-masqueraded eth1 the default route, so the WAN side has no internet | `boardfarm/patches/0002` | boardfarm-lab-staging |

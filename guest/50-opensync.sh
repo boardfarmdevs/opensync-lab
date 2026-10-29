@@ -31,12 +31,12 @@ cx "test -x /usr/opensync/scripts/opensync.init" || die "no OpenSync in this ima
 
 # Client certificates. ovsdb-server takes them from the OVSDB SSL table
 # (/usr/opensync/etc/certs/{ca,client}.pem, client_dec.key). On the real
-# board meta-rdk-opensync-sagemcom's do_install:append:f5685 symlinks those to
+# board, its OpenSync layer's do_install:append for the board's machine symlinks those to
 # one NOC's directory; that override does not apply to MACHINE
 # exm-qemux86-mv3, so the LXD image ships theta-dev/ + opensync-dev/ but no
 # selection and cm can never complete TLS (BACKOFF). Until meta-lxd-mv3 does
 # the selection itself (see docs/PLAN.md), make it here -- same default NOC as
-# f5685 without BUILD_OSRT, and what mv27/mv37 ship: theta-dev.
+# the real board's without BUILD_OSRT, and what mv27/mv37 ship: theta-dev.
 noc=${MVX_OPENSYNC_NOC:-theta-dev}
 certdir=/usr/opensync/etc/certs
 # Decided from the files, not the SSL table: on a fresh container OpenSync is

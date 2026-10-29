@@ -23,7 +23,7 @@ and checked against the reference package for package.</p>
 <h2>What is pinned, and why it works offline</h2>
 <p>The reference build (<code>~/yocto/mv3-lxd-r25-oe40-0808</code>) is the definition of "known good". Pinning it means three things:</p>
 <div class="cards">
-  <div class="card"><div class="k">projects</div><h3>Every repo project</h3><p>A revision-locked manifest (<code>pins/…/manifest.xml</code>) with each project at the SHA the reference had checked out.</p></div>
+  <div class="card"><div class="k">projects</div><h3>Every repo project</h3><p>A revision-locked manifest (<code>pins/…/manifest.xml</code>, kept in a private repository) with each project at the SHA the reference had checked out.</p></div>
   <div class="card"><div class="k">layers</div><h3>The LXD layers</h3><p><code>meta-lxd</code>, <code>meta-lxd-mv3</code>, <code>meta-python2</code> at the reference's commits (<code>layers.lock</code>).</p></div>
   <div class="card"><div class="k">recipes</div><h3>Every SRCREV</h3><p>Most RDK recipes use <code>AUTOREV</code>; the SRCREVs the reference resolved are taken from its buildhistory and forced (<code>srcrev.inc</code>).</p></div>
 </div>
@@ -81,7 +81,7 @@ from-scratch build takes about 5 minutes.</p></div>
 
 <h2>The pins in the repository</h2>
 <div class="scroll"><table class="t"><thead><tr><th>file</th><th>what</th></tr></thead><tbody>
-<tr><td><code>pins/mv3-r25-oe40-0808/manifest.xml</code></td><td>revision-locked manifest (+ <code>.projects</code>: name path sha branch)</td></tr>
+<tr><td><code>$OPENSYNC_LAB_PRIVATE/pins/mv3-r25-oe40-0808/manifest.xml</code></td><td>revision-locked manifest (+ <code>.projects</code>: name path sha branch)</td></tr>
 <tr><td><code>layers.lock</code></td><td>meta-lxd <code>15058aa</code>, meta-lxd-mv3 <code>12fbde1</code>, meta-python2 <code>f02882e</code></td></tr>
 <tr><td><code>srcrev.inc</code></td><td><code>SRCREV:pn-&lt;recipe&gt; = "&lt;sha&gt;"</code> for every recipe the reference built</td></tr>
 <tr><td><code>installed-package-*.txt</code></td><td>the reference image's packages, for the reproducibility check</td></tr>
