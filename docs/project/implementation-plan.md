@@ -183,7 +183,8 @@ opensync-lab/
     common.sh                     logging, config loading, wait helpers, product table
     vm.sh                         host-side VM helpers (push tree/files, run guest script)
     pin-manifest.py               revision-locked manifest (repo manifest -r replacement)
-  pins/
+  pins/README.md                  a placeholder: the pin sets are private, in $OPENSYNC_LAB_PRIVATE/pins/
+  $OPENSYNC_LAB_PRIVATE/pins/
     mv3-r25-oe40-0808/
       manifest.xml(.projects)     revision-locked manifest (+ name path sha branch list)
       layers.lock                 name branch sha url (meta-lxd, meta-lxd-mv3, meta-python2)
@@ -217,8 +218,9 @@ opensync-lab/
 ## 3. Phase 1: pins (`build-mvx.sh pin`)
 
 Capture everything that defines the reference build, once, into
-`pins/<product>-<release>-<MMDD>/`. The files are committed to this repo, so
-the build is reproducible without the reference tree.
+`$OPENSYNC_LAB_PRIVATE/pins/<product>-<release>-<MMDD>/`. The files are committed to a
+private repository (since 28 October 2026, pins/README.md), so the build is
+reproducible without the reference tree.
 
 **Pin store (finding while implementing).** The repo_reference mirror is
 *older* than the 0808 build: 11 of the 67 pinned commits are not in it. The
@@ -269,7 +271,7 @@ and `sha256` of the image. It also records the sha256 of
 `buildhistory/images/exm-qemux86-mv3/glibc/ofw/installed-package-names.txt`,
 which Phase 2 uses as a reproducibility check.
 
-**Default pins** are `pins/mv3-r25-oe40-0808`. The option `--track-heads`
+**Default pins** are `$OPENSYNC_LAB_PRIVATE/pins/mv3-r25-oe40-0808`. The option `--track-heads`
 (Phase 2) deliberately ignores `layers.lock`/`srcrev.inc` for a "latest" build.
 
 ## 4. Phase 2: fresh pinned build (`build-mvx.sh build`)

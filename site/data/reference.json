@@ -26,6 +26,12 @@
    "doc": ""
   },
   {
+   "name": "OPENSYNC_LAB_PRIVATE",
+   "default": "$HOME/yocto/opensync-lab-private",
+   "section": "product / release",
+   "doc": "The pin sets (pins/<pin set>/) and the build's manifest URL (private.conf) are private since 28 October 2026: a checkout of the private repository holds them (pins/README.md)."
+  },
+  {
    "name": "MVX_REPO_REF",
    "default": "$HOME/yocto/repo_reference/${MVX_PRODUCT}-${MVX_RELEASE}-repo_reference",
    "section": "product / release",

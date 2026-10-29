@@ -27,18 +27,30 @@
 # (hal-wifi-hwsim, rbus-*, opensync-service-provider-local) are pinned and
 # already cached in $MVX_DL_DIR/git2.
 #
-# Settings: config/mvx.conf, all overridable from the environment.
+# Settings: config/mvx.conf, all overridable from the environment. The pin sets and the
+# manifest URL are private: pin, build and all read them from OPENSYNC_LAB_PRIVATE (pins/README.md).
 
 set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/lib/common.sh"
 
 product_info "$MVX_PRODUCT"
-MANIFEST_URL=ssh://git@bitbucket.upc.biz:7999/rdkb/manifests.git
-PINS_DIR="$MVX_ROOT/pins/$MVX_PINS"
+if [ -r "$OPENSYNC_LAB_PRIVATE/private.conf" ]; then
+    # shellcheck source=/dev/null # private: not in this repository
+    source "$OPENSYNC_LAB_PRIVATE/private.conf"
+fi
+: "${MANIFEST_URL:=}"
+PINS_DIR="$OPENSYNC_LAB_PRIVATE/pins/$MVX_PINS"
 : "${MVX_PIN_STORE:=$HOME/yocto/repo_reference/mvx-pins/$MVX_PINS}"
 PIN_BRANCH="mvx/$MVX_PINS"
 
 subdir_of() { echo "$1${PROD_SUBDIR:+/$PROD_SUBDIR}"; }  # dir holding build-<machine>/
+
+# pin, build and all need the private build data; status does not
+need_private() {
+    if [ -z "$MANIFEST_URL" ] || [ ! -d "$OPENSYNC_LAB_PRIVATE/pins" ]; then
+        die "the pin sets and the manifest URL are private: set OPENSYNC_LAB_PRIVATE to its checkout (pins/$MVX_PINS, private.conf); see pins/README.md"
+    fi
+}
 
 # --------------------------------------------------------------------------- pin
 
@@ -413,9 +425,9 @@ usage() { sed -n '3,9p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 cmd=${1:-}; [ $# -gt 0 ] && shift
 case "$cmd" in
-    pin)    cmd_pin "$@" ;;
-    build)  cmd_build "$@" ;;
-    all)    [ -f "$PINS_DIR/manifest.xml" ] || cmd_pin; cmd_build "$@" ;;
+    pin)    need_private; cmd_pin "$@" ;;
+    build)  need_private; cmd_build "$@" ;;
+    all)    need_private; [ -f "$PINS_DIR/manifest.xml" ] || cmd_pin; cmd_build "$@" ;;
     status) cmd_status "$@" ;;
     *)      usage ;;
 esac

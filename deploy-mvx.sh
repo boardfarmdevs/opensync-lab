@@ -39,7 +39,7 @@ source "$(dirname "$(readlink -f "$0")")/lib/common.sh"
 source "$MVX_ROOT/lib/vm.sh"
 
 product_info "$MVX_PRODUCT"
-PINS_DIR="$MVX_ROOT/pins/$MVX_PINS"
+PINS_DIR="$OPENSYNC_LAB_PRIVATE/pins/$MVX_PINS"    # private (pins/README.md)
 : "${MVX_PIN_STORE:=$HOME/yocto/repo_reference/mvx-pins/$MVX_PINS}"
 
 container_name() {
@@ -65,6 +65,8 @@ image_build_name() {
 meta_lxd_source() {  # prints "<git dir> <sha>"
     if [ "$MVX_RUNTIME_META_LXD" = pin ]; then
         local sha
+        [ -r "$PINS_DIR/layers.lock" ] ||
+            die "no $PINS_DIR/layers.lock: the pin sets are private, set OPENSYNC_LAB_PRIVATE to its checkout (pins/README.md)"
         sha=$(awk '$1 == "meta-lxd" {print $3}' "$PINS_DIR/layers.lock")
         [ -n "$sha" ] || die "no meta-lxd pin in $PINS_DIR/layers.lock"
         echo "$MVX_PIN_STORE/layers/meta-lxd.git $sha"
