@@ -12,6 +12,9 @@ set +o pipefail   # probes pipe into grep -q; an early exit must not fail them
 name=${1:?container name}
 redirector=${MVX_OPENSYNC_REDIRECTOR:-ssl:wildfire.plume.tech:443}
 redir_host=$(sed -E 's|^[a-z]+:||; s|:[0-9]+$||' <<< "$redirector")
+# the router's SON object in its data model (Device.<object>), private: private.conf
+son=${OPENSYNC_LAB_SON_OBJECT:-}
+[ -n "$son" ] || die "OPENSYNC_LAB_SON_OBJECT is not set: it is private, in \$OPENSYNC_LAB_PRIVATE/private.conf (pins/README.md)"
 fail=0 lines=()
 
 cx() { lxc exec "$name" -- sh -c "$1" 2>/dev/null; }
@@ -53,8 +56,8 @@ else
     result INFO "client certificates" "present: $certdir/client.pem -> $(cx "readlink $certdir/client.pem")"
 fi
 
-cur_admin=$(cx "dmcli eRT getv Device.X_LGI-COM_SON.SONAdminStatus" | awk '/value:/ {print $NF}')
-cur_url=$(cx "dmcli eRT getv Device.X_LGI-COM_SON.SONURL" | awk '/value:/ {print $NF}')
+cur_admin=$(cx "dmcli eRT getv Device.$son.SONAdminStatus" | awk '/value:/ {print $NF}')
+cur_url=$(cx "dmcli eRT getv Device.$son.SONURL" | awk '/value:/ {print $NF}')
 if [ "$cur_admin" = true ] && [ "$cur_url" = "$redirector" ]; then
     log "SON already enabled with $redirector"
 else
@@ -64,7 +67,7 @@ else
               "SONAdminStatus bool true"; do
         # shellcheck disable=SC2086  # split "<name> <type> <value>"
         set -- $kv
-        cx "dmcli eRT setv Device.X_LGI-COM_SON.$1 $2 $3" | grep -q succeed \
+        cx "dmcli eRT setv Device.$son.$1 $2 $3" | grep -q succeed \
             || warn "dmcli setv $1 did not report success"
     done
 fi

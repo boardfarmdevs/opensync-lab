@@ -34,11 +34,7 @@ set -euo pipefail
 source "$(dirname "$(readlink -f "$0")")/lib/common.sh"
 
 product_info "$MVX_PRODUCT"
-if [ -r "$OPENSYNC_LAB_PRIVATE/private.conf" ]; then
-    # shellcheck source=/dev/null # private: not in this repository
-    source "$OPENSYNC_LAB_PRIVATE/private.conf"
-fi
-: "${MANIFEST_URL:=}"
+: "${MANIFEST_URL:=}"   # private.conf, read by lib/common.sh
 PINS_DIR="$OPENSYNC_LAB_PRIVATE/pins/$MVX_PINS"
 : "${MVX_PIN_STORE:=$HOME/yocto/repo_reference/mvx-pins/$MVX_PINS}"
 PIN_BRANCH="mvx/$MVX_PINS"

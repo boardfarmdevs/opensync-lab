@@ -5,12 +5,17 @@ MVX_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 export MVX_ROOT
 
 # config: environment > config/local.conf (untracked, written by the scripts)
-# > config/mvx.conf defaults. Both files only assign unset variables (:=), so
-# local.conf must be read first for its values to win over the defaults.
+# > config/mvx.conf defaults > private.conf. The files only assign unset or empty
+# variables (:=), so local.conf must be read first for its values to win over the
+# defaults; private.conf fills what the defaults leave empty (pins/README.md).
 # shellcheck source=/dev/null  # local.conf: untracked, machine-local
 [ -f "$MVX_ROOT/config/local.conf" ] && source "$MVX_ROOT/config/local.conf"
 # shellcheck source-path=SCRIPTDIR source=../config/mvx.conf
 source "$MVX_ROOT/config/mvx.conf"
+if [ -r "$OPENSYNC_LAB_PRIVATE/private.conf" ]; then
+    # shellcheck source=/dev/null # private: not in this repository
+    source "$OPENSYNC_LAB_PRIVATE/private.conf"
+fi
 
 log()  { printf '\033[1;34m[%s]\033[0m %s\n' "$(date +%H:%M:%S)" "$*"; }
 warn() { printf '\033[1;33m[%s] WARN\033[0m %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
@@ -47,14 +52,24 @@ wait_for() {
     return 1
 }
 
+# A product's build subdirectory, from OPENSYNC_LAB_SUBDIRS (private.conf): empty if none.
+product_subdir() {
+    local kv
+    # shellcheck disable=SC2086  # split "<product>=<subdir> ..." on spaces
+    for kv in $OPENSYNC_LAB_SUBDIRS; do
+        [ "${kv%%=*}" = "$1" ] && { echo "${kv#*=}"; return 0; }
+    done
+    return 0
+}
+
 # Per-product build facts. Sets PROD_MACHINE, PROD_META, PROD_SUBDIR.
 # shellcheck disable=SC2034  # used by the scripts that source this file
 product_info() {
     case "$1" in
         mv3)     PROD_MACHINE=exm-qemux86-mv3;     PROD_META=meta-lxd-mv3;     PROD_SUBDIR= ;;
         mv37)    PROD_MACHINE=exm-qemux86-mv37;    PROD_META=meta-lxd-mv37;    PROD_SUBDIR= ;;
-        mv2plus) PROD_MACHINE=exm-qemux86-mv2plus; PROD_META=meta-lxd-mv2plus; PROD_SUBDIR=brcm-openbfc-rdkm-scom ;;
-        mv27)    PROD_MACHINE=exm-qemux86-mv27;    PROD_META=meta-lxd-mv27;    PROD_SUBDIR=brcm-openbfc-rdkm ;;
+        mv2plus) PROD_MACHINE=exm-qemux86-mv2plus; PROD_META=meta-lxd-mv2plus; PROD_SUBDIR=$(product_subdir "$1") ;;
+        mv27)    PROD_MACHINE=exm-qemux86-mv27;    PROD_META=meta-lxd-mv27;    PROD_SUBDIR=$(product_subdir "$1") ;;
         *) die "unknown product: $1" ;;
     esac
 }

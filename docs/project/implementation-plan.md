@@ -104,10 +104,10 @@ separately committed additions such as a boardfarm lab config.
   netdev per VAP so home + backhaul beacon together") is what lets the cloud's
   `bhaul-ap-*` VAPs come up next to the home VAPs. It reports real VAP state to
   OpenSync.
-- `meta-lxd-mv3` lxdinit creates the Broadcom Wi-Fi readiness markers that
+- `meta-lxd-mv3` lxdinit creates the Wi-Fi readiness markers that
   `opensync.init` waits for on mv3.
 - Enabling OpenSync (`docs/opensync.md`, boardfarm `tests/opensync`):
-  `dmcli eRT setv Device.X_LGI-COM_SON.{SONURL=ssl:wildfire.plume.tech:443,
+  `dmcli eRT setv Device.<SON object>.{SONURL=<redirector>,
   NativeAtmBsControl=true, SONOperationalStatus=true, SONLogpullEnable=true,
   SONAdminStatus=true (last)}`. MeshAgent maps SONURL to
   `AWLAN_Node.redirector_addr`, and `cm` connects, which shows as
@@ -619,8 +619,8 @@ expected to change:
 |---|---|---|---|---|---|
 | mv3 | r25-oe40 | exm-qemux86-mv3 / meta-lxd-mv3 | (flat) | 1081 (+ mgmt 881) | eth0 |
 | mv37 | r24-oe40 | exm-qemux86-mv37 / meta-lxd-mv37 | (flat) | 100 | eth0 |
-| mv2plus | r25-oe40 | exm-qemux86-mv2plus / meta-lxd-mv2plus | brcm-openbfc-rdkm-scom | untagged | cm0 (+ bcm0 on `cm`) |
-| mv27 | r25-oe40 | exm-qemux86-mv27 / meta-lxd-mv27 | brcm-openbfc-rdkm | untagged | cm0 (+ bcm0 on `cm`) |
+| mv2plus | r25-oe40 | exm-qemux86-mv2plus / meta-lxd-mv2plus | (private.conf) | untagged | cm0 (+ the chip's port on `cm`) |
+| mv27 | r25-oe40 | exm-qemux86-mv27 / meta-lxd-mv27 | (private.conf) | untagged | cm0 (+ the chip's port on `cm`) |
 
 Notes: mv37's meta-lxd branch is `rnl25-oe40` (do-lxd.sh override). Reference
 builds exist for each: `~/yocto/mv37-lxd-r24-oe40-0808`,
