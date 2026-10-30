@@ -22,7 +22,7 @@
 # branch mvx/<pins>. At build time every remote URL is redirected into the
 # store with process-scoped git config (GIT_CONFIG_COUNT). Nothing is written
 # to ~/.gitconfig.
-# bitbake itself needs no redirect: the mng distro builds the RDK components
+# bitbake itself needs no redirect: the vendor's distro builds the RDK components
 # from the checkout's own src/ (file://), and the other bitbucket SRC_URIs
 # (hal-wifi-hwsim, rbus-*, opensync-service-provider-local) are pinned and
 # already cached in $MVX_DL_DIR/git2.

@@ -43,7 +43,7 @@ separately committed additions such as a boardfarm lab config.
   | meta-lxd-mv3 | rnl25-oe40 | `12fbde1` | same as `~/git/meta-lxd-mv3` HEAD |
   | meta-python2 | kirkstone | `f02882e` | from code.rdkcentral.com (reachable without VPN) |
 
-- **Most RDK recipes use `SRCREV ?= "${AUTOREV}"`** (meta-mng `recipes-ccsp/*`,
+- **Most RDK recipes use `SRCREV ?= "${AUTOREV}"`** (the vendor distro layer's `recipes-ccsp/*`,
   hal-*, rbus, opensync, `hal-wifi-hwsim`, …). Pinning the manifest alone therefore
   does **not** reproduce the build: bitbake resolves branch heads at parse time.
   The reference build ran with `INHERIT += "buildhistory"`, so the resolved
